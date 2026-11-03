@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Government bond liquidity</title>
+<meta name="description" content="Dealer-to-customer and dealer-to-dealer turnover in US Treasuries, gilts, Bunds, OATs, JGBs and CGBs, and the liquidity profile of a multi-currency bond holding.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root {
+  --bg: #f4f3ee; --card: #ffffff; --card2: #faf9f5; --fg: #1b1f24; --muted: #5d6572; --line: #dedbd2; --line2: #ece9e1;
+  --accent: #2563a8; --accent-soft: #e4edf8; --warn: #a65d00; --warn-soft: #fbefd9; --ok: #2f7d4f;
+  --d2c: #2f6db5; --d2con: #8fb4e3; --d2d: #b9c2cf; --tot: #1b1f24; --grid: #e8e6df; --axis: #5d6572;
+  --usd: #2563a8; --gbp: #c43d3d; --de: #d49a16; --fr: #2a9d8f; --jpy: #7b4fb3; --cny: #e07a2e;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", Consolas, monospace;
+  --r: 10px; --shadow: 0 1px 2px rgba(20,24,30,.06), 0 4px 14px rgba(20,24,30,.05);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141619; --card: #1d2024; --card2: #22262b; --fg: #e8e6e1; --muted: #9aa1ab; --line: #2e3238; --line2: #272b30;
+  --accent: #6ea3e8; --accent-soft: #223449; --warn: #e3a94c; --warn-soft: #3a2d16; --ok: #6cc08f;
+  --d2c: #5b93d6; --d2con: #325a8a; --d2d: #4f5862; --tot: #e8e6e1; --grid: #2a2e34; --axis: #c3c9d1;
+  --usd: #6ea3e8; --gbp: #e46b6b; --de: #e6b53a; --fr: #4fc1b2; --jpy: #a98ad8; --cny: #f09a55;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #141619; --card: #1d2024; --card2: #22262b; --fg: #e8e6e1; --muted: #9aa1ab; --line: #2e3238; --line2: #272b30;
+  --accent: #6ea3e8; --accent-soft: #223449; --warn: #e3a94c; --warn-soft: #3a2d16; --ok: #6cc08f;
+  --d2c: #5b93d6; --d2con: #325a8a; --d2d: #4f5862; --tot: #e8e6e1; --grid: #2a2e34; --axis: #c3c9d1;
+  --usd: #6ea3e8; --gbp: #e46b6b; --de: #e6b53a; --fr: #4fc1b2; --jpy: #a98ad8; --cny: #f09a55;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25); color-scheme: dark; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 1.7rem; font-weight: 600; margin: 0 0 .3rem; letter-spacing: -.01em; text-wrap: balance; }
+h2 { font-size: 1.15rem; font-weight: 600; margin: 0 0 .25rem; }
+h3 { font-size: .98rem; font-weight: 600; margin: 0 0 .3rem; }
+p { margin: 0 0 .7rem; max-width: 72ch; }
+code, .mono { font-family: var(--mono); font-size: .9em; }
+nav { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
+nav .in { display: flex; align-items: center; gap: .6rem; max-width: 1500px; margin: 0 auto; padding: .45rem max(16px, env(safe-area-inset-right, 0px)) .45rem max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
+nav .brand { font-weight: 600; margin-right: .6rem; white-space: nowrap; }
+nav .tabs { display: flex; gap: .35rem; flex-wrap: wrap; flex: 1; }
+nav .tabs a { padding: .42rem .85rem; border-radius: 999px; color: var(--fg); font-weight: 500; font-size: .95rem; white-space: nowrap; border: 1px solid var(--line); background: var(--card2); }
+nav .tabs a:hover { background: var(--accent-soft); border-color: var(--accent); text-decoration: none; color: var(--fg); }
+nav .tabs a.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+nav .tabs a.on .sw { outline: 1.5px solid #fff; }
+nav .tabs a .sw { display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .35em; vertical-align: -.02em; }
+#themeBtn { border: 1px solid var(--line); background: var(--card2); color: var(--fg); border-radius: 999px; padding: .3rem .7rem; cursor: pointer; font: inherit; font-size: .85rem; }
+main.wrap { max-width: 1500px; margin: 0 auto; padding-block: 1.2rem 3rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+section.pane { display: none; }
+section.pane.on { display: block; }
+.lede { color: var(--muted); max-width: 80ch; margin-bottom: 1rem; }
+.block { margin-top: 1.6rem; }
+section.pane > .block:first-child { margin-top: 0; }
+.block > p.note, .card > p.note { color: var(--muted); font-size: .9rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); min-width: 0; overflow-x: auto; }
+.card h3 { margin-bottom: .1rem; }
+.card .sub { color: var(--muted); font-size: .85rem; margin-bottom: .4rem; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 1000px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); } }
+.plot { width: 100%; height: 320px; }
+.plot.tall { height: 400px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .8rem; margin: .8rem 0 1rem; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .7rem .9rem; box-shadow: var(--shadow); min-width: 0; }
+.tile .k { font-size: .78rem; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; }
+.tile .v { font-family: var(--mono); font-size: 1.45rem; font-weight: 500; line-height: 1.2; margin-top: .15rem; }
+.tile .u { font-size: .8rem; color: var(--muted); }
+.tbl { border-collapse: collapse; width: 100%; font-size: .86rem; }
+.tbl th, .tbl td { padding: .35rem .4rem; border-bottom: 1px solid var(--line2); text-align: right; white-space: nowrap; }
+.tbl th { color: var(--muted); font-weight: 500; font-size: .78rem; letter-spacing: .02em; text-transform: uppercase; white-space: normal; line-height: 1.2; vertical-align: bottom; }
+.tbl th:first-child, .tbl td:first-child { text-align: left; }
+.tbl td.num { font-family: var(--mono); font-size: .86rem; }
+.tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
+.tbl td.na { color: var(--muted); }
+.tbl .sw { display: inline-block; width: .65em; height: .65em; border-radius: 2px; margin-right: .4em; vertical-align: -.02em; }
+.badge { display: inline-block; font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; margin-left: .4rem; vertical-align: middle; }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.ok { background: rgba(47, 125, 79, .15); color: var(--ok); }
+.badge.bad { background: rgba(196, 61, 61, .15); color: var(--gbp); }
+ol.steps { padding-left: 1.3rem; margin: .2rem 0; font-size: .93rem; }
+ol.steps li { margin-bottom: .55rem; max-width: 90ch; }
+.callout { background: var(--warn-soft); border-left: 3px solid var(--warn); padding: .6rem .9rem; border-radius: 6px; margin: .6rem 0 1rem; font-size: .92rem; }
+.callout.info { background: var(--accent-soft); border-left-color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; color: var(--muted); font-size: .88rem; margin: .3rem 0 .8rem; }
+.meta b { color: var(--fg); font-weight: 500; }
+ul.caveats { padding-left: 1.2rem; margin: .3rem 0; font-size: .92rem; }
+ul.caveats li { margin-bottom: .25rem; }
+/* main tab: side panel + content */
+.mainwrap { display: grid; grid-template-columns: 390px minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+@media (max-width: 1000px) { .mainwrap { grid-template-columns: minmax(0, 1fr); align-items: stretch; } }
+.content { min-width: 0; }
+.side { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
+@media (max-width: 1000px) { .side { position: static; max-height: none; } }
+.side h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: .9rem 0 .4rem; }
+.side h3:first-child { margin-top: 0; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: .4rem; align-items: center; margin-bottom: .4rem; font-size: .9rem; }
+.row label { color: var(--fg); }
+.row input[type=number], .row select { font: inherit; font-family: var(--mono); font-size: .86rem; width: 7.2rem; padding: .25rem .4rem; border: 1px solid var(--line); border-radius: 6px; background: var(--card2); color: var(--fg); text-align: right; }
+.row select { font-family: var(--sans); text-align: left; }
+.row input[type=range] { grid-column: 1 / -1; width: 100%; margin: 0 0 .2rem; accent-color: var(--accent); }
+.segs { display: flex; flex-direction: column; gap: .25rem; font-size: .88rem; }
+.segs label { display: flex; gap: .45rem; align-items: flex-start; cursor: pointer; }
+.segs input { margin-top: .3rem; accent-color: var(--accent); }
+.segs small { display: block; color: var(--muted); }
+.itbl { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.itbl th, .itbl td { padding: .12rem .15rem; text-align: right; }
+.itbl th { color: var(--muted); font-weight: 500; font-size: .72rem; text-transform: uppercase; letter-spacing: .02em; }
+.itbl th:first-child, .itbl td:first-child { text-align: left; white-space: nowrap; }
+.itbl input { font-family: var(--mono); font-size: .78rem; width: 3rem; padding: .12rem .2rem; border: 1px solid var(--line); border-radius: 5px; background: var(--card2); color: var(--fg); text-align: right; }
+.itbl input.cut, .mats input.cut { opacity: .35; text-decoration: line-through; }
+.itbl input.part, .mats input.part { border-style: dashed; border-color: var(--warn); }
+.ovtop { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; align-items: center; margin-bottom: .7rem; font-size: .92rem; }
+.ovtop label { cursor: pointer; } .ovtop input { accent-color: var(--accent); }
+.ovtop span { color: var(--muted); font-size: .85rem; flex: 1 1 14rem; }
+.ovp { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; align-items: flex-end; }
+.ovp.dis, #matBlock.dis, .ovf.matdep.dis { opacity: .45; }
+.tbl.mat tr.main td { border-bottom: 0; padding-bottom: .15rem; }
+.tbl.mat td.src { text-align: left; white-space: normal; font-size: .82rem; color: var(--muted); padding: 0 .4rem .5rem 1.6rem; line-height: 1.4; }
+.tbl.mat td .u { font-size: .75rem; color: var(--muted); }
+.tbl.mat .ok { color: var(--ok); font-weight: 600; } .tbl.mat .bad { color: var(--warn); font-weight: 600; }
+.mbar { display: flex; width: 170px; height: 12px; border-radius: 3px; overflow: hidden; background: var(--line2); }
+.mbar span { display: block; height: 100%; }
+.mlegend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .78rem; color: var(--muted); margin-bottom: .5rem; }
+.mlegend i { display: inline-block; width: .9em; height: .9em; border-radius: 2px; margin-right: .35em; vertical-align: -.1em; }
+label.chk { display: flex; gap: .45rem; align-items: center; cursor: pointer; font-size: .9rem; margin: .2rem 0 .3rem; }
+label.chk input { accent-color: var(--accent); margin: 0; }
+.ovf.chk span { display: flex; gap: .4rem; align-items: center; color: var(--fg); font-size: .9rem; padding: .25rem 0; }
+.ovf.chk input { accent-color: var(--accent); margin: 0; }
+.ovf { display: flex; flex-direction: column; gap: .2rem; font-size: .8rem; color: var(--muted); }
+.ovf input[type=number], .ovf select { font: inherit; font-family: var(--mono); font-size: .86rem; width: 6rem; padding: .25rem .4rem; border: 1px solid var(--line); border-radius: 6px; background: var(--card2); color: var(--fg); text-align: right; }
+.ovf select { font-family: var(--sans); text-align: left; width: auto; }
+.mats { display: flex; gap: .3rem; }
+.mats label { display: flex; flex-direction: column; align-items: center; font-size: .7rem; gap: .1rem; }
+.mats input[type=number] { width: 3.4rem; font-size: .8rem; padding: .15rem .25rem; }
+.itbl td.sum { font-family: var(--mono); color: var(--muted); }
+.itbl td.sum.bad { color: var(--warn); font-weight: 600; }
+.itbl.mk td:first-child { width: 1.5rem; padding-right: 0; }
+.itbl.mk td:nth-child(2) { text-align: left; white-space: nowrap; }
+.itbl input[type=checkbox] { width: auto; margin: 0; accent-color: var(--accent); vertical-align: middle; cursor: pointer; }
+.itbl tr.off td:not(:first-child), .tbl tr.off td { opacity: .45; }
+details.mw { margin-top: .4rem; }
+details.mw summary { cursor: pointer; color: var(--accent); font-size: .9rem; margin-bottom: .3rem; }
+.btns { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
+.btn { border: 1px solid var(--line); background: var(--card2); color: var(--fg); border-radius: 6px; padding: .25rem .6rem; cursor: pointer; font: inherit; font-size: .82rem; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tbl td .gl { display: block; font-family: var(--sans); font-size: .72rem; color: var(--muted); line-height: 1.1; }
+.tbl.mx td { border-left: 1px solid var(--line2); }
+.tbl.mx td:first-child { border-left: 0; }
+.hint { font-size: .8rem; color: var(--muted); margin: .2rem 0 .4rem; }
+details.src { margin-top: .6rem; font-size: .9rem; }
+details.src summary { cursor: pointer; color: var(--accent); }
+details.dl { padding: .45rem 0; border-bottom: 1px solid var(--line); }
+details.dl:last-child { border-bottom: 0; }
+details.dl summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: baseline; }
+details.dl summary a { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+details.dl .dl-t { flex: 1 1 18rem; min-width: 0; }
+details.dl .dl-m { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+details.dl p { margin: .4rem 0 0; font-size: .92rem; }
+details.dl code { font-size: .8rem; }
+footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem auto 0; padding: 1rem max(16px, env(safe-area-inset-right, 0px)) 1rem max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--line); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: .2rem 1rem; font-size: .9rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <span class="brand">Government bond liquidity</span>
+  <div class="tabs" id="tabs"></div>
+  <button id="themeBtn" type="button">Dark</button>
+</div></nav>
+
+<main class="wrap">
+
+<section class="pane" id="pane-main">
+  <div class="block">
+    <h1>Liquidity profile of a multi-currency government bond holding</h1>
+    <p class="lede">Average daily turnover in six government bond markets, split where the sources allow it into dealer-to-customer and dealer-to-dealer volume, and the time it would take to sell a holding of a given size and currency mix at a chosen share of that turnover. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers.</p>
+  </div>
+  <div class="mainwrap">
+    <aside class="side" id="side"></aside>
+    <div class="content">
+      <div class="tiles" id="mainTiles"></div>
+      <div class="grid2">
+        <div class="card"><h3>Cumulative share sold</h3><div class="sub" id="cvSub"></div><div class="plot tall" id="cvChart"></div></div>
+        <div class="card"><h3>Days to sell the holding</h3><div class="sub" id="dSub"></div><div class="plot tall" id="daysChart"></div></div>
+      </div>
+      <div class="grid2" style="margin-top:1rem">
+        <div class="card"><h3>Average daily turnover by market</h3><div class="sub" id="advSub"></div><div class="plot" id="advChart"></div></div>
+        <div class="card"><h3>Holding as days of turnover</h3><div class="sub">Holding divided by the daily turnover of its liquidity group, before any participation assumption</div><div class="plot" id="covChart"></div></div>
+      </div>
+      <div class="card" style="margin-top:1rem"><h3>Markets</h3><div class="sub" id="mtSub"></div><div id="mtTable"></div></div>
+      <div class="card" style="margin-top:1rem"><h3>Holdings and turnover by maturity bucket</h3><div class="sub">Local currency bn. Columns are the holding's maturity buckets. A cell that spans several buckets is one turnover pool: the source splits turnover no finer, so the holding in those buckets is sold against the pool together.</div><div id="grTable"></div></div>
+      <div class="card" style="margin-top:1rem"><h3>How the profile is computed</h3>
+        <p>Holding in market <i>m</i> = portfolio size × allocation share, converted to local currency at the ECB reference rate (<span id="fxDate"></span>). With the maturity option off (the default) the holding is one pool sold against the market's turnover across all maturities, which is the same as holding the market in proportion to its turnover. With the option on, the holding is spread over the five maturity buckets with the weights entered (default: the market's outstanding stock by remaining maturity, see the Notes tab), buckets beyond the maturity limit are removed (a bucket the limit cuts through keeps a proportional share), the weights are rescaled and the buckets pooled into the market's liquidity groups. Each group is sold at a constant pace equal to the participation rate times the group's average daily turnover in the chosen segment (after the haircut), all groups in parallel. For US Treasuries, the on-the-run share of the holding set in the side panel sells against on-the-run volume and the rest against off-the-run volume, as two parallel parts of each group; at 0 % the whole holding sells against off-the-run volume only. A market switched off in the side panel is left out and the allocation is rescaled over the rest. Each market tab can apply its own selling assumptions to that market alone (its holding stays linked to this tab); nothing here changes when it does. The curve is the sum over groups of min(holding, pace × days). "Days to sell" is where that sum reaches the holding; the combined profile sums markets in the base currency.</p>
+        <p class="note">This is a capacity calculation, not a price-impact model: it says how many days of turnover a holding represents, at a participation rate you judge to be absorbable without moving the market. It assumes turnover stays at its window average while you sell, which stress episodes contradict; use the haircut for that. Dealer-to-customer volume is the relevant pool for an investor that trades with dealers; interdealer volume (shown as D2D) is the dealers' own recycling of risk and is included only in the "total" segment.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pane" id="pane-usd"></section>
+<section class="pane" id="pane-gbp"></section>
+<section class="pane" id="pane-de"></section>
+<section class="pane" id="pane-fr"></section>
+<section class="pane" id="pane-jpy"></section>
+<section class="pane" id="pane-cny"></section>
+
+<section class="pane" id="pane-update">
+  <div class="block">
+    <h1>Updating the data</h1>
+    <p class="lede">Every number on this page comes from files in <code>rawData/</code>, read by the Python pipeline and baked into the page at build time. Most sources are downloaded by the pipeline itself; four need a file fetched by hand because the issuer's site blocks scripts. This tab shows how fresh each dataset is and what to do to bring it forward.</p>
+  </div>
+  <div class="block"><h2>Status by dataset</h2>
+    <p class="note">Latest data point is the last period in the data; raw files updated is when the files in <code>rawData/</code> were last written; next data expected is a rough publication date after which newer figures are probably available at the source.</p>
+    <div class="card"><div id="upTable"></div></div>
+  </div>
+  <div class="block"><h2>Files to download by hand</h2>
+    <p class="note">These issuers serve their files behind a bot check, so the pipeline cannot fetch them. Download the file in a browser, drop it in the folder named, then run the update below. The pipeline always uses the newest file of each kind.</p>
+    <div class="card" id="upManual"></div>
+  </div>
+  <div class="block"><h2>Running an update</h2>
+    <div class="card">
+      <ol class="steps">
+        <li>Put any new hand-downloaded files in their folders (list above).</li>
+        <li>In the project folder run <code>python -X utf8 pipeline/run_all.py --refresh</code>. This downloads every automatic source (TRACE months, JSDA workbooks, Finanzagentur page, Bond Connect reports, ECB rates, the four outstanding-stock lists) and parses everything in <code>rawData/</code> into <code>data/liquidity.json</code>.</li>
+        <li>Run <code>python -X utf8 build.py</code> to rebuild the page and the Excel downloads.</li>
+        <li>Publish with <code>npx wrangler deploy</code> and check the dates on this tab.</li>
+      </ol>
+      <p class="note" style="margin-top:.6rem"><b>Why there is no update button here.</b> This page is a static file on Cloudflare; the pipeline needs Python with pandas and openpyxl and the hand-downloaded files on disk, so there is nothing on the server that could run it or receive an uploaded file. Running updates from the page would need a small runner (for example a GitHub Actions job that the page triggers through a Worker endpoint, with uploads committed to the repository the same way). That is a separate piece of infrastructure and is not set up.</p>
+    </div>
+  </div>
+</section>
+
+<section class="pane" id="pane-notes">
+  <div class="block">
+    <h1>Notes, sources and assumptions</h1>
+    <p class="lede">Everything on the page is generated from the files in <code>rawData/</code> by <code>pipeline/run_all.py</code>, a Python port of the R scripts <code>main_liquidity.R</code>, <code>trace_treasury_aggregates.R</code>, <code>dmo_gilt_turnover.R</code>, <code>eur_bund_turnover.R</code>, <code>jpy_jsda_turnover.R</code> and <code>cny_bond_connect.R</code> (kept in <code>R/</code>). Segment definitions are those of the R scripts.</p>
+  </div>
+  <div class="block"><h2>Segments</h2>
+    <div class="card"><table class="tbl" id="segTable"></table></div>
+  </div>
+  <div class="block"><h2>Counting conventions and maturity basis</h2>
+    <div class="card"><table class="tbl" id="convTable"></table></div>
+  </div>
+  <div class="block"><h2>Settings in the pipeline</h2>
+    <div class="card"><dl class="kv" id="setList"></dl></div>
+  </div>
+  <div class="block"><h2>Exchange rates</h2>
+    <div class="card"><div id="fxTable"></div></div>
+  </div>
+  <div class="block"><h2>Outstanding stock by remaining maturity</h2>
+    <p class="note">The market-weighted maturity profile offered as the default holding distribution when the maturity option on the Profile tab is on: nominal amount outstanding of each market's nominal coupon government bonds in the five buckets, by remaining maturity on the as-of date.</p>
+    <div class="card"><div id="matTable"></div></div>
+  </div>
+  <div class="block"><h2>Downloads</h2>
+    <p class="note">The structured datasets behind every chart and table on this page, as Excel workbooks. Each has a <b>Data</b> sheet (one observation per row, local currency millions unless the column name says otherwise, empty cells mean not available) and an <b>About</b> sheet with the description, source, counting convention and a column dictionary. The first entry bundles every dataset into one workbook. <a href="data/README.txt" download>data/README.txt</a> repeats the descriptions as a plain-text data dictionary. The files are regenerated on every build, so they always match the page.</p>
+    <div class="card"><div id="dlList"></div></div>
+  </div>
+  <div class="block"><h2>What is not in the data</h2>
+    <div class="card"><ul class="caveats">
+      <li>No source reports turnover by both counterparty type and maturity except FINRA TRACE and the DMO maturity-band file. For Bunds and JGBs the counterparty mix of the latest window is applied uniformly to every maturity class.</li>
+      <li>Bunds and JGBs are classified by original maturity, so a 10-year Bund with three years left sits in the 5-10y group. The common buckets are on remaining maturity; the mapping is therefore approximate for those two markets.</li>
+      <li>France has no published turnover by maturity or counterparty: the OAT level is the Bund level times a provisional scale factor. China has no maturity data and no observable interdealer split; the whole-market CGB figure is CCDC settlement data, all counterparties.</li>
+      <li>Turnover is measured differently across sources: par value (TRACE, JSDA), market value (DMO) or nominal gross (Finanzagentur). Reporting populations also differ (all FINRA members; GEMMs; a subset of Bund auction-group banks; all JSDA members; Bond Connect only).</li>
+      <li>Trading-day calendars are typed into <code>pipeline/common.py</code> and should be verified against SIFMA, gov.uk and JPX.</li>
+      <li>Averages are over the latest window of each source (12 months for TRACE, JSDA and Bond Connect; four quarters for the DMO; one calendar year for the Finanzagentur), so the windows do not coincide exactly.</li>
+    </ul></div>
+  </div>
+</section>
+
+</main>
+<footer id="foot"></footer>
+
+<script>
+const D = /*__DATA__*/;
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const isDark = () => (document.documentElement.dataset.theme === 'dark') || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+function fmt(x, d = 1) { if (x == null || !isFinite(x)) return '–'; return x.toLocaleString('en-GB', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function fmtDays(x) { if (x == null) return '–'; if (!isFinite(x)) return '∞'; return x < 10 ? fmt(x, 1) : fmt(x, 0); }
+const CFG = {displayModeBar: false, responsive: true};
+function base(extra = {}) {
+  const fg = css('--fg'), muted = css('--axis'), grid = css('--grid');
+  return Object.assign({
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {family: css('--sans'), size: 12, color: fg},
+    margin: {l: 52, r: 14, t: 30, b: 40}, hovermode: 'x unified',
+    hoverlabel: {bgcolor: css('--card'), bordercolor: css('--line'), namelength: -1, font: {family: css('--sans'), size: 12, color: fg}},
+    legend: {orientation: 'h', y: 1.02, yanchor: 'bottom', x: 0, font: {size: 11}},
+    xaxis: {gridcolor: grid, zeroline: false, linecolor: grid, tickfont: {color: muted}},
+    yaxis: {gridcolor: grid, zeroline: false, tickfont: {color: muted}, title: {font: {size: 11, color: muted}}, hoverformat: ',.2f'},
+  }, extra);
+}
+// stacked bar charts get an invisible line carrying the stack total, so the unified hover box also shows the total
+function totalTrace(traces) {
+  const x = traces[0].x, y = x.map((_, i) => { let s = 0, any = false; for (const t of traces) { const v = t.y[i]; if (v != null && isFinite(v)) { s += v; any = true; } } return any ? s : null; });
+  return {x, y, name: 'Total', mode: 'lines', line: {color: css('--tot'), width: 0}, showlegend: false, hovertemplate: '%{y:,.2f}<extra>Total</extra>'};
+}
+function plot(id, traces, layout) {
+  const el = document.getElementById(id); if (!el) return;
+  if (layout.barmode === 'stack' && traces.length > 1 && traces.every(t => t.type === 'bar' && t.x === traces[0].x)) traces = traces.concat([totalTrace(traces)]);
+  Plotly.react(el, traces, layout, CFG);
+}
+
+/* ---------- constants ---------- */
+const MK = D.order.filter(k => D.markets[k]);
+const TAB = {USD: 'usd', GBP: 'gbp', 'EUR-DE': 'de', 'EUR-FR': 'fr', JPY: 'jpy', CNY: 'cny'};
+const COLV = {USD: '--usd', GBP: '--gbp', 'EUR-DE': '--de', 'EUR-FR': '--fr', JPY: '--jpy', CNY: '--cny'};
+const col = m => css(COLV[m]);
+const B = D.buckets;
+const BEDGE = [[0, 3], [3, 5], [5, 7], [7, 10], [10, 30]];   // bucket edges in years; 10y+ treated as 10-30y when the limit cuts into it
+function matCovL(L) { L = +L || 0; return BEDGE.map(([lo, hi]) => Math.min(1, Math.max(0, (L - lo) / (hi - lo)))); }
+function matCov() { return matCovL(S.matMax); }
+const SHORT = {USD: 'US Treasuries', GBP: 'Gilts', 'EUR-DE': 'Bunds', 'EUR-FR': 'OATs', JPY: 'JGBs', CNY: 'CGBs'};
+const TBL = {'<= 2 years': '≤2y', '> 2 years and <= 3 years': '2-3y', '> 3 years and <= 5 years': '3-5y', '> 5 years and <= 7 years': '5-7y', '> 7 years and <= 10 years': '7-10y', '> 10 years and <= 20 years': '10-20y', '> 20 years': '>20y'};
+const SEGS = {
+  d2c: {label: 'Dealer-to-customer', small: 'Customer-facing turnover: the pool an investor selling through dealers competes for. USD: the on-the-run share below sells against on-the-run D2C volume, the rest against off-the-run D2C.'},
+  total: {label: 'Total incl. interdealer', small: 'All reported turnover, single-counted where the source double counts; an upper bound. CNY: whole-market CCDC settlement instead of foreign-investor turnover.'},
+};
+const MATD = (D.maturity && D.maturity.markets) || {};
+const SEGADV = {d2c: 'd2c_all', total: 'total'};   // window_adv key per segment (d2c_all = d2c_off + d2c_on for USD, = customer turnover elsewhere)
+const DEF = {
+  base: 'NOK', size: 500, part: 3, haircut: 0, seg: 'd2c', horizon: 0, otr: 0.5, matOn: false, matMax: 10, grm: 'days', ov: {},
+  on: Object.fromEntries(MK.map(m => [m, true])),
+  alloc: {USD: 50, GBP: 7, 'EUR-DE': 18, 'EUR-FR': 16, JPY: 7, CNY: 2},
+  // default maturity weights: the market's outstanding stock by remaining maturity (pipeline/maturity.py); null where no source
+  mat: Object.fromEntries(MK.map(m => [m, MATD[m] && MATD[m].available ? MATD[m].shares_pct.slice() : [null, null, null, null, null]])),
+};
+const matKnown = m => !!(MATD[m] && MATD[m].available);
+let S = JSON.parse(JSON.stringify(DEF));
+try { const s = localStorage.getItem('bondliq.inputs.v3'); if (s) { const o = JSON.parse(s); S = Object.assign(S, o); S.on = Object.assign({}, DEF.on, o.on || {}); S.ov = Object.assign({}, o.ov || {}); S.alloc = Object.assign({}, DEF.alloc, o.alloc || {}); S.mat = Object.assign({}, DEF.mat, o.mat || {}); } } catch (e) {}
+if (!SEGS[S.seg]) S.seg = DEF.seg;
+function save() { try { localStorage.setItem('bondliq.inputs.v3', JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- the liquidity profile ---------- */
+function fxLocalPerBase(cur) { return D.fx.per_eur[cur] / D.fx.per_eur[S.base]; }
+const OTR_PREFIX = {d2c: 'd2c', total: 'total'};
+// selling assumptions: the Profile tab's, or a market tab's own set (S.ov[m]) when switched on there
+function globalParams(m) { return {part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: S.matOn, matMax: S.matMax, mat: S.mat[m]}; }
+function ownParams(m) { const o = S.ov[m]; return !!(o && o.on); }
+function params(m) { const o = S.ov[m]; return ownParams(m) ? {part: o.part, haircut: o.haircut, seg: SEGS[o.seg] ? o.seg : 'd2c', otr: o.otr, matOn: !!o.matOn, matMax: o.matMax, mat: o.mat} : globalParams(m); }
+function calcMarket(m, share, P) {
+  const M = D.markets[m];
+  const wOtr = Math.min(100, Math.max(0, +P.otr || 0)) / 100;
+  const hc = 1 - P.haircut / 100, pr = P.part / 100;
+  const cov = matCovL(P.matMax);
+  const fx = fxLocalPerBase(M.currency);
+  const holdBase = S.size * 1000 * share, holdLocal = holdBase * fx;
+  // pooled = no maturity split: one pool, the whole holding against turnover summed over the market's groups
+  const hasW = P.mat.some(x => +x > 0);
+  const pooled = !P.matOn || !hasW;
+  const w = pooled ? null : P.mat.map((x, i) => (+x || 0) * cov[i]); const wSum = pooled ? 1 : (w.reduce((a, b) => a + b, 0) || 1);
+  const byBucket = pooled ? null : w.map(x => holdLocal * x / wSum);
+  const adv = M.window_adv[SEGADV[P.seg]];
+  const det = M.window_adv_detail, pre = OTR_PREFIX[P.seg];
+  const split = !!(det && pre && det[pre + '_on'] && det[pre + '_off']);
+  const sumG = (tbl, members) => members.some(g => tbl[g] == null) ? null : members.reduce((s, g) => s + tbl[g], 0);
+  const pools = pooled ? [{g: 'all', members: M.groups}] : M.groups.map(g => ({g, members: [g]}));
+  const groups = pools.map(({g, members}) => {
+    const nb = members.reduce((s, x) => s + B.filter(b => M.group_map[b] === x).length, 0);
+    const H = pooled ? holdLocal : B.reduce((s, b, i) => s + (M.group_map[b] === g ? byBucket[i] : 0), 0);
+    const raw = split
+      ? [{lab: 'off-the-run', H: H * (1 - wOtr), A0: sumG(det[pre + '_off'], members)}, {lab: 'on-the-run', H: H * wOtr, A0: sumG(det[pre + '_on'], members)}]
+      : [{lab: '', H, A0: sumG(adv, members)}];
+    const parts = raw.map(p => {
+      const A = p.A0 == null ? null : p.A0 * hc; const cap = A == null ? null : A * pr;
+      return {lab: p.lab, H: p.H, A, cap, days: p.H > 0 ? (cap > 0 ? p.H / cap : Infinity) : 0, daysAdv: p.H > 0 ? (A > 0 ? p.H / A : Infinity) : 0};
+    });
+    const A = parts.some(p => p.A == null) ? null : parts.reduce((s, p) => s + p.A, 0);
+    const days = Math.max(...parts.map(p => p.days)), daysAdv = Math.max(...parts.map(p => p.daysAdv));
+    // effective pace: what the holding actually gets (holding / days to sell); equals A x participation when not split
+    const cap = A == null ? null : (H > 0 && isFinite(days) && days > 0 ? H / days : A * pr);
+    return {g, nb, H, A, cap, days, daysAdv, parts, split, sold: t => parts.reduce((s, p) => s + (p.cap > 0 ? Math.min(p.H, t * p.cap) : 0), 0)};
+  });
+  const parts = groups.flatMap(x => x.parts);
+  const valid = parts.every(p => p.H === 0 || p.cap > 0);
+  return {share, fx, holdBase, holdLocal, byBucket, groups, valid, split, P, pooled, noDist: P.matOn && !hasW,
+    curve: t => groups.reduce((s, x) => s + x.sold(t), 0),
+    t50: solveTime(parts, 0.5), t90: solveTime(parts, 0.9), t100: solveTime(parts, 1),
+    // advD2c is the dealer-to-customer pool a holding of seasoned bonds faces: off-the-run D2C for USD, customer turnover elsewhere
+    advD2c: sumAdv(M, 'd2c_base'), advD2cOn: det && det.d2c_on ? sumAdv({window_adv: det, groups: M.groups}, 'd2c_on') : null,
+    advD2d: sumAdv(M, 'd2d'), advTot: sumAdv(M, 'total')};
+}
+function calc() {
+  const sizeMn = S.size * 1000;
+  const active = MK.filter(m => S.on[m]);
+  const aSum = active.reduce((s, m) => s + (+S.alloc[m] || 0), 0) || 1;
+  const out = {markets: {}, sizeMn, aSum, active};
+  for (const m of MK) out.markets[m] = calcMarket(m, S.on[m] ? (+S.alloc[m] || 0) / aSum : 0, globalParams(m));
+  const items = [];
+  for (const m of active) { const fx = out.markets[m].fx; for (const p of out.markets[m].groups.flatMap(x => x.parts)) items.push({H: p.H / fx, cap: p.cap == null ? null : p.cap / fx}); }
+  out.t50 = solveTime(items, 0.5); out.t90 = solveTime(items, 0.9); out.t100 = solveTime(items, 1);
+  out.curve = t => active.reduce((s, m) => s + out.markets[m].curve(t) / out.markets[m].fx, 0);
+  out.valid = active.every(m => out.markets[m].valid);
+  out.split = active.some(m => out.markets[m].split);
+  return out;
+}
+function sumAdv(M, seg) { const a = M.window_adv[seg]; let s = 0; for (const g of M.groups) { if (a[g] == null) return null; s += a[g]; } return s; }
+function solveTime(items, frac) {
+  const tot = items.reduce((s, i) => s + i.H, 0);
+  if (tot <= 0) return 0;
+  const its = items.filter(i => i.H > 0);
+  if (its.some(i => !(i.cap > 0))) return Infinity;
+  const sorted = its.map(i => ({H: i.H, cap: i.cap, d: i.H / i.cap})).sort((a, b) => a.d - b.d);
+  const target = frac * tot - 1e-9;
+  let done = 0, active = sorted.reduce((s, i) => s + i.cap, 0), last = 0;
+  for (const it of sorted) {
+    if (done + active * it.d >= target) return Math.max(0, (target - done) / active);
+    done += it.H; active -= it.cap; last = it.d;
+  }
+  return last;
+}
+
+/* ---------- side panel ---------- */
+function mwOpen() { try { const v = localStorage.getItem('bondliq.mw'); if (v === '1' || v === '0') return v === '1'; } catch (e) {} return MK.some(m => S.mat[m].some((x, i) => (x == null ? null : +x) !== DEF.mat[m][i])); }
+function buildSide() {
+  const side = $('#side');
+  const curs = ['USD', 'EUR', 'GBP', 'NOK', 'JPY', 'CNY', 'SEK', 'CHF'].filter(c => D.fx.per_eur[c] != null);
+  let h = `<h3>Holding</h3>
+  <div class="row"><label for="inBase">Base currency</label><select id="inBase">${curs.map(c => `<option value="${c}"${c === S.base ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
+  <div class="row"><label for="inSize">Portfolio size, bn</label><input type="number" id="inSize" min="0" step="1" value="${S.size}"></div>
+  <h3>Markets and allocation, %</h3>
+  <table class="itbl mk"><tbody>${MK.map(m => `<tr data-row="${m}"${S.on[m] ? '' : ' class="off"'}><td><input type="checkbox" data-on="${m}"${S.on[m] ? ' checked' : ''} title="Include ${esc(D.markets[m].name)} in the profile"></td><td><span class="sw" style="background:${col(m)}"></span>${esc(D.markets[m].name)}</td><td><input type="number" data-alloc="${m}" min="0" step="1" value="${S.alloc[m]}"></td></tr>`).join('')}
+  <tr><td></td><td>Sum of included</td><td class="sum" id="allocSum"></td></tr></tbody></table>
+  <div class="hint">Untick a market to leave it out of the profile. The shares of the included markets are scaled to 100 %.</div>
+  <h3>Selling assumptions</h3>
+  <div class="row"><label for="inPart">Participation, % of daily turnover</label><input type="number" id="inPart" min="1" max="100" step="1" value="${S.part}"><input type="range" id="inPartR" min="1" max="100" step="1" value="${S.part}"></div>
+  <div class="row"><label for="inHair">Turnover haircut, % (stress)</label><input type="number" id="inHair" min="0" max="95" step="5" value="${S.haircut}"><input type="range" id="inHairR" min="0" max="95" step="5" value="${S.haircut}"></div>
+  <div class="segs">${Object.entries(SEGS).map(([k, v]) => `<label><input type="radio" name="seg" value="${k}"${S.seg === k ? ' checked' : ''}><span>${v.label}<small>${v.small}</small></span></label>`).join('')}</div>
+  <div class="row" style="margin-top:.5rem"><label for="inOtr">US on-the-run share of holding, %</label><input type="number" id="inOtr" min="0" max="100" step="0.5" value="${S.otr}"></div>
+  <div class="hint">Share of each US maturity group that sells against on-the-run turnover; the rest sells against off-the-run turnover. The current on-the-run coupons are about 2 % of marketable coupon debt, so 0.5 % describes a holding of mostly seasoned bonds; 0 % is the most conservative case.</div>
+  <div class="row"><label for="inHor">Chart horizon, days (0 = automatic)</label><input type="number" id="inHor" min="0" max="500" step="5" value="${S.horizon}"></div>
+  <h3>Maturity of the holding</h3>
+  <label class="chk"><input type="checkbox" id="inMatOn"${S.matOn ? ' checked' : ''}> Apply a maturity distribution</label>
+  <div class="hint">Off: each market's holding is one pool sold against the market's turnover across all maturities (the same as holding it in proportion to turnover), and no maturity limit applies. On: the holding is spread over the buckets below, by default in proportion to the market's outstanding stock by remaining maturity.</div>
+  <div id="matBlock" class="${S.matOn ? '' : 'dis'}">
+  <div class="row"><label for="inMax">Maturity limit, years (longest bond held)</label><input type="number" id="inMax" min="1" max="30" step="1" value="${S.matMax}"></div>
+  <div class="hint">Buckets beyond the limit are dropped and the remaining weights are rescaled; a bucket the limit cuts through keeps a proportional part (10y+ counted as 10 to 30 years). 30 keeps everything.</div>
+  <details class="mw"${mwOpen() ? ' open' : ''}><summary>Maturity weights by market, %</summary>
+  <div class="hint">Share of the holding by remaining maturity. Default: the market's nominal bonds outstanding by remaining maturity (sources and dates on the Notes tab). A market with no figures (${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ') || 'none'}) is sold as one pool unless weights are typed in.</div>
+  <table class="itbl"><thead><tr><th></th>${B.map(b => `<th>${b}</th>`).join('')}</tr></thead><tbody>
+  <tr><td>Template</td>${B.map((b, i) => `<td><input type="number" data-tpl="${i}" min="0" step="1" value="20"></td>`).join('')}</tr>
+  ${MK.map(m => `<tr><td><span class="sw" style="background:${col(m)}"></span>${m}${matKnown(m) ? '' : '<span class="badge warn" title="no source for the outstanding stock by maturity">n/a</span>'}</td>${B.map((b, i) => `<td><input type="number" data-mat="${m}" data-i="${i}" min="0" step="1" value="${S.mat[m][i] == null ? '' : S.mat[m][i]}"></td>`).join('')}</tr>`).join('')}
+  </tbody></table>
+  <div class="btns"><button class="btn" id="btnMkt" type="button">Market-weighted (default)</button><button class="btn" id="btnTpl" type="button">Apply template to all</button></div></details>
+  </div>
+  <div class="btns" style="margin-top:.9rem"><button class="btn" id="btnAllOn" type="button">All markets on</button><button class="btn" id="btnReset" type="button">Reset everything</button></div>`;
+  side.innerHTML = h;
+  const on = (sel, ev, fn) => side.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn));
+  on('details.mw', 'toggle', e => { try { localStorage.setItem('bondliq.mw', e.target.open ? '1' : '0'); } catch (x) {} });
+  on('input[data-on]', 'change', e => { S.on[e.target.dataset.on] = e.target.checked; update(); });
+  on('#btnAllOn', 'click', () => { for (const m of MK) S.on[m] = true; side.querySelectorAll('input[data-on]').forEach(i => { i.checked = true; }); update(); });
+  on('#inBase', 'change', e => { S.base = e.target.value; update(); });
+  on('#inSize', 'input', e => { S.size = Math.max(0, +e.target.value || 0); update(); });
+  on('#inPart', 'input', e => { S.part = Math.min(100, Math.max(1, +e.target.value || 1)); $('#inPartR').value = S.part; update(); });
+  on('#inPartR', 'input', e => { S.part = +e.target.value; $('#inPart').value = S.part; update(); });
+  on('#inHair', 'input', e => { S.haircut = Math.min(95, Math.max(0, +e.target.value || 0)); $('#inHairR').value = S.haircut; update(); });
+  on('#inHairR', 'input', e => { S.haircut = +e.target.value; $('#inHair').value = S.haircut; update(); });
+  on('#inHor', 'change', e => { S.horizon = Math.min(500, Math.max(0, +e.target.value || 0)); e.target.value = S.horizon; update(); });
+  on('input[name=seg]', 'change', e => { S.seg = e.target.value; update(); });
+  on('#inOtr', 'input', e => { S.otr = Math.min(100, Math.max(0, +e.target.value || 0)); update(); });
+  on('#inMax', 'input', e => { S.matMax = Math.min(30, Math.max(1, +e.target.value || 1)); update(); });
+  on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); update(); });
+  on('#btnMkt', 'click', () => { for (const m of MK) S.mat[m] = DEF.mat[m].slice(); side.querySelectorAll('input[data-mat]').forEach(i => { const v = S.mat[i.dataset.mat][+i.dataset.i]; i.value = v == null ? '' : v; }); update(); });
+  on('input[data-alloc]', 'input', e => { S.alloc[e.target.dataset.alloc] = Math.max(0, +e.target.value || 0); update(); });
+  on('input[data-mat]', 'input', e => { S.mat[e.target.dataset.mat][+e.target.dataset.i] = e.target.value === '' ? null : Math.max(0, +e.target.value || 0); update(); });
+  on('#btnTpl', 'click', () => { const t = [...side.querySelectorAll('input[data-tpl]')].map(i => Math.max(0, +i.value || 0)); for (const m of MK) { S.mat[m] = t.slice(); } side.querySelectorAll('input[data-mat]').forEach(i => { i.value = S.mat[i.dataset.mat][+i.dataset.i]; }); update(); });
+  on('#btnReset', 'click', () => { S = JSON.parse(JSON.stringify(DEF)); save(); buildSide(); update(); });
+}
+
+/* ---------- main tab ---------- */
+let R = null;
+const drawn = {};
+function update() {
+  save(); R = calc();
+  const sum = R.active.reduce((s, m) => s + (+S.alloc[m] || 0), 0);
+  const el = $('#allocSum'); if (el) { el.textContent = fmt(sum, 0) + ' %'; el.classList.toggle('bad', Math.abs(sum - 100) > 0.01); }
+  document.querySelectorAll('#side tr[data-row]').forEach(tr => tr.classList.toggle('off', !S.on[tr.dataset.row]));
+  const cov = matCov();
+  document.querySelectorAll('#side input[data-mat], #side input[data-tpl]').forEach(el => { const c = cov[+(el.dataset.i ?? el.dataset.tpl)]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); });
+  drawMain();
+  for (const m of MK) if (drawn[TAB[m]]) drawMarketProfile(m);
+}
+function horizon() { if (S.horizon > 0) return S.horizon; const t = isFinite(R.t100) ? R.t100 : 60; return Math.max(10, Math.min(500, Math.ceil(t * 1.3 / 5) * 5)); }
+function tile(k, v, u) { return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="u">${u || ''}</div></div>`; }
+function drawMain() {
+  const bc = S.base, sz = S.size, AM = R.active;
+  const segLab = SEGS[S.seg].label.toLowerCase();
+  const f1 = R.curve(1) / R.sizeMn, f5 = R.curve(5) / R.sizeMn, f20 = R.curve(20) / R.sizeMn;
+  $('#mainTiles').innerHTML = tile('Holding', `${fmt(sz, 0)} <span style="font-size:.8em">${bc} bn</span>`, AM.length < MK.length ? `${AM.length} of ${MK.length} markets, ECB rates of ${D.fx.date}` : `at ECB rates of ${D.fx.date}`) +
+    tile('Sold in 1 day', fmt(100 * f1, 0) + ' %', `${fmt(S.part, 0)} % of ${segLab}`) +
+    tile('Sold in 5 days', fmt(100 * f5, 0) + ' %', 'one week') +
+    tile('Sold in 20 days', fmt(100 * f20, 0) + ' %', 'one month') +
+    tile('Half sold after', fmtDays(R.t50) + ' <span style="font-size:.7em">days</span>', 'combined') +
+    tile('Fully sold after', fmtDays(R.t100) + ' <span style="font-size:.7em">days</span>', R.valid ? 'slowest group decides' : 'a group has no turnover figure');
+  $('#fxDate').textContent = D.fx.date;
+  // curves
+  const H = horizon(), n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
+  const traces = AM.map(m => ({x: ts, y: ts.map(t => R.markets[m].holdLocal > 0 ? 100 * R.markets[m].curve(t) / R.markets[m].holdLocal : null), name: D.markets[m].name, mode: 'lines', line: {color: col(m), width: 1.8}, hovertemplate: '%{y:.0f} %<extra>' + esc(D.markets[m].name) + '</extra>'}));
+  traces.push({x: ts, y: ts.map(t => 100 * R.curve(t) / R.sizeMn), name: 'Combined', mode: 'lines', line: {color: css('--tot'), width: 3}, hovertemplate: '%{y:.0f} %<extra>Combined</extra>'});
+  $('#cvSub').textContent = `Share of each market's holding sold by day t at ${S.part} % of ${segLab}${S.haircut ? `, turnover cut by ${S.haircut} %` : ''}; combined line in ${bc}`;
+  plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
+  // ADV by market in base currency bn/day
+  const toB = (m, v) => v == null ? null : v / R.markets[m].fx / 1000;
+  const names = MK.map(m => SHORT[m]);
+  const d2cB = MK.map(m => toB(m, R.markets[m].advD2c)), d2cOn = MK.map(m => toB(m, R.markets[m].advD2cOn));
+  const d2d = MK.map(m => toB(m, R.markets[m].advD2d)), tot = MK.map(m => toB(m, R.markets[m].advTot));
+  const usOn = R.markets.USD && R.markets.USD.advD2cOn ? toB('USD', R.markets.USD.advD2cOn) : null;
+  $('#advSub').textContent = `All six markets, window averages, ${bc} bn per trading day at ECB rates, log scale. US D2C is off-the-run volume${usOn ? `; on-the-run D2C (${fmt(usOn, 0)} bn) is stacked on top and only the on-the-run share of the holding sells against it` : ''}. D2D and total follow each source's own counting; CNY has no D2D figure and its total is whole-market interbank CGB settlement (CCDC).`;
+  plot('advChart', [
+    {x: names, y: d2cB, name: 'Dealer-to-customer', type: 'bar', offsetgroup: 'd2c', marker: {color: css('--d2c')}, customdata: MK.map(m => m === 'USD' ? 'D2C, off-the-run' : 'D2C'), hovertemplate: '%{y:.1f}<extra>%{customdata}</extra>'},
+    {x: names, y: d2cOn, base: d2cB, name: 'US on-the-run D2C', type: 'bar', offsetgroup: 'd2c', marker: {color: css('--d2con')}, hovertemplate: '%{y:.1f}<extra>D2C, on-the-run (stacked on off-the-run)</extra>'},
+    {x: names, y: d2d, name: 'D2D (interdealer)', type: 'bar', offsetgroup: 'd2d', marker: {color: css('--d2d')}, hovertemplate: '%{y:.1f}<extra>D2D</extra>'},
+    {x: names, y: tot, name: 'Total (reported)', type: 'bar', offsetgroup: 'tot', marker: {color: 'rgba(0,0,0,0)', line: {color: css('--tot'), width: 1.5}}, hovertemplate: '%{y:.1f}<extra>Total</extra>'},
+  ], base({barmode: 'group', bargap: 0.25, yaxis: Object.assign(base().yaxis, {title: {text: bc + ' bn per day (log)'}, type: 'log', dtick: 1, tickformat: ',.0f'}), margin: {l: 64, r: 14, t: 30, b: 40}, hovermode: 'x unified'}));
+  // days chart
+  $('#dSub').textContent = `At ${S.part} % of ${segLab}${S.haircut ? ` after a ${S.haircut} % haircut` : ''}; the dot marks half the holding, the last bar the whole portfolio`;
+  const t100 = AM.map(m => R.markets[m].t100).concat([R.t100]), t50 = AM.map(m => R.markets[m].t50).concat([R.t50]);
+  const sn = AM.map(m => SHORT[m]).concat(['Combined']);
+  const capD = v => !isFinite(v) ? null : v;
+  plot('daysChart', [
+    {y: sn, x: t100.map(capD), type: 'bar', orientation: 'h', name: 'Fully sold', marker: {color: AM.map(col).concat([css('--d2d')])}, hovertemplate: '%{y}: fully sold after %{x:.1f} days<extra></extra>'},
+    {y: sn, x: t50.map(capD), type: 'scatter', mode: 'markers', name: 'Half sold', marker: {color: css('--tot'), size: 9}, hovertemplate: '%{y}: half sold after %{x:.1f} days<extra></extra>'},
+  ], base({hovermode: 'closest', margin: {l: 100, r: 14, t: 30, b: 40}, xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, rangemode: 'tozero'}), yaxis: Object.assign(base().yaxis, {autorange: 'reversed'}), showlegend: true}));
+  // coverage chart: holding / ADV (days of turnover) per market x group
+  const covTr = [];
+  AM.forEach(m => { const g = R.markets[m].groups; covTr.push({x: g.map(x => SHORT[m] + ' ' + x.g), y: g.map(x => isFinite(x.daysAdv) ? x.daysAdv : null), type: 'bar', name: D.markets[m].name, marker: {color: col(m)}, hovertemplate: '%{x}: %{y:.2f} days of turnover<extra></extra>'}); });
+  plot('covChart', covTr, base({hovermode: 'closest', showlegend: false, margin: {l: 52, r: 14, t: 30, b: 80}, xaxis: Object.assign(base().xaxis, {tickangle: -45, tickfont: {size: 10, color: css('--axis')}}), yaxis: Object.assign(base().yaxis, {title: {text: 'days of turnover'}})}));
+  // market table
+  $('#mtSub').textContent = `Turnover in local currency bn per day (window averages). Days at ${S.part} % participation${S.haircut ? ` and a ${S.haircut} % haircut` : ''}. Markets switched off are greyed out and carry no holding.`;
+  let h = `<table class="tbl"><thead><tr><th>Market</th><th>Share</th><th>Holding, ${bc} bn</th><th>Holding, local bn</th><th>D2C</th><th>D2D</th><th>Total</th><th>D2C share</th><th>Holding / D2C, days</th><th>Half sold, days</th><th>Fully sold, days</th></tr></thead><tbody>`;
+  for (const m of MK) {
+    const r = R.markets[m], M = D.markets[m], off = !S.on[m];
+    const d2c = r.advD2c, tt = r.advTot;
+    h += `<tr${off ? ' class="off"' : ''}><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}" title="${esc(M.name)}">${esc(SHORT[m] || M.name)}</a>${M.provisional ? '<span class="badge warn">provisional</span>' : ''}${off ? '<span class="badge">off</span>' : ''}</td><td class="num">${off ? '–' : fmt(100 * r.share, 1) + ' %'}</td><td class="num">${off ? '–' : fmt(r.holdBase / 1000, 1)}</td><td class="num">${off ? '–' : fmt(r.holdLocal / 1000, 1) + ' ' + M.currency}</td>
+      <td class="num">${fmt(d2c / 1000, 1)}${m === 'USD' ? '*' : ''}</td><td class="num${r.advD2d == null ? ' na' : ''}">${r.advD2d == null ? 'n/a' : fmt(r.advD2d / 1000, 1)}</td><td class="num${tt == null ? ' na' : ''}">${tt == null ? 'n/a' : fmt(tt / 1000, 1)}</td><td class="num">${tt ? fmt(100 * d2c / tt, 0) + ' %' : '–'}</td>
+      <td class="num">${off ? '–' : d2c ? fmt(r.holdLocal / d2c, 1) : '–'}</td><td class="num">${off ? '–' : fmtDays(r.t50)}</td><td class="num">${off ? '–' : fmtDays(r.t100)}</td></tr>`;
+  }
+  h += `<tr class="tot"><td>Combined${AM.length < MK.length ? ' (included markets)' : ''}</td><td class="num">100 %</td><td class="num">${fmt(sz, 1)}</td><td></td><td class="num">${fmt(AM.reduce((s, m) => s + (R.markets[m].advD2c || 0) / R.markets[m].fx, 0) / 1000, 1)}</td><td class="num">${fmt(AM.reduce((s, m) => s + (R.markets[m].advD2d || 0) / R.markets[m].fx, 0) / 1000, 1)}</td><td></td><td></td><td></td><td class="num">${fmtDays(R.t50)}</td><td class="num">${fmtDays(R.t100)}</td></tr></tbody></table>
+  <p class="note" style="margin-top:.5rem">* US D2C is off-the-run dealer-to-customer volume, the pool a holding of seasoned Treasuries sells into; on-the-run D2C (${R.markets.USD && R.markets.USD.advD2cOn ? fmt(R.markets.USD.advD2cOn / 1000, 0) : '–'} USD bn per day) is used only for the on-the-run share of the holding. Combined turnover columns are sums in ${bc}; D2D and total are shown as reported and are not comparable across markets (see each market's counting convention). CNY has no interdealer figure; its total is whole-market interbank CGB settlement (CCDC), not foreign-investor turnover.</p>`;
+  $('#mtTable').innerHTML = h;
+  // bucket matrix: markets x maturity buckets, pooled buckets merged into one cell; one figure at a time
+  const GRM = {
+    days: ['Days to sell', x => fmtDays(x.days), r => fmtDays(r.t100)],
+    hold: ['Holding, bn', x => fmt(x.H / 1000, 2), r => fmt(r.holdLocal / 1000, 2)],
+    adv: [`Turnover, bn per day (${esc(segLab)})`, x => x.A == null ? 'n/a' : fmt(x.A / 1000, 2), r => r.groups.some(x => x.A == null) ? 'n/a' : fmt(r.groups.reduce((s, x) => s + x.A, 0) / 1000, 2)],
+    pace: ['Pace, bn per day', x => x.cap == null ? '–' : fmt(x.cap / 1000, 2), r => r.groups.some(x => x.cap == null) ? '–' : fmt(r.groups.reduce((s, x) => s + x.cap, 0) / 1000, 2)],
+    cov: ['Holding ÷ turnover, days', x => fmtDays(x.daysAdv), r => r.groups.some(x => x.A == null) ? '–' : fmtDays(r.holdLocal / r.groups.reduce((s, x) => s + x.A, 0))],
+  };
+  if (!GRM[S.grm]) S.grm = 'days';
+  const G = GRM[S.grm];
+  h = `<div class="btns" style="margin:0 0 .7rem">${Object.entries(GRM).map(([k, v]) => `<button class="btn${S.grm === k ? ' on' : ''}" data-grm="${k}" type="button">${v[0]}</button>`).join('')}</div>
+  <table class="tbl mx"><thead><tr><th>Market</th>${B.map(b => `<th>${b}</th>`).join('')}<th>Whole holding</th></tr></thead><tbody>`;
+  for (const m of AM) {
+    const M = D.markets[m], r = R.markets[m];
+    h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || M.name)}</td>`;
+    for (const x of r.groups) {
+      const n = x.nb, cut = x.H <= 0 && S.grm !== 'adv';
+      const gl = r.pooled ? (r.noDist ? 'no distribution available' : 'no maturity split') : x.g === 'all' ? 'one pool' : x.g + ' pooled';
+      h += `<td class="num${cut ? ' na' : ''}" colspan="${n}">${cut ? '–' : G[1](x)}${n > 1 ? `<span class="gl">${gl}</span>` : ''}</td>`;
+    }
+    h += `<td class="num">${G[2](r)}</td></tr>`;
+  }
+  h += `</tbody></table><p class="note" style="margin-top:.5rem">${S.grm === 'days' ? 'Days to sell the holding in each cell at the chosen participation rate; the last column is the whole market holding (its slowest cell).' : S.grm === 'hold' ? 'Holding in each cell after the maturity limit, local currency bn.' : S.grm === 'adv' ? 'Average daily turnover of the pool each cell sells into.' : S.grm === 'pace' ? 'Daily selling pace: participation rate × turnover after the haircut (US: effective pace of the two on/off-the-run parts).' : 'Holding divided by daily turnover of its pool, before any participation assumption.'} ${S.matOn ? 'Buckets beyond the maturity limit hold nothing and show –.' : 'The maturity option is off, so every market is one pool across all maturities.'}${R.split ? ` US Treasuries: ${fmt(S.otr, 1)} % of each cell is treated as on-the-run and sells against on-the-run turnover, the rest against off-the-run; days to sell is the slower of the two parts.` : ''}</p>`;
+  $('#grTable').innerHTML = h;
+}
+
+/* ---------- market tabs ---------- */
+function marketHead(m) {
+  const M = D.markets[m];
+  const prov = M.provisional ? `<div class="callout"><b>Provisional figures.</b> ${esc(M.origin)}. The DMO publishes quarterly turnover by maturity band and counterparty type as spreadsheets behind a bot check; put <code>gemm-turnover-by-maturity-band-*.xlsx</code>, <code>all-gemms-turnover-*.xls</code> and <code>annual-turnover-report-*.xls</code> in <code>rawData/dmo_gilts</code> and rebuild to replace this block with the full quarterly series.</div>` : '';
+  return `<div class="block"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
+  <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div>${prov}
+  <div class="tiles" id="tiles-${TAB[m]}"></div></div>`;
+}
+function marketTiles(m) {
+  const M = D.markets[m], a = M.window_adv, s = g => Object.values(g).every(v => v != null) ? Object.values(g).reduce((x, y) => x + y, 0) : null;
+  const d2c = s(a.d2c_base), d2cAll = s(a.d2c_all), d2d = s(a.d2d), tot = s(a.total);
+  const u = `${M.currency} bn / day`;
+  let h = tile(m === 'USD' ? 'D2C, off-the-run' : 'Dealer-to-customer', fmt(d2c / 1000, 1), u);
+  if (d2cAll != null && Math.abs(d2cAll - d2c) > 1) h += tile('D2C, all issues', fmt(d2cAll / 1000, 1), u);
+  h += tile('D2D (interdealer)', d2d == null ? 'n/a' : fmt(d2d / 1000, 1), u) + tile('Total', tot == null ? 'n/a' : fmt(tot / 1000, 1), u);
+  if (tot) h += tile('D2C share', fmt(100 * d2cAll / tot, 0) + ' %', 'of total turnover');
+  if (m === 'USD') { const ofs = s(M.window_adv_detail.d2c_off) / s(M.window_adv_detail.d2c_all); h += tile('Off-the-run share', fmt(100 * ofs, 0) + ' %', 'of D2C volume'); }
+  $('#tiles-' + TAB[m]).innerHTML = h;
+}
+function groupBars(m, id) {
+  const M = D.markets[m], a = M.window_adv, gs = M.groups;
+  const tr = [];
+  if (m === 'USD') {
+    const d = M.window_adv_detail;
+    tr.push({x: gs, y: gs.map(g => d.d2c_off[g] / 1000), name: 'D2C off-the-run', type: 'bar', marker: {color: css('--d2c')}});
+    tr.push({x: gs, y: gs.map(g => d.d2c_on[g] / 1000), name: 'D2C on-the-run', type: 'bar', marker: {color: css('--d2con')}});
+    tr.push({x: gs, y: gs.map(g => d.d2d_all[g] / 1000), name: 'ATS and interdealer', type: 'bar', marker: {color: css('--d2d')}});
+  } else {
+    tr.push({x: gs, y: gs.map(g => a.d2c_base[g] == null ? null : a.d2c_base[g] / 1000), name: 'Dealer-to-customer', type: 'bar', marker: {color: css('--d2c')}});
+    tr.push({x: gs, y: gs.map(g => a.d2d[g] == null ? null : a.d2d[g] / 1000), name: 'Dealer-to-dealer', type: 'bar', marker: {color: css('--d2d')}});
+  }
+  plot(id, tr, base({barmode: 'stack', hovermode: 'x unified', yaxis: Object.assign(base().yaxis, {title: {text: M.currency + ' bn per day'}})}));
+}
+function groupTable(m) {
+  const M = D.markets[m], a = M.window_adv, us = m === 'USD';
+  let h = `<table class="tbl"><thead><tr><th>Group</th><th>Buckets</th>${us ? '<th>D2C off-the-run</th><th>D2C all issues</th>' : '<th>Dealer-to-customer</th>'}<th>D2D</th><th>Total</th><th>D2C share</th></tr></thead><tbody>`;
+  for (const g of M.groups) {
+    const v = k => a[k][g] == null ? '<span class="na">n/a</span>' : fmt(a[k][g] / 1000, 2);
+    h += `<tr><td>${g}</td><td style="text-align:left">${B.filter(b => M.group_map[b] === g).join(', ')}</td><td class="num">${v('d2c_base')}</td>${us ? `<td class="num">${v('d2c_all')}</td>` : ''}<td class="num">${v('d2d')}</td><td class="num">${v('total')}</td><td class="num">${a.total[g] ? fmt(100 * a.d2c_all[g] / a.total[g], 0) + ' %' : '–'}</td></tr>`;
+  }
+  h += `</tbody></table><table class="tbl" style="margin-top:.8rem"><thead><tr><th>Segment</th><th style="text-align:left">Definition</th></tr></thead><tbody>`;
+  for (const [k, s] of Object.entries(M.segments)) h += `<tr><td>${k}</td><td style="text-align:left;white-space:normal"><b>${esc(s.label)}</b>: ${esc(s.note)}</td></tr>`;
+  return h + '</tbody></table>';
+}
+function profileBlock(m) {
+  const t = TAB[m], M = D.markets[m], one = M.groups.length === 1;
+  return `<div class="block"><h2>This market in the liquidity profile</h2><p class="note" id="pn-${t}"></p>
+  <div class="card" id="ov-${t}"><div class="ovtop"><label><input type="checkbox" data-ov="on"> <b>Own selling assumptions for this tab</b></label><span id="ovs-${t}"></span><button class="btn" type="button" data-ov="copy">Copy the Profile tab's settings</button></div>
+  <div class="ovp">
+    <label class="ovf">Participation, % of daily turnover<input type="number" data-ov="part" min="1" max="100" step="1"></label>
+    <label class="ovf">Turnover haircut, %<input type="number" data-ov="haircut" min="0" max="95" step="5"></label>
+    <label class="ovf">Turnover segment<select data-ov="seg">${Object.entries(SEGS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}</select></label>
+    ${m === 'USD' ? `<label class="ovf">On-the-run share of holding, %<input type="number" data-ov="otr" min="0" max="100" step="0.5"></label>` : ''}
+    <label class="ovf chk">Maturity distribution<span><input type="checkbox" data-ov="matOn"> apply</span></label>
+    <label class="ovf matdep">Maturity limit, years<input type="number" data-ov="matMax" min="1" max="30" step="1"></label>
+    <div class="ovf matdep">Maturity weights, %${one ? ' (one turnover pool here, so only the limit matters)' : matKnown(m) ? '' : ' (no source for this market: type weights or it stays one pool)'}<div class="mats">${B.map((b, i) => `<label><span>${b}</span><input type="number" data-ov="mat" data-i="${i}" min="0" step="1"></label>`).join('')}</div></div>
+  </div></div>
+  <div class="grid2" style="margin-top:1rem"><div class="card"><h3>Cumulative share sold</h3><div class="sub" id="pfs-${t}"></div><div class="plot" id="pf-${t}"></div></div><div class="card"><h3>By liquidity group</h3><div id="pt-${t}"></div></div></div></div>`;
+}
+function newOv(m) { return Object.assign({on: true}, globalParams(m), {mat: S.mat[m].slice()}); }
+function fillOv(m) {
+  const t = TAB[m], pnl = $('#ov-' + t); if (!pnl) return;
+  const on = ownParams(m), P = params(m), cov = matCovL(P.matMax);
+  pnl.querySelector('[data-ov=on]').checked = on;
+  pnl.querySelector('.ovp').classList.toggle('dis', !on);
+  pnl.querySelectorAll('.matdep').forEach(el => el.classList.toggle('dis', !P.matOn));
+  pnl.querySelectorAll('.ovp input, .ovp select').forEach(el => {
+    const k = el.dataset.ov, v = k === 'mat' ? P.mat[+el.dataset.i] : P[k];
+    el.disabled = !on || (el.closest('.matdep') && !P.matOn);
+    if (k === 'matOn') { el.checked = !!P.matOn; return; }
+    if (document.activeElement !== el) el.value = v == null ? '' : v;
+    if (k === 'mat') { const c = cov[+el.dataset.i]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); }
+  });
+  $('#ovs-' + t).textContent = on ? 'Used on this tab only; the Profile tab keeps its own assumptions.' : 'Following the Profile tab.';
+  if (!pnl.dataset.bound) {
+    pnl.dataset.bound = '1';
+    pnl.querySelector('[data-ov=on]').addEventListener('change', e => { if (!S.ov[m]) S.ov[m] = newOv(m); S.ov[m].on = e.target.checked; save(); drawMarketProfile(m); });
+    pnl.querySelector('[data-ov=copy]').addEventListener('click', () => { S.ov[m] = newOv(m); save(); drawMarketProfile(m); });
+    pnl.querySelectorAll('.ovp input, .ovp select').forEach(el => el.addEventListener('input', () => {
+      if (!S.ov[m]) S.ov[m] = newOv(m);
+      const o = S.ov[m], k = el.dataset.ov, v = +el.value;
+      if (k === 'mat') o.mat[+el.dataset.i] = el.value === '' ? null : Math.max(0, v || 0);
+      else if (k === 'matOn') o.matOn = el.checked;
+      else if (k === 'seg') o.seg = el.value;
+      else if (k === 'part') o.part = Math.min(100, Math.max(1, v || 1));
+      else if (k === 'haircut') o.haircut = Math.min(95, Math.max(0, v || 0));
+      else if (k === 'otr') o.otr = Math.min(100, Math.max(0, v || 0));
+      else if (k === 'matMax') o.matMax = Math.min(30, Math.max(1, v || 1));
+      save(); drawMarketProfile(m);
+    }));
+  }
+}
+function drawMarketProfile(m) {
+  fillOv(m);
+  const M = D.markets[m], g = R.markets[m], own = ownParams(m);
+  const r = own ? calcMarket(m, g.share, params(m)) : g, P = r.P, segLab = SEGS[P.seg].label.toLowerCase();
+  const pn = $('#pn-' + TAB[m]); if (pn) pn.innerHTML = S.on[m] ? `The holding is linked to the Profile tab: portfolio size × allocation share at ECB rates. The selling assumptions below can be set for this market alone; the Profile tab keeps its own.` : `<b>This market is switched off on the Profile tab</b>, so it carries no holding here. Tick it in the Profile side panel to include it.`;
+  let H = horizon(); if (S.horizon <= 0 && isFinite(r.t100)) H = Math.max(H, Math.min(500, Math.ceil(r.t100 * 1.3 / 5) * 5));
+  const n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
+  const tr = (r.pooled ? [] : r.groups.filter(x => x.H > 0)).map(x => ({x: ts, y: ts.map(t => 100 * x.sold(t) / x.H), name: x.g, mode: 'lines', line: {width: 1.5, dash: 'dot'}, hovertemplate: '%{y:.0f} %<extra>' + x.g + '</extra>'}));
+  tr.push({x: ts, y: ts.map(t => r.holdLocal > 0 ? 100 * r.curve(t) / r.holdLocal : null), name: 'Whole holding', mode: 'lines', line: {color: col(m), width: 3}, hovertemplate: '%{y:.0f} %<extra>holding</extra>'});
+  if (own) tr.push({x: ts, y: ts.map(t => g.holdLocal > 0 ? 100 * g.curve(t) / g.holdLocal : null), name: 'Profile tab assumptions', mode: 'lines', line: {color: css('--axis'), width: 1.5, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Profile tab assumptions</extra>'});
+  $('#pfs-' + TAB[m]).textContent = `At ${P.part} % of ${segLab}${P.haircut ? `, turnover cut by ${P.haircut} %` : ''}, ${r.pooled ? (r.noDist ? 'no maturity distribution available (one pool)' : 'no maturity split (one pool)') : `maturity limit ${P.matMax} years`}${own ? '; dashed line: the Profile tab\'s assumptions' : ''}`;
+  plot('pf-' + TAB[m], tr, base({yaxis: Object.assign(base().yaxis, {title: {text: '% sold'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
+  let h = `<table class="tbl"><thead><tr><th>Group</th><th>Holding, ${M.currency} bn</th><th>Turnover, bn/day</th><th>Pace, bn/day</th><th>Holding / turnover</th><th>Days to sell</th></tr></thead><tbody>`;
+  for (const x of r.groups) h += `<tr><td>${x.g === 'all' ? 'All maturities' : x.g}</td><td class="num">${fmt(x.H / 1000, 2)}</td><td class="num${x.A == null ? ' na' : ''}">${x.A == null ? 'n/a' : fmt(x.A / 1000, 2)}</td><td class="num">${x.cap == null ? '–' : fmt(x.cap / 1000, 2)}</td><td class="num">${fmtDays(x.daysAdv)}</td><td class="num">${fmtDays(x.days)}</td></tr>`;
+  h += `<tr class="tot"><td>Holding</td><td class="num">${fmt(r.holdLocal / 1000, 2)}</td><td></td><td></td><td></td><td class="num">${fmtDays(r.t100)}</td></tr></tbody></table>
+  <p class="note" style="margin-top:.5rem">${fmt(r.holdBase / 1000, 1)} ${S.base} bn = ${fmt(100 * r.share, 1)} % of the portfolio at ${fmt(r.fx, 4)} ${M.currency} per ${S.base}. Half sold after ${fmtDays(r.t50)} days, 90 % after ${fmtDays(r.t90)}, all after ${fmtDays(r.t100)}${own ? ` (with the Profile tab's assumptions: ${fmtDays(g.t50)}, ${fmtDays(g.t90)} and ${fmtDays(g.t100)} days)` : ''}.</p>`;
+  if (r.split) h += `<p class="note" style="margin-top:.5rem">US Treasuries: ${fmt(P.otr, 1)} % of each group is treated as on-the-run and sells against on-the-run turnover; the rest sells against off-the-run turnover. Days to sell is the slower of the two parts and pace is the effective pace (holding ÷ days).</p>`;
+  $('#pt-' + TAB[m]).innerHTML = h;
+}
+const monthLab = s => { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-GB', {month: 'short', year: 'numeric'}); };
+const sumArr = arrs => arrs[0].map((_, i) => arrs.reduce((s, a) => s + (a[i] ?? 0), 0));
+
+function tabUSD() {
+  const m = 'USD', M = D.markets[m];
+  $('#pane-usd').innerHTML = marketHead(m) + `
+  <div class="block"><h2>Turnover over time</h2><p class="note">Nominal coupon Treasuries, par value, USD bn per trading day (SIFMA calendar). FINRA reports each trade once; ATS and interdealer trades are the dealer-to-dealer leg.</p>
+  <div class="grid2"><div class="card"><h3>By venue</h3><div class="sub">Stacked: dealer-to-customer (off-the-run and on-the-run) and ATS/interdealer</div><div class="plot" id="us-ts"></div></div>
+  <div class="card"><h3>By security type, all venues</h3><div class="sub">Bills, nominal coupons, TIPS and FRNs</div><div class="plot" id="us-type"></div></div></div></div>
+  <div class="block"><h2>By remaining maturity, window average</h2>
+  <div class="grid2"><div class="card"><h3>Common buckets</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="us-grp"></div></div>
+  <div class="card"><h3>TRACE buckets</h3><div class="sub">Dealer-to-customer, off- and on-the-run, and ATS/interdealer</div><div class="plot" id="us-tb"></div></div></div></div>
+  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  ${profileBlock(m)}
+  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <li>Off-the-run dealer-to-customer volume is the conservative measure because an investor selling seasoned bonds competes for that liquidity; on-the-run volume is dominated by hedging and relative-value flow in the current issues.</li>
+  <li>Strips are included in off-the-run nominal coupon volume by FINRA.</li>
+  <li>TRACE covers FINRA members' trades; trades between two non-members (for example bank dealers that are not broker-dealers) are not captured, and the ATS category includes both interdealer and some customer-facing platforms as FINRA classifies them.</li>
+  <li>Monthly files are published around the middle of the following month; the window is the latest ${M.window.n} months on file.</li></ul></div></div>`;
+  marketTiles(m);
+  const x = M.months.map(monthLab), ma = M.monthly_adv;
+  const sum = k => sumArr(B.map(b => ma[k][b])).map(v => v / 1000);
+  plot('us-ts', [
+    {x, y: sum('d2c_off'), name: 'D2C off-the-run', type: 'bar', marker: {color: css('--d2c')}},
+    {x, y: sum('d2c_on'), name: 'D2C on-the-run', type: 'bar', marker: {color: css('--d2con')}},
+    {x, y: sum('d2d_all'), name: 'ATS and interdealer', type: 'bar', marker: {color: css('--d2d')}},
+  ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
+  const bt = M.by_type_adv;
+  plot('us-type', ['Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map((t, i) => ({x, y: bt[t].total.map(v => v / 1000), name: t, mode: 'lines', line: {width: 2}})),
+    base({yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
+  groupBars(m, 'us-grp');
+  const tb = M.trace_buckets, tbs = M.monthly_adv_trace_buckets, idx = M.months.map((mm, i) => i).filter(i => M.months[i] >= M.window.from);
+  const avg = k => tb.map(b => idx.reduce((s, i) => s + (tbs[k][b][i] ?? 0), 0) / idx.length / 1000);
+  const tbx = tb.map(b => TBL[b] || b);
+  plot('us-tb', [
+    {x: tbx, y: avg('d2c_off'), name: 'D2C off-the-run', type: 'bar', marker: {color: css('--d2c')}},
+    {x: tbx, y: avg('d2c_on'), name: 'D2C on-the-run', type: 'bar', marker: {color: css('--d2con')}},
+    {x: tbx, y: avg('d2d_all'), name: 'ATS and interdealer', type: 'bar', marker: {color: css('--d2d')}},
+  ], base({barmode: 'stack', hovermode: 'x unified', yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
+  drawMarketProfile(m);
+}
+
+function tabGBP() {
+  const m = 'GBP', M = D.markets[m];
+  const full = !M.provisional;
+  $('#pane-gbp').innerHTML = marketHead(m) + `
+  <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by GEMMs, market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
+  <div class="grid2"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3><div class="plot" id="gb-ts"></div></div>
+  <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div></div></div></div>
+  <div class="block"><h2>By remaining maturity, window average</h2>
+  <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="gb-grp"></div></div>
+  ${full ? `<div class="card"><h3>DMO maturity bands</h3><div class="sub">Customer and professional</div><div class="plot" id="gb-bands"></div></div>` : `<div class="card"><h3>Annual turnover by segment</h3><div id="gb-ann"></div></div>`}</div></div>
+  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  ${profileBlock(m)}
+  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <li>GEMM-reported turnover covers the market makers only; it is not the whole gilt market, though it should be most of it.</li>
+  <li>Professional turnover is not adjusted for double counting through IDBs, so the D2D and total figures are upper bounds.</li>
+  ${full ? '<li>Index-linked gilts and strips are excluded from the liquidity groups.</li>' : `<li>The customer share of ${fmt(100 * M.customer_share, 0)} % is read by eye from the weekly chart in the Quarterly Review April-June 2026 and applied uniformly to all maturities; the proper split by band is in the DMO spreadsheet.</li><li>The three segments (0-7y, 7-15y, 15y+) are coarser than the common buckets: holdings in the 10y+ bucket are matched with the 15y+ pool, which is conservative for 10-15 year bonds.</li>`}</ul></div></div>`;
+  marketTiles(m);
+  if (full) {
+    const x = M.quarters, q = M.quarterly_adv;
+    plot('gb-ts', [
+      {x, y: sumArr(B.map(b => q.d2c[b])).map(v => v / 1000), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
+      {x, y: sumArr(B.map(b => q.d2d[b])).map(v => v / 1000), name: 'Professional', type: 'bar', marker: {color: css('--d2d')}},
+    ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}})}));
+    if (M.weekly) plot('gb-wk', [
+      {x: M.weekly.week_ending, y: M.weekly.customer.map(v => v / 1000), name: 'Customer', mode: 'lines', line: {color: css('--d2c'), width: 1.5}},
+      {x: M.weekly.week_ending, y: M.weekly.professional.map(v => v / 1000), name: 'Professional', mode: 'lines', line: {color: css('--d2d'), width: 1.5}},
+    ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per week'}})}));
+    const bands = M.bands, bq = M.quarterly_adv_bands, idx = x.map((_, i) => i).filter(i => x[i] >= M.window.from);
+    const avg = k => bands.map(b => idx.reduce((s, i) => s + (bq[k][b][i] ?? 0), 0) / idx.length / 1000);
+    plot('gb-bands', [
+      {x: bands, y: avg('d2c'), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
+      {x: bands, y: avg('d2d'), name: 'Professional', type: 'bar', marker: {color: css('--d2d')}},
+    ], base({barmode: 'stack', hovermode: 'x unified', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}})}));
+  } else {
+    const an = M.annual, x = an.map(a => a.financial_year);
+    plot('gb-ts', [
+      {x, y: an.map(a => a.short), name: 'Short 0-7y', type: 'bar', marker: {color: css('--d2c')}},
+      {x, y: an.map(a => a.medium), name: 'Medium 7-15y', type: 'bar', marker: {color: css('--d2con')}},
+      {x, y: an.map(a => a.long), name: 'Long 15y+', type: 'bar', marker: {color: css('--d2d')}},
+      {x, y: an.map(a => a.index_linked), name: 'Index-linked', type: 'bar', marker: {color: css('--fr')}},
+    ], base({barmode: 'stack', xaxis: Object.assign(base().xaxis, {type: 'category'}), yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per financial year'}})}));
+    const a = M.window_adv, gs = M.groups;
+    plot('gb-wk', [
+      {x: gs, y: gs.map(g => a.d2c_base[g] / 1000), name: 'Customer (assumed share)', type: 'bar', marker: {color: css('--d2c')}},
+      {x: gs, y: gs.map(g => a.d2d[g] / 1000), name: 'Professional (assumed share)', type: 'bar', marker: {color: css('--d2d')}},
+    ], base({barmode: 'stack', hovermode: 'x unified', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}})}));
+    let h = `<table class="tbl"><thead><tr><th>FY</th><th>Short</th><th>Medium</th><th>Long</th><th>Index-linked</th><th>Total</th></tr></thead><tbody>`;
+    for (const r of an.slice(-8)) h += `<tr><td>${r.financial_year}</td><td class="num">${fmt(r.short, 0)}</td><td class="num">${fmt(r.medium, 0)}</td><td class="num">${fmt(r.long, 0)}</td><td class="num">${fmt(r.index_linked, 0)}</td><td class="num">${fmt(r.total, 0)}</td></tr>`;
+    $('#gb-ann').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.5rem">GBP bn, cash terms; ${M.trading_days_fy} UK trading days in FY ${M.financial_year}.</p>`;
+  }
+  groupBars(m, 'gb-grp');
+  drawMarketProfile(m);
+}
+
+function tabDE() {
+  const m = 'EUR-DE', M = D.markets[m];
+  $('#pane-de').innerHTML = marketHead(m) + `
+  <div class="block"><h2>Annual trading volumes</h2><p class="note">Gross volume (sales plus purchases) reported by a representative subset of Bund Issues Auction Group banks, EUR bn per calendar year, by instrument (original maturity) and by counterparty. "Broker" counterparties are the interdealer leg, reported by both banks and halved; all other counterparties are reported once and taken as dealer-to-customer. ${M.trading_days} TARGET trading days per year.</p>
+  <div class="grid3"><div class="card"><h3>By instrument</h3><div class="sub">Gross, EUR bn per year</div><div class="plot" id="de-inst"></div></div>
+  <div class="card"><h3>By counterparty</h3><div class="sub">Gross, EUR bn per year (${M.year})</div><div class="plot" id="de-cp"></div></div>
+  <div class="card"><h3>Implied daily turnover</h3><div class="sub">Schatz to Bund 30 only; customer vs halved broker legs</div><div class="plot" id="de-ts"></div></div></div></div>
+  <div class="block"><h2>By original maturity, ${M.year}</h2>
+  <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">Schatz + Bobl → 0-5y; Bund 7 + Bund 10 → 5-10y; Bund 15 + Bund 30 → 10y+</div><div class="plot" id="de-grp"></div></div>
+  <div class="card"><h3>Instrument detail</h3><div id="de-tab"></div></div></div></div>
+  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  ${profileBlock(m)}
+  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <li>The reporting banks are a subset of the auction group, so the level is a lower bound for the whole Bund market.</li>
+  <li>The counterparty mix is published for all instruments together; the ${fmt(100 * M.broker_share, 0)} % broker share of ${M.year} is applied to every instrument.</li>
+  <li>Instruments are classified by original maturity: a seasoned 10-year Bund stays in the 5-10y group however short its remaining life.</li>
+  <li>${(() => { const e = M.excluded_latest || {}; const f = k => e[k] ? `${fmt(e[k].gross_bn, 0)} bn gross in ${M.year} (${fmt(e[k].per_day_mn / 1000, 2)} bn per day, ${fmt(100 * e[k].share_of_gross, 1)} % of gross)` : 'n/a'; return `Excluded from the groups: Bubills ${f('Bubill')}, inflation-linked Bunds ${f('ILB')} and green Bunds ${f('Green')}. For a nominal bond holding the level without linkers is the right basis; including them would raise the level by ${fmt(100 * (e.ILB ? e.ILB.share_of_gross : 0), 1)} %. Green Bunds are nominal twins of conventional Bunds and are left out only because the page gives no maturity for them, which understates the 5-10y and 10y+ groups by about ${fmt(100 * (e.Green ? e.Green.share_of_gross : 0), 1)} %.`; })()}</li>
+  <li>The page is annual; the latest full year is used and there is no intra-year series.</li></ul></div></div>`;
+  marketTiles(m);
+  const an = M.annual, yrs = an.map(a => String(a.year));
+  const inst = Object.keys(M.instruments_latest);
+  plot('de-inst', inst.map(k => ({x: yrs, y: an.map(a => a.instruments[k]), name: k, type: 'bar'})), base({barmode: 'stack', hovermode: 'x unified', xaxis: Object.assign(base().xaxis, {type: 'category'}), yaxis: Object.assign(base().yaxis, {title: {text: 'EUR bn gross per year'}})}));
+  const cp = M.counterparties_latest, cpk = Object.keys(cp).sort((a, b) => cp[b] - cp[a]);
+  plot('de-cp', [{y: cpk, x: cpk.map(k => cp[k]), type: 'bar', orientation: 'h', marker: {color: cpk.map(k => k === 'Broker' ? css('--d2d') : css('--d2c'))}, hovertemplate: '%{y}: %{x:,.0f} bn<extra></extra>'}], base({hovermode: 'closest', margin: {l: 110, r: 14, t: 30, b: 40}, yaxis: Object.assign(base().yaxis, {autorange: 'reversed'}), xaxis: Object.assign(base().xaxis, {title: {text: 'EUR bn gross'}})}));
+  plot('de-ts', [
+    {x: yrs, y: an.map(a => a.d2c_adv_mn / 1000), name: 'Customer-facing', type: 'bar', marker: {color: css('--d2c')}},
+    {x: yrs, y: an.map(a => a.d2d_adv_mn / 1000), name: 'Broker, halved', type: 'bar', marker: {color: css('--d2d')}},
+  ], base({barmode: 'stack', hovermode: 'x unified', xaxis: Object.assign(base().xaxis, {type: 'category'}), yaxis: Object.assign(base().yaxis, {title: {text: 'EUR bn per day'}})}));
+  groupBars(m, 'de-grp');
+  let h = `<table class="tbl"><thead><tr><th>Instrument</th><th>Group</th><th>Gross, bn</th><th>Customer, bn</th><th>Broker, bn</th><th>D2C per day</th><th>D2D per day</th><th>Total per day</th></tr></thead><tbody>`;
+  for (const r of M.instruments) h += `<tr><td>${r.instrument}</td><td>${r.group}</td><td class="num">${fmt(r.gross_eur_bn, 0)}</td><td class="num">${fmt(r.customer_bn, 0)}</td><td class="num">${fmt(r.broker_bn, 0)}</td><td class="num">${fmt(r.d2c_adv_mn / 1000, 2)}</td><td class="num">${fmt(r.d2d_adv_mn / 1000, 2)}</td><td class="num">${fmt(r.total_adv_mn / 1000, 2)}</td></tr>`;
+  $('#de-tab').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.5rem">EUR bn; per-day figures in EUR bn per trading day. Customer share ${fmt(100 * M.customer_share, 1)} %.</p>`;
+  drawMarketProfile(m);
+}
+
+function tabFR() {
+  const m = 'EUR-FR', M = D.markets[m], DE = D.markets['EUR-DE'];
+  const de010 = k => (DE.window_adv[k]['0-5y'] + DE.window_adv[k]['5-10y']) / 1000;
+  $('#pane-fr').innerHTML = marketHead(m) + `
+  <div class="callout info"><b>Derived level, no French turnover source.</b> Agence France Trésor publishes SVT-reported daily volumes only as a chart in its monthly bulletin, with no split by maturity or counterparty. <b>Figure used:</b> the German 0-10y customer-facing level (Schatz, Bobl, Bund 7, Bund 10: ${fmt(M.de_010_d2c_mn / 1000, 1)} bn per day in ${M.year}) × ${M.scale} = <b>${fmt(M.window_adv.d2c_base.all / 1000, 1)} bn per day</b>; total incl. halved broker legs ${fmt(M.window_adv.total.all / 1000, 1)} bn. <b>Assumption:</b> OAT turnover is ${M.scale} of Bund turnover and has the same counterparty mix. <b>Reference check:</b> an independent estimate puts gross OAT turnover at about ${fmt(M.reference.total_mn / 1000, 1)} bn per day (${esc(M.reference.note)}). The like-for-like German figure, Finanzagentur gross excluding Bubills but including linkers and green Bunds, is ${fmt(M.reference.de_like_for_like_mn / 1000, 1)} bn per day, so the reference implies an OAT/Bund ratio of ${fmt(M.reference.implied_scale, 2)}; at that ratio the customer-facing level would be ${fmt(M.reference.d2c_at_implied_scale_mn / 1000, 1)} bn per day. The ratio is kept at ${M.scale} because the reference probably includes OATi/OAT€i, whose share of OAT turnover is not in the sources used, and because the French interdealer share is unknown; the nominal-only level is the right basis for a nominal holding. Change <code>EUR_FR_SCALE</code> in <code>pipeline/common.py</code> to use another ratio.</div>
+  <div class="block"><div class="grid2"><div class="card"><h3>Bund 0-10y level and the scaled OAT level</h3><div class="sub">EUR bn per trading day, ${DE.year}</div><div class="plot" id="fr-cmp"></div></div>
+  <div class="card"><h3>Figures used in the profile</h3>${groupTable(m)}</div></div></div>
+  ${profileBlock(m)}
+  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <li>One liquidity group covers all maturities, so the holding's maturity weights do not affect the French result.</li>
+  <li>The counterparty split is inherited from the Bund data and says nothing about the OAT market's own interdealer share.</li>
+  <li>The single group is meant to cover the benchmark universe up to 10 years; a holding concentrated in long OATs is overstated in liquidity.</li>
+  <li>Index-linked OATs are not separated: the German base excludes linkers (${fmt(100 * (DE.excluded_latest && DE.excluded_latest.ILB ? DE.excluded_latest.ILB.share_of_gross : 0), 1)} % of German gross), so the scaled level is a nominal-only level; the reference figure above likely includes them, which biases the implied ratio upward.</li></ul></div></div>`;
+  marketTiles(m);
+  const fx2 = ['Bunds 0-10y', 'OATs (scaled)'];
+  plot('fr-cmp', [
+    {x: fx2, y: [de010('d2c_base'), M.window_adv.d2c_base.all / 1000], name: 'Dealer-to-customer', type: 'bar', marker: {color: css('--d2c')}},
+    {x: fx2, y: [de010('d2d'), M.window_adv.d2d.all / 1000], name: 'Dealer-to-dealer', type: 'bar', marker: {color: css('--d2d')}},
+  ], base({barmode: 'stack', hovermode: 'x unified', yaxis: Object.assign(base().yaxis, {title: {text: 'EUR bn per day'}})}));
+  drawMarketProfile(m);
+}
+
+function tabJPY() {
+  const m = 'JPY', M = D.markets[m];
+  $('#pane-jpy').innerHTML = marketHead(m) + `
+  <div class="block"><h2>Turnover over time</h2><p class="note">JSDA members' outright OTC transactions in JGBs (repos excluded), face value, JPY bn per trading day. Members report their own legs: trades with customers appear once, member-to-member trades ("Bond Dealers") twice and are halved. "Others", which includes members' auction allotments, is ${M.include_others ? 'included in' : 'excluded from'} customer volume. Zero-coupon bonds and T-bills are excluded from the groups.</p>
+  <div class="grid2"><div class="card"><h3>By counterparty</h3><div class="sub">Interest-bearing JGBs (medium, long, super-long)</div><div class="plot" id="jp-ts"></div></div>
+  <div class="card"><h3>By original maturity class, customer volume</h3><div class="plot" id="jp-cls"></div></div></div></div>
+  <div class="block"><h2>Window average</h2>
+  <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">medium (2/4/5y) → 0-5y; long (6/10y) → 5-10y; super-long → 10y+; ${esc(M.window.label)}</div><div class="plot" id="jp-grp"></div></div>
+  <div class="card"><h3>Who trades JGBs</h3><div class="sub">Average monthly outright volume by investor category, JPY trn, ${esc(M.window.label)}</div><div class="plot" id="jp-inv"></div></div></div></div>
+  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  ${profileBlock(m)}
+  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <li>Classes are by original maturity: a 10-year JGB with two years left is still "long" (5-10y group).</li>
+  <li>Face value, not market value; for super-long JGBs trading well below par the cash turnover is lower than shown.</li>
+  <li>"Bond Dealers" is the JSDA category for member-to-member trades; the halving assumes both sides are members, which is the definition of the category.</li>
+  <li>The current-year file is revised monthly; the previous fiscal year's file is final.</li></ul></div></div>`;
+  marketTiles(m);
+  const x = M.months.map(monthLab), ma = M.monthly_adv, cls = ['medium', 'long', 'super_long'];
+  plot('jp-ts', [
+    {x, y: sumArr(cls.map(c => ma.d2c[c])).map(v => v / 1000), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
+    {x, y: sumArr(cls.map(c => ma.d2d[c])).map(v => v / 1000), name: 'Bond Dealers, halved', type: 'bar', marker: {color: css('--d2d')}},
+  ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'JPY bn per day'}})}));
+  plot('jp-cls', [
+    {x, y: ma.d2c.medium.map(v => v / 1000), name: 'Medium (2/4/5y)', mode: 'lines', line: {width: 2}},
+    {x, y: ma.d2c.long.map(v => v / 1000), name: 'Long (6/10y)', mode: 'lines', line: {width: 2}},
+    {x, y: ma.d2c.super_long.map(v => v / 1000), name: 'Super-long (>10y)', mode: 'lines', line: {width: 2}},
+    {x, y: ma.d2c.tbills.map(v => v / 1000), name: 'T-bills (excluded)', mode: 'lines', line: {width: 1, dash: 'dot', color: css('--muted')}},
+  ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'JPY bn per day'}})}));
+  groupBars(m, 'jp-grp');
+  const inv = M.investors_window_bn_per_month, ik = Object.keys(inv).sort((a, b) => inv[b].jgb_total - inv[a].jgb_total).slice(0, 10);
+  plot('jp-inv', [{y: ik, x: ik.map(k => inv[k].jgb_total / 1000), type: 'bar', orientation: 'h', marker: {color: ik.map(k => k === 'Bond Dealers' ? css('--d2d') : k === 'Others' ? css('--d2con') : css('--d2c'))}, hovertemplate: '%{y}: %{x:.1f} trn per month<extra></extra>'}],
+    base({hovermode: 'closest', margin: {l: 200, r: 14, t: 30, b: 40}, yaxis: Object.assign(base().yaxis, {autorange: 'reversed', tickfont: {size: 10}}), xaxis: Object.assign(base().xaxis, {title: {text: 'JPY trn per month, all JGBs'}})}));
+  drawMarketProfile(m);
+}
+
+function tabCNY() {
+  const m = 'CNY', M = D.markets[m];
+  $('#pane-cny').innerHTML = marketHead(m) + `
+  <div class="block"><h2>Northbound Bond Connect turnover</h2><p class="note">Monthly average daily turnover of all bonds through Bond Connect (RMB bn) and the share of Chinese government bonds, from the monthly Flash Reports. Where a report does not state the CGB share, the turnover-weighted mean of the months that do (${fmt(100 * M.fill_cgb_share, 0)} %) is used. ${M.channel === 'all_foreign' ? `The level is scaled up by 1 / ${M.bondconnect_share} to approximate all foreign-investor CGB turnover including CIBM Direct (HKMA: Bond Connect carries over ${fmt(100 * M.bondconnect_share, 0)} % of foreign turnover).` : 'Bond Connect only.'}</p>
+  <div class="grid2"><div class="card"><h3>Average daily turnover</h3><div class="sub">All bonds and the CGB part, RMB bn per day</div><div class="plot" id="cn-ts"></div></div>
+  <div class="card"><h3>Bond type shares</h3><div class="sub">Policy financial bonds and CGBs as stated in the reports</div><div class="plot" id="cn-sh"></div></div></div></div>
+  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}
+  <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Volume, bn</th><th>ADT, bn</th><th>Trading days</th><th>CGB share</th><th>CGB ADT, bn</th></tr></thead><tbody>${M.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${fmt(r.volume_bn, 1)}</td><td class="num">${fmt(r.adt_bn, 1)}</td><td class="num">${r.trading_days ?? '–'}</td><td class="num${r.cgb_share == null ? ' na' : ''}">${r.cgb_share == null ? fmt(100 * r.cgb_share_used, 0) + ' %*' : fmt(100 * r.cgb_share, 0) + ' %'}</td><td class="num">${fmt(r.cgb_adt_bn, 1)}</td></tr>`).join('')}</tbody></table>
+  <p class="note" style="margin-top:.5rem">* share not stated in that report; filled with the weighted mean.</p></div></div>
+  ${M.market_cgb_adv_bn ? `<div class="block"><h2>Whole-market CGB turnover</h2><div class="card"><p>The onshore interbank market settles about <b>${fmt(M.market_cgb_adv_bn, 0)} bn CGBs per day</b> (${esc(M.market_cgb_note)}). That is ${fmt(M.market_cgb_adv_bn * 1000 / M.window_adv.d2c_base.all, 0)} times the foreign-investor turnover used in the profile (${fmt(M.window_adv.d2c_base.all / 1000, 1)} bn per day, ${fmt(100 * M.window_adv.d2c_base.all / (M.market_cgb_adv_bn * 1000), 1)} % of the whole market). It feeds only the "total" segment.</p>
+  <p class="note">The profile keeps foreign investors' own turnover as the dealer-to-customer pool. A foreign holder sells through Bond Connect or CIBM Direct against onshore market makers, so the capacity of those channels for one-sided foreign selling is the binding constraint. The whole-market figure is dominated by domestic banks and interbank trading, its counterparty split is not published, and it would overstate what a foreign seller can draw on by a factor of ${fmt(M.market_cgb_adv_bn * 1000 / M.window_adv.d2c_base.all, 0)}. Choosing the "total" segment on the main tab uses it anyway, as an upper bound.</p></div>
+  ${M.ccdc ? (C => `<div class="card" style="margin-top:.8rem"><h3>CCDC settlement statistics, ${esc(C.window.label)}</h3><div class="sub"><a href="${esc(C.source_url)}" target="_blank" rel="noopener">${esc(C.source)}</a>. Downloaded by hand from ChinaBond: Data, Statistics, Monthly Bulletin of Statistics, pick the month, click the table title and choose Excel; files in <code>rawData/ccdc_cgb</code> (${C.files.length} files, ${esc(C.months[0])} to ${esc(C.months[C.months.length - 1])}).</div>
+  <p>Window averages: CGBs <b>${fmt(C.window_avg.cgb_adv_mn / 1000, 1)} bn per day</b> (${fmt(C.window_avg.cgb_mn_per_month / 1e6, 2)} trn per month, ${C.window_avg.trading_days} trading days in ${C.window.n} months); all CCDC-registered bonds ${fmt(C.window_avg.all_adv_mn / 1000, 0)} bn per day, so CGBs are ${fmt(100 * C.window_avg.cgb_share, 0)} % of interbank cash settlement. Foreign investors settled ${fmt(C.window_avg.foreign_adv_mn / 1000, 1)} bn per day of all CCDC bonds, ${fmt(100 * C.window_avg.foreign_share, 1)} % of the market by side.${C.reference_bn ? ` Your earlier estimate of ${fmt(C.reference_bn, 0)} bn per day (${esc(C.reference_note)}) is ${fmt(100 * (C.reference_bn * 1000 / C.window_avg.cgb_adv_mn - 1), 0).replace('-', '−')} % ${C.reference_bn * 1000 >= C.window_avg.cgb_adv_mn ? 'above' : 'below'} the CCDC figure for this window.` : ''}</p>
+  <p class="note">${esc(C.counting)}. Coverage: ${esc(C.coverage)}. ${esc(C.trading_days_note)}. The foreign-investor column is all CCDC bonds (CGBs plus policy bank and other bonds, excluding NCDs, which settle at the Shanghai Clearing House), so it is not the same quantity as the all-foreign CGB estimate used in the profile; the two are shown side by side in the right-hand chart as a cross-check.</p>
+  <div class="grid2"><div><h3>Interbank cash settlement per day</h3><div class="sub">CGBs and all CCDC-registered bonds, RMB bn per trading day</div><div class="plot" id="cn-mk"></div></div>
+  <div><h3>Foreign investors</h3><div class="sub">CCDC settlement by foreign investors (all CCDC bonds, own side) and the all-foreign CGB estimate from Bond Connect, RMB bn per day</div><div class="plot" id="cn-fo"></div></div></div>
+  <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Trading days</th><th>CGB settlement, bn</th><th>CGB bn/day</th><th>All CCDC bonds bn/day</th><th>CGB share</th><th>Foreign investors bn/day</th><th>Foreign share</th></tr></thead><tbody>${C.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${r.trading_days}</td><td class="num">${fmt(r.cgb_mn / 1000, 0)}</td><td class="num">${fmt(r.cgb_adv_mn / 1000, 1)}</td><td class="num">${fmt(r.all_adv_mn / 1000, 0)}</td><td class="num">${fmt(100 * r.cgb_share, 0)} %</td><td class="num">${r.foreign_adv_mn == null ? '–' : fmt(r.foreign_adv_mn / 1000, 1)}</td><td class="num">${r.foreign_share == null ? '–' : fmt(100 * r.foreign_share, 1) + ' %'}</td></tr>`).join('')}</tbody></table></div>`)(M.ccdc) : ''}</div>` : ''}
+  ${profileBlock(m)}
+  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <li>Bond Connect turnover is foreign investors' trades with onshore market makers: a dealer-to-customer measure for one investor class only. The onshore interbank market is many times larger (see the CCDC figure above), but its CGB cash turnover by counterparty type is not published, only by investor type on each side.</li>
+  <li>No maturity split is published, so the holding's maturity weights do not affect the Chinese result.</li>
+  <li>The Bond Connect share of foreign turnover (${M.bondconnect_share}) is a single HKMA statement and moves over time.</li>
+  <li>A reserve manager selling CGBs would typically do so through CIBM Direct or Bond Connect against onshore dealers, so foreign-investor turnover understates the pool available, but the depth of that pool for large, one-sided foreign selling is untested.</li></ul></div></div>`;
+  marketTiles(m);
+  const x = M.months.map(monthLab), mo = M.monthly;
+  plot('cn-ts', [
+    {x, y: mo.map(r => r.adt_bn), name: 'All bonds', type: 'bar', marker: {color: css('--d2d')}},
+    {x, y: mo.map(r => r.cgb_adt_bn), name: 'Chinese government bonds', type: 'bar', marker: {color: css('--d2c')}},
+  ], base({barmode: 'overlay', yaxis: Object.assign(base().yaxis, {title: {text: 'RMB bn per day'}})}));
+  plot('cn-sh', [
+    {x, y: mo.map(r => r.cgb_share == null ? null : 100 * r.cgb_share), name: 'CGB share (stated)', mode: 'lines+markers', line: {color: css('--d2c'), width: 2}, connectgaps: true},
+    {x, y: mo.map(r => r.pfb_share == null ? null : 100 * r.pfb_share), name: 'Policy financial bond share', mode: 'lines+markers', line: {color: css('--d2d'), width: 2}, connectgaps: true},
+  ], base({yaxis: Object.assign(base().yaxis, {title: {text: '% of volume'}, range: [0, 70]})}));
+  if (M.ccdc) {
+    const C = M.ccdc, cx = C.months.map(monthLab);
+    plot('cn-mk', [
+      {x: cx, y: C.monthly.map(r => r.all_adv_mn / 1000), name: 'All CCDC bonds', type: 'bar', marker: {color: css('--d2d')}},
+      {x: cx, y: C.monthly.map(r => r.cgb_adv_mn / 1000), name: 'Chinese government bonds', type: 'bar', marker: {color: css('--d2c')}},
+    ], base({barmode: 'overlay', yaxis: Object.assign(base().yaxis, {title: {text: 'RMB bn per day'}})}));
+    const bc = Object.fromEntries(M.monthly.map(r => [r.month, r.cgb_adt_bn / M.bondconnect_share]));
+    plot('cn-fo', [
+      {x: cx, y: C.monthly.map(r => r.foreign_adv_mn == null ? null : r.foreign_adv_mn / 1000), name: 'CCDC: foreign investors, all CCDC bonds', type: 'bar', marker: {color: css('--d2d')}},
+      {x: cx, y: C.months.map(m => bc[m] ?? null), name: 'Profile: all-foreign CGB estimate', type: 'bar', marker: {color: css('--d2c')}},
+    ], base({barmode: 'group', yaxis: Object.assign(base().yaxis, {title: {text: 'RMB bn per day'}})}));
+  }
+  drawMarketProfile(m);
+}
+
+function tabUpdate() {
+  const ST = D.status || [];
+  const badge = st => `<span class="badge ${st === 'up to date' ? 'ok' : st === 'file needed' ? 'bad' : 'warn'}">${esc(st)}</span>`;
+  const modeLab = {automatic: 'automatic', manual: 'by hand', derived: 'derived'};
+  let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Dataset</th><th>Mode</th><th>Latest data point</th><th>Raw files updated</th><th>Next data expected</th><th>Status</th></tr></thead><tbody>`;
+  for (const x of ST) {
+    h += `<tr class="main"><td>${esc(x.title)}</td><td>${modeLab[x.mode] || esc(x.mode)}</td><td class="num">${esc(x.latest || '–')}</td><td class="num">${x.files_updated ? `${esc(x.files_updated)} <span class="u">(${x.n_files} file${x.n_files === 1 ? '' : 's'})</span>` : '–'}</td><td class="num">${esc(x.next_expected || '–')}</td><td>${badge(x.status)}</td></tr>
+    <tr><td colspan="6" class="src">${esc(x.cadence)}. ${esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
+  }
+  $('#upTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}.</p>`;
+  const man = ST.filter(x => x.mode === 'manual');
+  $('#upManual').innerHTML = `<ol class="steps">${man.map(x => `<li><b>${esc(x.title)}</b> ${badge(x.status)}<br>${esc(x.how)}<br><span class="note">Latest data point ${esc(x.latest || 'none')}; files last written ${esc(x.files_updated || 'never')}; ${esc(x.cadence)}.</span> <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Open the download page</a></li>`).join('')}</ol>`;
+}
+function tabNotes() {
+  let h = `<thead><tr><th>Market</th><th>d2c_base</th><th>d2c_all</th><th>d2d</th><th>total</th></tr></thead><tbody>`;
+  for (const m of MK) { const s = D.markets[m].segments; h += `<tr><td>${esc(D.markets[m].name)}</td>${['d2c_base', 'd2c_all', 'd2d', 'total'].map(k => `<td style="text-align:left;white-space:normal;font-size:.85rem"><b>${esc(s[k].label)}</b><br>${esc(s[k].note)}</td>`).join('')}</tr>`; }
+  $('#segTable').innerHTML = h + '</tbody>';
+  h = `<thead><tr><th>Market</th><th>Source</th><th>Counting</th><th>Maturity basis</th><th>Groups</th><th>Window</th></tr></thead><tbody>`;
+  for (const m of MK) { const M = D.markets[m]; h += `<tr><td>${esc(M.name)}</td><td style="text-align:left;white-space:normal"><a href="${esc(M.source_url)}" target="_blank" rel="noopener">${esc(M.source)}</a>${M.ccdc ? `<br>Whole-market total: <a href="${esc(M.ccdc.source_url)}" target="_blank" rel="noopener">${esc(M.ccdc.source)}</a> (downloaded by hand)` : ''}${M.origin ? `<br><span style="color:var(--muted);font-size:.85em">${esc(M.origin)}</span>` : ''}</td><td style="text-align:left;white-space:normal">${esc(M.counting)}</td><td style="text-align:left;white-space:normal">${esc(M.maturity_basis)}</td><td style="text-align:left;white-space:normal">${M.groups.join(', ')}</td><td>${esc(M.window.label)}</td></tr>`; }
+  $('#convTable').innerHTML = h + '</tbody>';
+  const st = D.settings;
+  $('#setList').innerHTML = Object.entries(st).map(([k, v]) => `<dt><code>${k}</code></dt><dd>${v === null ? 'not set' : esc(String(v))}</dd>`).join('');
+  $('#dlList').innerHTML = (D.downloads || []).map(e => `<details class="dl"><summary><a href="data/${esc(e.file)}" download onclick="event.stopPropagation()">${esc(e.file)}</a><span class="dl-t">${esc(e.title)}</span><span class="dl-m">${e.rows == null ? '' : fmt(e.rows, 0) + ' rows · '}${e.bytes >= 1048576 ? fmt(e.bytes / 1048576, 1) + ' MB' : e.bytes < 1024 ? '&lt;1 kB' : fmt(e.bytes / 1024, 0) + ' kB'}</span></summary>
+    <p>${esc(e.description)}</p>
+    <p class="note"><b>Source:</b> ${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source)}<br><b>Counting / notes:</b> ${esc(e.notes)}${e.columns.length ? `<br><b>Columns:</b> ${e.columns.map(c => `<code>${esc(c)}</code>`).join(', ')}` : ''}</p></details>`).join('');
+  h = `<table class="tbl mat"><thead><tr><th>Market</th><th>As of</th>${B.map(b => `<th>${b}</th>`).join('')}<th>Total</th><th>Issues</th></tr></thead><tbody>`;
+  for (const m of MK) {
+    const x = MATD[m], c = col(m);
+    if (x && x.available) {
+      h += `<tr class="main"><td><span class="sw" style="background:${c}"></span>${esc(D.markets[m].name)}</td><td class="num">${x.as_of}</td>${x.shares_pct.map(v => `<td class="num">${fmt(v, 1)}</td>`).join('')}<td class="num">${fmt(x.total_bn, 0)} <span class="u">${esc(x.unit)}</span></td><td class="num">${x.n_issues}</td></tr>
+      <tr><td colspan="9" class="src">${esc(x.universe)}. ${esc(x.source)}${x.fetched ? `, fetched ${x.fetched}` : ''}. <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>${x.check ? `. ${x.check_ok ? '<span class="ok">Check ok:</span>' : '<span class="bad">Check failed:</span>'} ${esc(x.check)}` : ''}</td></tr>`;
+    } else {
+      h += `<tr class="main off"><td><span class="sw" style="background:${c}"></span>${esc(D.markets[m].name)}</td><td class="num">–</td>${B.map(() => '<td class="num">–</td>').join('')}<td><span class="badge warn">needs a file</span></td><td></td></tr>
+      <tr><td colspan="9" class="src"><b>Not available.</b> ${esc((x && (x.how_to || x.error)) || 'no source')}${x && x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
+    }
+  }
+  $('#matTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Shares in % of nominal outstanding. Bucket boundaries are on remaining maturity at the as-of date; 10y+ runs to the longest bond. The per-issue lists stay in rawData/maturity; the five sums per market are in the maturity_profile workbook under Downloads.</p>`;
+  $('#fxTable').innerHTML = `<p class="note">${esc(D.fx.source)}, ${D.fx.date} (<a href="${esc(D.fx.source_url)}" target="_blank" rel="noopener">source</a>). Units of currency per euro.</p><table class="tbl"><thead><tr>${Object.keys(D.fx.per_eur).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(D.fx.per_eur).map(v => `<td class="num">${fmt(v, 4)}</td>`).join('')}</tr></tbody></table>`;
+}
+
+/* ---------- tabs and boot ---------- */
+const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, update: tabUpdate, notes: tabNotes};
+const TABLABEL = {main: 'Profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', update: 'Update', notes: 'Notes & sources'};
+const TABMK = {usd: 'USD', gbp: 'GBP', de: 'EUR-DE', fr: 'EUR-FR', jpy: 'JPY', cny: 'CNY'};
+function buildTabs() {
+  $('#tabs').innerHTML = Object.keys(TABS).filter(t => !TABMK[t] || D.markets[TABMK[t]]).map(t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`).join('');
+}
+function showTab(t) {
+  if (!TABS.hasOwnProperty(t) || (TABMK[t] && !D.markets[TABMK[t]])) t = 'main';
+  document.querySelectorAll('section.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + t));
+  document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === t));
+  if (!drawn[t]) { if (TABS[t]) TABS[t](); drawn[t] = true; }
+  document.querySelectorAll('#pane-' + t + ' .plot').forEach(el => { if (el.data) Plotly.Plots.resize(el); });
+  window.scrollTo({top: 0});
+}
+function current() { return (location.hash || '#main').slice(1); }
+function redrawAll() { for (const k in drawn) delete drawn[k]; drawMain(); showTab(current()); }
+function setTheme(t) { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; $('#themeBtn').textContent = isDark() ? 'Light' : 'Dark'; try { localStorage.setItem('bondliq.theme', t || ''); } catch (e) {} }
+try { const t = localStorage.getItem('bondliq.theme'); document.documentElement.dataset.theme = (t === 'light' || t === 'dark') ? t : 'dark'; } catch (e) {}
+$('#themeBtn').addEventListener('click', () => { setTheme(isDark() ? 'light' : 'dark'); redrawAll(); });
+$('#themeBtn').textContent = isDark() ? 'Light' : 'Dark';
+buildTabs(); buildSide(); update(); showTab(current());
+$('#grTable').addEventListener('click', e => { const b = e.target.closest('[data-grm]'); if (b) { S.grm = b.dataset.grm; update(); } });
+window.addEventListener('hashchange', () => showTab(current()));
+$('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Notes tab; nothing on this page is investment advice.`;
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+__pycache__/
+.wrangler/
+node_modules/
+site/_*.html
+rawData/dmo_gilts/pdf/*.txt
+rawData/dmo_gilts/pdf/*.png
