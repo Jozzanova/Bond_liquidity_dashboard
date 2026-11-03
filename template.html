@@ -207,7 +207,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       <div class="card" style="margin-top:1rem"><h3>Markets</h3><div class="sub" id="mtSub"></div><div id="mtTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Holdings and turnover by maturity bucket</h3><div class="sub">Local currency bn. Columns are the holding's maturity buckets. A cell that spans several buckets is one turnover pool: the source splits turnover no finer, so the holding in those buckets is sold against the pool together.</div><div id="grTable"></div></div>
       <details class="card method" style="margin-top:1rem"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand; the full method is on the Methods &amp; sources tab)</span></summary><div id="methodBody">
-        <p>Holding in market <i>m</i> = portfolio size × allocation share, converted to local currency at the ECB reference rate (<span id="fxDate"></span>). With the maturity option off (the default) the holding is one pool sold against the market's turnover across all maturities, which is the same as holding the market in proportion to its turnover. With the option on, the holding is spread over the five maturity buckets with the weights entered (default: the market's outstanding stock by remaining maturity, see the Notes tab), buckets beyond the maturity limit are removed (a bucket the limit cuts through keeps a proportional share), the weights are rescaled and the buckets pooled into the market's liquidity groups. Each group is sold at a constant pace equal to the participation rate times the group's average daily turnover in the chosen segment (after the haircut), all groups in parallel. For US Treasuries, the on-the-run share of the holding set in the side panel sells against on-the-run volume and the rest against off-the-run volume, as two parallel parts of each group; at 0 % the whole holding sells against off-the-run volume only. A market switched off in the side panel is left out and the allocation is rescaled over the rest. Each market tab can apply its own selling assumptions to that market alone (its holding stays linked to this tab); nothing here changes when it does. The curve is the sum over groups of min(holding, pace × days). "Days to sell" is where that sum reaches the holding; the combined profile sums markets in the base currency.</p>
+        <p>Holding in market <i>m</i> = portfolio size × allocation share, converted to local currency at the ECB reference rate (<span id="fxDate"></span>). With the maturity option off (the default) the holding is one pool sold against the market's turnover across all maturities, which is the same as holding the market in proportion to its turnover. With the option on, the holding is spread over the five maturity buckets with the weights entered (default: the market's outstanding stock by remaining maturity, see the outstanding stock table on the Methods &amp; sources tab), buckets beyond the maturity limit are removed (a bucket the limit cuts through keeps a proportional share), the weights are rescaled and the buckets pooled into the market's liquidity groups. Each group is sold at a constant pace equal to the participation rate times the group's average daily turnover in the chosen segment (after the haircut), all groups in parallel. For US Treasuries, the on-the-run share of the holding set in the side panel sells against on-the-run volume and the rest against off-the-run volume, as two parallel parts of each group; at 0 % the whole holding sells against off-the-run volume only. A market switched off in the side panel is left out and the allocation is rescaled over the rest. Each market tab can apply its own selling assumptions to that market alone (its holding stays linked to this tab); nothing here changes when it does. The curve is the sum over groups of min(holding, pace × days). "Days to sell" is where that sum reaches the holding; the combined profile sums markets in the base currency.</p>
         <p class="note">This is a capacity calculation, not a price-impact model: it says how many days of turnover a holding represents, at a participation rate you judge to be absorbable without moving the market. It assumes turnover stays at its window average while you sell, which stress episodes contradict; use the haircut for that. Dealer-to-customer volume is the relevant pool for an investor that trades with dealers; interdealer volume (shown as D2D) is the dealers' own recycling of risk and is included only in the "total" segment.</p>
       </div></details>
     </div>
@@ -268,7 +268,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <div class="card"><table class="tbl" id="convTable"></table></div>
   </div>
   <div class="block"><h2>Outstanding stock by remaining maturity</h2>
-    <p class="note">The market-weighted maturity profile offered as the default holding distribution when the maturity option on the Profile tab is on: nominal amount outstanding of each market's nominal coupon government bonds in the five buckets, by remaining maturity on the as-of date.</p>
+    <p class="note">The market-weighted maturity profile offered as the default holding distribution when the maturity option on the Liquidity profile tab is on: nominal amount outstanding of each market's nominal coupon government bonds in the five buckets, by remaining maturity on the as-of date.</p>
     <div class="card"><div id="matTable"></div></div>
   </div>
   <div class="block"><h2>What is not in the data</h2>
@@ -360,7 +360,7 @@ function save() { try { localStorage.setItem('bondliq.inputs.v3', JSON.stringify
 /* ---------- the liquidity profile ---------- */
 function fxLocalPerBase(cur) { return D.fx.per_eur[cur] / D.fx.per_eur[S.base]; }
 const OTR_PREFIX = {d2c: 'd2c', total: 'total'};
-// selling assumptions: the Profile tab's, or a market tab's own set (S.ov[m]) when switched on there
+// selling assumptions: the Liquidity profile tab's, or a market tab's own set (S.ov[m]) when switched on there
 function globalParams(m) { return {part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: S.matOn, matMax: S.matMax, mat: S.mat[m]}; }
 function ownParams(m) { const o = S.ov[m]; return !!(o && o.on); }
 function params(m) { const o = S.ov[m]; return ownParams(m) ? {part: o.part, haircut: o.haircut, seg: SEGS[o.seg] ? o.seg : 'd2c', otr: o.otr, matOn: !!o.matOn, matMax: o.matMax, mat: o.mat} : globalParams(m); }
@@ -462,7 +462,7 @@ function buildSide() {
   <div class="row"><label for="inMax">Maturity limit, years (longest bond held)</label><input type="number" id="inMax" min="1" max="30" step="1" value="${S.matMax}"></div>
   <div class="hint">Buckets beyond the limit are dropped and the remaining weights are rescaled; a bucket the limit cuts through keeps a proportional part (10y+ counted as 10 to 30 years). 30 keeps everything.</div>
   <details class="mw"${mwOpen() ? ' open' : ''}><summary>Maturity weights by market, %</summary>
-  <div class="hint">Share of the holding by remaining maturity. Default: the market's nominal bonds outstanding by remaining maturity (sources and dates on the Notes tab). A market with no figures (${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ') || 'none'}) is sold as one pool unless weights are typed in.</div>
+  <div class="hint">Share of the holding by remaining maturity. Default: the market's nominal bonds outstanding by remaining maturity (sources and dates on the Methods & sources tab). A market with no figures (${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ') || 'none'}) is sold as one pool unless weights are typed in.</div>
   <table class="itbl"><thead><tr><th></th>${B.map(b => `<th>${b}</th>`).join('')}</tr></thead><tbody>
   <tr><td>Template</td>${B.map((b, i) => `<td><input type="number" data-tpl="${i}" min="0" step="1" value="20"></td>`).join('')}</tr>
   ${MK.map(m => `<tr><td><span class="sw" style="background:${col(m)}"></span>${m}${matKnown(m) ? '' : '<span class="badge warn" title="no source for the outstanding stock by maturity">n/a</span>'}</td>${B.map((b, i) => `<td><input type="number" data-mat="${m}" data-i="${i}" min="0" step="1" value="${S.mat[m][i] == null ? '' : S.mat[m][i]}"></td>`).join('')}</tr>`).join('')}
@@ -688,7 +688,7 @@ function groupTable(m) {
 function profileBlock(m) {
   const t = TAB[m], M = D.markets[m], one = M.groups.length === 1;
   return `<div class="block"><h2>This market in the liquidity profile</h2><p class="note" id="pn-${t}"></p>
-  <div class="card" id="ov-${t}"><div class="ovtop"><label><input type="checkbox" data-ov="on"> <b>Own selling assumptions for this tab</b></label><span id="ovs-${t}"></span><button class="btn" type="button" data-ov="copy">Copy the Profile tab's settings</button></div>
+  <div class="card" id="ov-${t}"><div class="ovtop"><label><input type="checkbox" data-ov="on"> <b>Own selling assumptions for this tab</b></label><span id="ovs-${t}"></span><button class="btn" type="button" data-ov="copy">Copy the Liquidity profile tab's settings</button></div>
   <div class="ovp">
     <label class="ovf">Participation, % of daily turnover<input type="number" data-ov="part" min="1" max="100" step="1"></label>
     <label class="ovf">Turnover haircut, %<input type="number" data-ov="haircut" min="0" max="95" step="5"></label>
@@ -714,7 +714,7 @@ function fillOv(m) {
     if (document.activeElement !== el) el.value = v == null ? '' : v;
     if (k === 'mat') { const c = cov[+el.dataset.i]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); }
   });
-  $('#ovs-' + t).textContent = on ? 'Used on this tab only; the Profile tab keeps its own assumptions.' : 'Following the Profile tab.';
+  $('#ovs-' + t).textContent = on ? 'Used on this tab only; the Liquidity profile tab keeps its own assumptions.' : 'Following the Liquidity profile tab.';
   if (!pnl.dataset.bound) {
     pnl.dataset.bound = '1';
     pnl.querySelector('[data-ov=on]').addEventListener('change', e => { if (!S.ov[m]) S.ov[m] = newOv(m); S.ov[m].on = e.target.checked; save(); drawMarketProfile(m); });
@@ -741,18 +741,18 @@ function drawMarketProfile(m) {
   if (pfm) pfm.innerHTML = S.on[m]
     ? `<b>In the liquidity profile:</b> holding ${fmt(r.holdLocal / 1000, 1)} ${M.currency} bn (${fmt(r.holdBase / 1000, 1)} ${S.base} bn, ${fmt(100 * r.share, 1)} % of the portfolio). At ${P.part} % of ${segLab}${P.haircut ? ` with a ${P.haircut} % haircut` : ''}: half sold in ${fmtDays(r.t50)} days, all in ${fmtDays(r.t100)} days${own ? ' (own assumptions for this tab)' : ''}. <a href="#${TAB[m]}" onclick="document.getElementById('ov-${TAB[m]}').scrollIntoView({behavior:'smooth'}); return false;">Details below</a>.`
     : `<b>Switched off on the Liquidity profile tab</b>, so this market carries no holding. Tick it in the side panel there to include it.`;
-  const pn = $('#pn-' + TAB[m]); if (pn) pn.innerHTML = S.on[m] ? `The holding is linked to the Profile tab: portfolio size × allocation share at ECB rates. The selling assumptions below can be set for this market alone; the Profile tab keeps its own.` : `<b>This market is switched off on the Profile tab</b>, so it carries no holding here. Tick it in the Profile side panel to include it.`;
+  const pn = $('#pn-' + TAB[m]); if (pn) pn.innerHTML = S.on[m] ? `The holding is linked to the Liquidity profile tab: portfolio size × allocation share at ECB rates. The selling assumptions below can be set for this market alone; the Liquidity profile tab keeps its own.` : `<b>This market is switched off on the Liquidity profile tab</b>, so it carries no holding here. Tick it in the Profile side panel to include it.`;
   let H = horizon(); if (S.horizon <= 0 && isFinite(r.t100)) H = Math.max(H, Math.min(500, Math.ceil(r.t100 * 1.3 / 5) * 5));
   const n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
   const tr = (r.pooled ? [] : r.groups.filter(x => x.H > 0)).map(x => ({x: ts, y: ts.map(t => 100 * x.sold(t) / x.H), name: x.g, mode: 'lines', line: {width: 1.5, dash: 'dot'}, hovertemplate: '%{y:.0f} %<extra>' + x.g + '</extra>'}));
   tr.push({x: ts, y: ts.map(t => r.holdLocal > 0 ? 100 * r.curve(t) / r.holdLocal : null), name: 'Whole holding', mode: 'lines', line: {color: col(m), width: 3}, hovertemplate: '%{y:.0f} %<extra>holding</extra>'});
-  if (own) tr.push({x: ts, y: ts.map(t => g.holdLocal > 0 ? 100 * g.curve(t) / g.holdLocal : null), name: 'Profile tab assumptions', mode: 'lines', line: {color: css('--axis'), width: 1.5, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Profile tab assumptions</extra>'});
-  $('#pfs-' + TAB[m]).textContent = `At ${P.part} % of ${segLab}${P.haircut ? `, turnover cut by ${P.haircut} %` : ''}, ${r.pooled ? (r.noDist ? 'no maturity distribution available (one pool)' : 'no maturity split (one pool)') : `maturity limit ${P.matMax} years`}${own ? '; dashed line: the Profile tab\'s assumptions' : ''}`;
+  if (own) tr.push({x: ts, y: ts.map(t => g.holdLocal > 0 ? 100 * g.curve(t) / g.holdLocal : null), name: 'Liquidity profile tab assumptions', mode: 'lines', line: {color: css('--axis'), width: 1.5, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Liquidity profile tab assumptions</extra>'});
+  $('#pfs-' + TAB[m]).textContent = `At ${P.part} % of ${segLab}${P.haircut ? `, turnover cut by ${P.haircut} %` : ''}, ${r.pooled ? (r.noDist ? 'no maturity distribution available (one pool)' : 'no maturity split (one pool)') : `maturity limit ${P.matMax} years`}${own ? '; dashed line: the Liquidity profile tab\'s assumptions' : ''}`;
   plot('pf-' + TAB[m], tr, base({yaxis: Object.assign(base().yaxis, {title: {text: '% sold'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
   let h = `<table class="tbl"><thead><tr><th>Group</th><th>Holding, ${M.currency} bn</th><th>Turnover, bn/day</th><th>Pace, bn/day</th><th>Holding / turnover</th><th>Days to sell</th></tr></thead><tbody>`;
   for (const x of r.groups) h += `<tr><td>${x.g === 'all' ? 'All maturities' : x.g}</td><td class="num">${fmt(x.H / 1000, 2)}</td><td class="num${x.A == null ? ' na' : ''}">${x.A == null ? 'n/a' : fmt(x.A / 1000, 2)}</td><td class="num">${x.cap == null ? '–' : fmt(x.cap / 1000, 2)}</td><td class="num">${fmtDays(x.daysAdv)}</td><td class="num">${fmtDays(x.days)}</td></tr>`;
   h += `<tr class="tot"><td>Holding</td><td class="num">${fmt(r.holdLocal / 1000, 2)}</td><td></td><td></td><td></td><td class="num">${fmtDays(r.t100)}</td></tr></tbody></table>
-  <p class="note" style="margin-top:.5rem">${fmt(r.holdBase / 1000, 1)} ${S.base} bn = ${fmt(100 * r.share, 1)} % of the portfolio at ${fmt(r.fx, 4)} ${M.currency} per ${S.base}. Half sold after ${fmtDays(r.t50)} days, 90 % after ${fmtDays(r.t90)}, all after ${fmtDays(r.t100)}${own ? ` (with the Profile tab's assumptions: ${fmtDays(g.t50)}, ${fmtDays(g.t90)} and ${fmtDays(g.t100)} days)` : ''}.</p>`;
+  <p class="note" style="margin-top:.5rem">${fmt(r.holdBase / 1000, 1)} ${S.base} bn = ${fmt(100 * r.share, 1)} % of the portfolio at ${fmt(r.fx, 4)} ${M.currency} per ${S.base}. Half sold after ${fmtDays(r.t50)} days, 90 % after ${fmtDays(r.t90)}, all after ${fmtDays(r.t100)}${own ? ` (with the Liquidity profile tab's assumptions: ${fmtDays(g.t50)}, ${fmtDays(g.t90)} and ${fmtDays(g.t100)} days)` : ''}.</p>`;
   if (r.split) h += `<p class="note" style="margin-top:.5rem">US Treasuries: ${fmt(P.otr, 1)} % of each group is treated as on-the-run and sells against on-the-run turnover; the rest sells against off-the-run turnover. Days to sell is the slower of the two parts and pace is the effective pace (holding ÷ days).</p>`;
   $('#pt-' + TAB[m]).innerHTML = h;
 }
@@ -1009,7 +1009,7 @@ function tabUpdate() {
 function tabNotes() {
   $('#methodNotes').innerHTML = $('#methodBody').innerHTML;
   let h = `<thead><tr><th>Market</th><th>Dealer-to-customer</th><th>D2C incl. on-the-run (US)</th><th>Dealer-to-dealer</th><th>Total</th></tr></thead><tbody>`;
-  for (const m of MK) { const s = D.markets[m].segments; h += `<tr><td>${esc(D.markets[m].name)}</td>${['d2c_base', 'd2c_all', 'd2d', 'total'].map(k => `<td style="text-align:left;white-space:normal;font-size:.85rem"><b>${esc(s[k].label)}</b><br>${esc(s[k].note)}</td>`).join('')}</tr>`; }
+  for (const m of MK) { const s = D.markets[m].segments; const plain = t => esc(t).replace(/d2c_base = d2c_all/g, 'no on-the-run split').replace(/same as d2c_base/g, 'same as dealer-to-customer').replace(/d2c_all/g, 'D2C all issues').replace(/d2c_base/g, 'D2C'); h += `<tr><td>${esc(D.markets[m].name)}</td>${['d2c_base', 'd2c_all', 'd2d', 'total'].map(k => `<td style="text-align:left;white-space:normal;font-size:.85rem"><b>${esc(s[k].label)}</b><br>${plain(s[k].note)}</td>`).join('')}</tr>`; }
   $('#segTable').innerHTML = h + '</tbody>';
   h = `<thead><tr><th>Market</th><th>Source</th><th>Counting</th><th>Maturity basis</th><th>Groups</th><th>Window</th></tr></thead><tbody>`;
   for (const m of MK) { const M = D.markets[m]; h += `<tr><td>${esc(M.name)}</td><td style="text-align:left;white-space:normal"><a href="${esc(M.source_url)}" target="_blank" rel="noopener">${esc(M.source)}</a>${M.ccdc ? `<br>Whole-market total: <a href="${esc(M.ccdc.source_url)}" target="_blank" rel="noopener">${esc(M.ccdc.source)}</a> (downloaded by hand)` : ''}${M.origin ? `<br><span style="color:var(--muted);font-size:.85em">${esc(M.origin)}</span>` : ''}</td><td style="text-align:left;white-space:normal">${esc(M.counting)}</td><td style="text-align:left;white-space:normal">${esc(M.maturity_basis)}</td><td style="text-align:left;white-space:normal">${M.groups.join(', ')}</td><td>${esc(M.window.label)}</td></tr>`; }
@@ -1057,7 +1057,7 @@ buildTabs(); buildSide(); update(); showTab(current());
 $('#btnCsv').addEventListener('click', downloadCsv);
 $('#grTable').addEventListener('click', e => { const b = e.target.closest('[data-grm]'); if (b) { S.grm = b.dataset.grm; update(); } });
 window.addEventListener('hashchange', () => showTab(current()));
-$('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Notes tab; nothing on this page is investment advice.`;
+$('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Methods & sources tab; nothing on this page is investment advice.`;
 </script>
 </body>
 </html>
