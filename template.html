@@ -41,9 +41,9 @@ p { margin: 0 0 .7rem; max-width: 72ch; }
 code, .mono { font-family: var(--mono); font-size: .9em; }
 nav { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
 nav .in { display: flex; align-items: center; gap: .6rem; max-width: 1500px; margin: 0 auto; padding: .45rem max(16px, env(safe-area-inset-right, 0px)) .45rem max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
-nav .brand { font-weight: 600; margin-right: .6rem; white-space: nowrap; }
-nav .tabs { display: flex; gap: .35rem; flex-wrap: wrap; flex: 1; }
-nav .tabs a { padding: .42rem .85rem; border-radius: 999px; color: var(--fg); font-weight: 500; font-size: .95rem; white-space: nowrap; border: 1px solid var(--line); background: var(--card2); }
+nav .brand { font-weight: 600; margin-right: .4rem; white-space: nowrap; font-size: .95rem; }
+nav .tabs { display: flex; gap: .28rem; flex-wrap: wrap; flex: 1; }
+nav .tabs a { padding: .36rem .7rem; border-radius: 999px; color: var(--fg); font-weight: 500; font-size: .9rem; white-space: nowrap; border: 1px solid var(--line); background: var(--card2); }
 nav .tabs a:hover { background: var(--accent-soft); border-color: var(--accent); text-decoration: none; color: var(--fg); }
 nav .tabs a.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 nav .tabs a.on .sw { outline: 1.5px solid #fff; }
@@ -65,6 +65,8 @@ section.pane > .block:first-child { margin-top: 0; }
 @media (max-width: 700px) { .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); } }
 .plot { width: 100%; height: 320px; }
 .plot.tall { height: 400px; }
+.tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; margin-bottom: -.2rem; }
+.tools .note { font-size: .82rem; margin: 0; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .8rem; margin: .8rem 0 1rem; }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .7rem .9rem; box-shadow: var(--shadow); min-width: 0; }
 .tile .k { font-size: .78rem; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; }
@@ -186,11 +188,12 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <section class="pane" id="pane-main">
   <div class="block">
     <h1>Liquidity profile of a multi-currency government bond holding</h1>
-    <p class="lede">Average daily turnover in six government bond markets, split where the sources allow it into dealer-to-customer and dealer-to-dealer volume, and the time it would take to sell a holding of a given size and currency mix at a chosen share of that turnover. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers.</p>
+    <p class="lede">How long it would take to sell a government bond portfolio of a given size and currency mix at a chosen share of each market's daily turnover, and how much cash that raises by horizon. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers and can carry its own selling assumptions.</p>
   </div>
   <div class="mainwrap">
     <aside class="side" id="side"></aside>
     <div class="content">
+      <div class="tools"><span class="note" id="toolNote"></span><button class="btn" id="btnCsv" type="button">Download these results (CSV)</button></div>
       <div class="tiles" id="mainTiles"></div>
       <div class="grid2">
         <div class="card"><h3>Cumulative share sold</h3><div class="sub" id="cvSub"></div><div class="plot tall" id="cvChart"></div></div>
@@ -200,6 +203,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
         <div class="card"><h3>Average daily turnover by market</h3><div class="sub" id="advSub"></div><div class="plot" id="advChart"></div></div>
         <div class="card"><h3>Holding as days of turnover</h3><div class="sub">Holding divided by the daily turnover of its liquidity group, before any participation assumption</div><div class="plot" id="covChart"></div></div>
       </div>
+      <div class="card" style="margin-top:1rem"><h3>Cash raised by horizon</h3><div class="sub" id="hzSub"></div><div id="hzTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Markets</h3><div class="sub" id="mtSub"></div><div id="mtTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Holdings and turnover by maturity bucket</h3><div class="sub">Local currency bn. Columns are the holding's maturity buckets. A cell that spans several buckets is one turnover pool: the source splits turnover no finer, so the holding in those buckets is sold against the pool together.</div><div id="grTable"></div></div>
       <details class="card method" style="margin-top:1rem"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand; the full method is on the Methods &amp; sources tab)</span></summary><div id="methodBody">
@@ -560,6 +564,14 @@ function drawMain() {
   h += `<tr class="tot"><td>Combined${AM.length < MK.length ? ' (included markets)' : ''}</td><td class="num">100 %</td><td class="num">${fmt(sz, 1)}</td><td></td><td class="num">${fmt(AM.reduce((s, m) => s + (R.markets[m].advD2c || 0) / R.markets[m].fx, 0) / 1000, 1)}</td><td class="num">${fmt(AM.reduce((s, m) => s + (R.markets[m].advD2d || 0) / R.markets[m].fx, 0) / 1000, 1)}</td><td></td><td></td><td></td><td class="num">${fmtDays(R.t50)}</td><td class="num">${fmtDays(R.t100)}</td></tr></tbody></table>
   <p class="note" style="margin-top:.5rem">* US D2C is off-the-run dealer-to-customer volume, the pool a holding of seasoned Treasuries sells into; on-the-run D2C (${R.markets.USD && R.markets.USD.advD2cOn ? fmt(R.markets.USD.advD2cOn / 1000, 0) : '–'} USD bn per day) is used only for the on-the-run share of the holding. Combined turnover columns are sums in ${bc}; D2D and total are shown as reported and are not comparable across markets (see each market's counting convention). CNY has no interdealer figure; its total is whole-market interbank CGB settlement (CCDC), not foreign-investor turnover.</p>`;
   $('#mtTable').innerHTML = h;
+  // cash raised by horizon, base currency
+  const HZ = [[1, '1 day'], [2, '2 days'], [5, '1 week'], [10, '2 weeks'], [20, '1 month'], [60, '3 months']];
+  $('#hzSub').textContent = `${bc} bn raised by selling every included market in parallel at ${S.part} % of ${segLab}${S.haircut ? ` after a ${S.haircut} % haircut` : ''}, and the share of each holding that represents. Horizons in trading days (5 = one week, 20 = one month).`;
+  h = `<table class="tbl"><thead><tr><th>Market</th><th>Holding, ${bc} bn</th>${HZ.map(([d, l]) => `<th>${l}<br><span style="font-weight:400">${d} d</span></th>`).join('')}</tr></thead><tbody>`;
+  const cell = (v, H) => H > 0 ? `<td class="num">${fmt(v, 1)}<span class="gl">${fmt(100 * v / H, 0)} %</span></td>` : '<td class="num">–</td>';
+  for (const m of AM) { const r = R.markets[m]; const Hb = r.holdBase / 1000; h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || D.markets[m].name)}</td><td class="num">${fmt(Hb, 1)}</td>${HZ.map(([d]) => cell(r.curve(d) / r.fx / 1000, Hb)).join('')}</tr>`; }
+  h += `<tr class="tot"><td>Combined</td><td class="num">${fmt(sz, 1)}</td>${HZ.map(([d]) => cell(R.curve(d) / 1000, sz)).join('')}</tr></tbody></table>`;
+  $('#hzTable').innerHTML = h;
   // bucket matrix: markets x maturity buckets, pooled buckets merged into one cell; one figure at a time
   const GRM = {
     days: ['Days to sell', x => fmtDays(x.days), r => fmtDays(r.t100)],
@@ -586,13 +598,56 @@ function drawMain() {
   $('#grTable').innerHTML = h;
 }
 
+/* ---------- CSV export of the current profile ---------- */
+function csvCell(v) { const t = String(v ?? ''); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }
+function downloadCsv() {
+  const rows = [], add = (...r) => rows.push(r.map(csvCell).join(','));
+  const num = (v, d = 3) => v == null || !isFinite(v) ? '' : +v.toFixed(d);
+  const days = v => v == null ? '' : !isFinite(v) ? 'never' : +v.toFixed(2);
+  const AM = R.active, segLab = SEGS[S.seg].label;
+  add('Government bond liquidity profile', 'https://bond-liquidity.jskjeltorp.workers.dev');
+  add('Generated', new Date().toISOString().slice(0, 16).replace('T', ' '), 'Pipeline run', D.generated, 'ECB rates', D.fx.date);
+  add('');
+  add('Inputs');
+  add('Base currency', S.base); add('Portfolio size, bn', S.size); add('Participation, % of daily turnover', S.part); add('Turnover haircut, %', S.haircut);
+  add('Turnover segment', segLab); add('US on-the-run share of holding, %', S.otr); add('Maturity distribution applied', S.matOn ? 'yes' : 'no'); if (S.matOn) add('Maturity limit, years', S.matMax);
+  add('Market', 'Included', 'Allocation input, %', 'Share used, %', ...(S.matOn ? B.map(b => 'Weight ' + b + ', %') : []));
+  for (const m of MK) add(D.markets[m].name, S.on[m] ? 'yes' : 'no', S.alloc[m], num(100 * R.markets[m].share, 2), ...(S.matOn ? S.mat[m].map(x => x == null ? '' : x) : []));
+  add('');
+  add('Markets', 'Local currency bn per day; days at the chosen participation rate');
+  add('Market', 'Currency', 'Local per ' + S.base, 'Holding, ' + S.base + ' bn', 'Holding, local bn', 'D2C turnover (US: off-the-run)', 'D2D', 'Total', 'Holding / D2C, days', 'Half sold, days', '90 % sold, days', 'Fully sold, days', 'Own assumptions on market tab');
+  for (const m of AM) { const r = R.markets[m], M = D.markets[m]; add(M.name, M.currency, num(r.fx, 6), num(r.holdBase / 1000), num(r.holdLocal / 1000), num(r.advD2c / 1000), num(r.advD2d == null ? null : r.advD2d / 1000), num(r.advTot == null ? null : r.advTot / 1000), days(r.advD2c ? r.holdLocal / r.advD2c : null), days(r.t50), days(r.t90), days(r.t100), ownParams(m) ? 'yes (not used here)' : 'no'); }
+  add('Combined', S.base, '', num(S.size), '', '', '', '', '', days(R.t50), days(R.t90), days(R.t100), '');
+  add('');
+  add('Cash raised by horizon', S.base + ' bn');
+  const HZ = [1, 2, 5, 10, 20, 60];
+  add('Market', 'Holding', ...HZ.map(d => d + ' days'));
+  for (const m of AM) { const r = R.markets[m]; add(D.markets[m].name, num(r.holdBase / 1000), ...HZ.map(d => num(r.curve(d) / r.fx / 1000))); }
+  add('Combined', num(S.size), ...HZ.map(d => num(R.curve(d) / 1000)));
+  add('');
+  add('By liquidity group', 'local currency bn');
+  add('Market', 'Group', 'Buckets', 'Holding', 'Turnover (' + segLab + ')', 'Pace per day', 'Holding / turnover, days', 'Days to sell');
+  for (const m of AM) { const M = D.markets[m]; for (const x of R.markets[m].groups) add(M.name, x.g === 'all' ? 'all maturities' : x.g, x.g === 'all' ? B.join(' ') : B.filter(b => M.group_map[b] === x.g).join(' '), num(x.H / 1000), num(x.A == null ? null : x.A / 1000), num(x.cap == null ? null : x.cap / 1000), days(x.daysAdv), days(x.days)); }
+  add('');
+  add('Cumulative share sold, % of holding', 'trading day');
+  const Hn = Math.max(5, Math.ceil((isFinite(R.t100) ? R.t100 : 60) * 1.2));
+  add('Day', ...AM.map(m => D.markets[m].name), 'Combined');
+  for (let t = 0; t <= Hn; t++) add(t, ...AM.map(m => R.markets[m].holdLocal > 0 ? num(100 * R.markets[m].curve(t) / R.markets[m].holdLocal, 2) : ''), num(100 * R.curve(t) / R.sizeMn, 2));
+  const blob = new Blob(['\ufeff' + rows.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bond_liquidity_profile_${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
 /* ---------- market tabs ---------- */
+function srcLine(m) {
+  const M = D.markets[m];
+  return `<p class="note" style="margin-bottom:.7rem"><b>Source:</b> <a href="${esc(M.source_url)}" target="_blank" rel="noopener">${esc(M.source)}</a>${M.ccdc ? `; whole-market total from the <a href="${esc(M.ccdc.source_url)}" target="_blank" rel="noopener">${esc(M.ccdc.source)}</a>, downloaded by hand` : ''}. <b>Counting:</b> ${esc(M.counting)}. <b>Maturity basis:</b> ${esc(M.maturity_basis)}; liquidity groups ${M.groups.join(', ')}. <b>Window:</b> ${esc(M.window.label)}.${M.origin ? ` <b>Origin:</b> ${esc(M.origin)}.` : ''}</p>`;
+}
 function marketHead(m) {
   const M = D.markets[m];
   const prov = M.provisional ? `<div class="callout"><b>Provisional figures.</b> ${esc(M.origin)}. The DMO publishes quarterly turnover by maturity band and counterparty type as spreadsheets behind a bot check; put <code>gemm-turnover-by-maturity-band-*.xlsx</code>, <code>all-gemms-turnover-*.xls</code> and <code>annual-turnover-report-*.xls</code> in <code>rawData/dmo_gilts</code> and rebuild to replace this block with the full quarterly series.</div>` : '';
   return `<div class="block"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
   <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div>${prov}
-  <div class="tiles" id="tiles-${TAB[m]}"></div></div>`;
+  <div class="tiles" id="tiles-${TAB[m]}"></div><div class="callout info" id="pfm-${TAB[m]}" style="margin-top:0"></div></div>`;
 }
 function marketTiles(m) {
   const M = D.markets[m], a = M.window_adv, s = g => Object.values(g).every(v => v != null) ? Object.values(g).reduce((x, y) => x + y, 0) : null;
@@ -682,6 +737,10 @@ function drawMarketProfile(m) {
   fillOv(m);
   const M = D.markets[m], g = R.markets[m], own = ownParams(m);
   const r = own ? calcMarket(m, g.share, params(m)) : g, P = r.P, segLab = SEGS[P.seg].label.toLowerCase();
+  const pfm = $('#pfm-' + TAB[m]);
+  if (pfm) pfm.innerHTML = S.on[m]
+    ? `<b>In the liquidity profile:</b> holding ${fmt(r.holdLocal / 1000, 1)} ${M.currency} bn (${fmt(r.holdBase / 1000, 1)} ${S.base} bn, ${fmt(100 * r.share, 1)} % of the portfolio). At ${P.part} % of ${segLab}${P.haircut ? ` with a ${P.haircut} % haircut` : ''}: half sold in ${fmtDays(r.t50)} days, all in ${fmtDays(r.t100)} days${own ? ' (own assumptions for this tab)' : ''}. <a href="#${TAB[m]}" onclick="document.getElementById('ov-${TAB[m]}').scrollIntoView({behavior:'smooth'}); return false;">Details below</a>.`
+    : `<b>Switched off on the Liquidity profile tab</b>, so this market carries no holding. Tick it in the side panel there to include it.`;
   const pn = $('#pn-' + TAB[m]); if (pn) pn.innerHTML = S.on[m] ? `The holding is linked to the Profile tab: portfolio size × allocation share at ECB rates. The selling assumptions below can be set for this market alone; the Profile tab keeps its own.` : `<b>This market is switched off on the Profile tab</b>, so it carries no holding here. Tick it in the Profile side panel to include it.`;
   let H = horizon(); if (S.horizon <= 0 && isFinite(r.t100)) H = Math.max(H, Math.min(500, Math.ceil(r.t100 * 1.3 / 5) * 5));
   const n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
@@ -711,7 +770,7 @@ function tabUSD() {
   <div class="card"><h3>TRACE buckets</h3><div class="sub">Dealer-to-customer, off- and on-the-run, and ATS/interdealer</div><div class="plot" id="us-tb"></div></div></div></div>
   <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Off-the-run dealer-to-customer volume is the conservative measure because an investor selling seasoned bonds competes for that liquidity; on-the-run volume is dominated by hedging and relative-value flow in the current issues.</li>
   <li>Strips are included in off-the-run nominal coupon volume by FINRA.</li>
   <li>TRACE covers FINRA members' trades; trades between two non-members (for example bank dealers that are not broker-dealers) are not captured, and the ATS category includes both interdealer and some customer-facing platforms as FINRA classifies them.</li>
@@ -751,7 +810,7 @@ function tabGBP() {
   ${full ? `<div class="card"><h3>DMO maturity bands</h3><div class="sub">Customer and professional</div><div class="plot" id="gb-bands"></div></div>` : `<div class="card"><h3>Annual turnover by segment</h3><div id="gb-ann"></div></div>`}</div></div>
   <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>GEMM-reported turnover covers the market makers only; it is not the whole gilt market, though it should be most of it.</li>
   <li>Professional turnover is not adjusted for double counting through IDBs, so the D2D and total figures are upper bounds.</li>
   ${full ? '<li>Index-linked gilts and strips are excluded from the liquidity groups.</li>' : `<li>The customer share of ${fmt(100 * M.customer_share, 0)} % is read by eye from the weekly chart in the Quarterly Review April-June 2026 and applied uniformly to all maturities; the proper split by band is in the DMO spreadsheet.</li><li>The three segments (0-7y, 7-15y, 15y+) are coarser than the common buckets: holdings in the 10y+ bucket are matched with the 15y+ pool, which is conservative for 10-15 year bonds.</li>`}</ul></div></div>`;
@@ -805,7 +864,7 @@ function tabDE() {
   <div class="card"><h3>Instrument detail</h3><div id="de-tab"></div></div></div></div>
   <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>The reporting banks are a subset of the auction group, so the level is a lower bound for the whole Bund market.</li>
   <li>The counterparty mix is published for all instruments together; the ${fmt(100 * M.broker_share, 0)} % broker share of ${M.year} is applied to every instrument.</li>
   <li>Instruments are classified by original maturity: a seasoned 10-year Bund stays in the 5-10y group however short its remaining life.</li>
@@ -836,7 +895,7 @@ function tabFR() {
   <div class="block"><div class="grid2"><div class="card"><h3>Bund 0-10y level and the scaled OAT level</h3><div class="sub">EUR bn per trading day, ${DE.year}</div><div class="plot" id="fr-cmp"></div></div>
   <div class="card"><h3>Figures used in the profile</h3>${groupTable(m)}</div></div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>One liquidity group covers all maturities, so the holding's maturity weights do not affect the French result.</li>
   <li>The counterparty split is inherited from the Bund data and says nothing about the OAT market's own interdealer share.</li>
   <li>The single group is meant to cover the benchmark universe up to 10 years; a holding concentrated in long OATs is overstated in liquidity.</li>
@@ -861,7 +920,7 @@ function tabJPY() {
   <div class="card"><h3>Who trades JGBs</h3><div class="sub">Average monthly outright volume by investor category, JPY trn, ${esc(M.window.label)}</div><div class="plot" id="jp-inv"></div></div></div></div>
   <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Classes are by original maturity: a 10-year JGB with two years left is still "long" (5-10y group).</li>
   <li>Face value, not market value; for super-long JGBs trading well below par the cash turnover is lower than shown.</li>
   <li>"Bond Dealers" is the JSDA category for member-to-member trades; the halving assumes both sides are members, which is the definition of the category.</li>
@@ -903,7 +962,7 @@ function tabCNY() {
   <div><h3>Foreign investors</h3><div class="sub">CCDC settlement by foreign investors (all CCDC bonds, own side) and the all-foreign CGB estimate from Bond Connect, RMB bn per day</div><div class="plot" id="cn-fo"></div></div></div>
   <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Trading days</th><th>CGB settlement, bn</th><th>CGB bn/day</th><th>All CCDC bonds bn/day</th><th>CGB share</th><th>Foreign investors bn/day</th><th>Foreign share</th></tr></thead><tbody>${C.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${r.trading_days}</td><td class="num">${fmt(r.cgb_mn / 1000, 0)}</td><td class="num">${fmt(r.cgb_adv_mn / 1000, 1)}</td><td class="num">${fmt(r.all_adv_mn / 1000, 0)}</td><td class="num">${fmt(100 * r.cgb_share, 0)} %</td><td class="num">${r.foreign_adv_mn == null ? '–' : fmt(r.foreign_adv_mn / 1000, 1)}</td><td class="num">${r.foreign_share == null ? '–' : fmt(100 * r.foreign_share, 1) + ' %'}</td></tr>`).join('')}</tbody></table></div>`)(M.ccdc) : ''}</div>` : ''}
   ${profileBlock(m)}
-  <div class="block"><h2>Caveats</h2><div class="card"><ul class="caveats">
+  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Bond Connect turnover is foreign investors' trades with onshore market makers: a dealer-to-customer measure for one investor class only. The onshore interbank market is many times larger (see the CCDC figure above), but its CGB cash turnover by counterparty type is not published, only by investor type on each side.</li>
   <li>No maturity split is published, so the holding's maturity weights do not affect the Chinese result.</li>
   <li>The Bond Connect share of foreign turnover (${M.bondconnect_share}) is a single HKMA statement and moves over time.</li>
@@ -995,6 +1054,7 @@ try { const t = localStorage.getItem('bondliq.theme'); document.documentElement.
 $('#themeBtn').addEventListener('click', () => { setTheme(isDark() ? 'light' : 'dark'); redrawAll(); });
 $('#themeBtn').textContent = isDark() ? 'Light' : 'Dark';
 buildTabs(); buildSide(); update(); showTab(current());
+$('#btnCsv').addEventListener('click', downloadCsv);
 $('#grTable').addEventListener('click', e => { const b = e.target.closest('[data-grm]'); if (b) { S.grm = b.dataset.grm; update(); } });
 window.addEventListener('hashchange', () => showTab(current()));
 $('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Notes tab; nothing on this page is investment advice.`;

@@ -5,9 +5,8 @@ dealer-to-customer (D2C) and dealer-to-dealer (D2D) volume, and the liquidity pr
 multi-currency holding: how many trading days it takes to sell a holding of a given size,
 currency allocation and maturity mix at a chosen participation rate.
 
-The data logic is a Python port of the R scripts in `R/` (`main_liquidity.R` and the five
-source scripts); segment definitions, counting conventions, liquidity groups and windows are
-theirs.
+Segment definitions, counting conventions, liquidity groups and averaging windows follow each
+source's own reporting; see the Methods & sources tab of the page.
 
 ## Layout
 
@@ -77,18 +76,20 @@ total segment falls back to CNY_MARKET_CGB_ADV_BN. Files present as of 3 Nov 202
 
 | Tab | Hash | Content |
 |---|---|---|
-| Profile | `#main` | Inputs (base currency, size, on/off switch and allocation per market, participation rate, haircut, segment: dealer-to-customer or total, US on-the-run share of the holding (default 0.5 %), optional maturity distribution: off by default, when on the weights default to the market's outstanding stock by remaining maturity, with a maturity limit), cumulative-sale curves, days to sell, turnover comparison in the base currency, holdings vs turnover by liquidity group; each market tab has an optional panel with its own selling assumptions (participation, haircut, segment, on-the-run share, maturity limit and weights) for that market alone, holding still linked to the Profile tab |
+| Liquidity profile | `#main` | Inputs (base currency, size, on/off switch and allocation per market, participation rate, haircut, segment: dealer-to-customer or total, US on-the-run share of the holding (default 0.5 %), optional maturity distribution: off by default, when on the weights default to the market's outstanding stock by remaining maturity, with a maturity limit), cumulative-sale curves, days to sell, turnover comparison in the base currency, holdings vs turnover by liquidity group; each market tab has an optional panel with its own selling assumptions (participation, haircut, segment, on-the-run share, maturity limit and weights) for that market alone, holding still linked to the Profile tab |
 | US Treasuries | `#usd` | TRACE by venue over time, by security type, by remaining maturity with on/off-the-run split |
 | UK gilts | `#gbp` | DMO customer vs professional by quarter and band (annual fallback if the files are missing) |
 | German Bunds | `#de` | Finanzagentur volumes by instrument and counterparty, implied daily turnover |
 | French OATs | `#fr` | Scaled Bund level (EUR_FR_SCALE), shown against an independent 2025 reference of about EUR 24 bn/day gross (FR_REFERENCE_TOTAL_MN) and the ratio it implies |
 | JGBs | `#jpy` | JSDA customer vs Bond Dealers by month, by original-maturity class, investor categories |
-| Update | `#update` | Status of every dataset (latest data point, when the raw files were written, next expected publication), the step guide for the four hand-downloaded files, and the commands that run an update. The page is static, so it cannot run the pipeline or accept uploads itself; a runner (e.g. GitHub Actions behind a Worker endpoint) would be needed for that |
 | CGBs | `#cny` | Bond Connect average daily turnover and CGB share by month; whole-market interbank CGB cash settlement from the CCDC monthly statistics (`rawData/ccdc_cgb`, 12-month window average, 409 bn/day for Oct 2025 to Sep 2026) fills the total segment only; the user's earlier estimate (CNY_MARKET_CGB_ADV_BN = 415) is shown as a reference and used only if the files are missing |
-| Notes & sources | `#notes` | Segment definitions, counting conventions, pipeline settings, exchange rates, what is not in the data |
+| Methods & sources | `#notes` | How the profile is computed, turnover segments, sources and counting conventions, outstanding stock by maturity, what is not in the data, exchange rates, Excel downloads |
+| Update data | `#update` | Status of every dataset (latest data point, when the raw files were written, next expected publication), the step guide for the four hand-downloaded files, the commands that run an update, and (collapsed) the pipeline settings. The page is static, so it cannot run the pipeline or accept uploads itself; a runner (e.g. GitHub Actions behind a Worker endpoint) would be needed for that |
 
-Every market tab ends with that market's share of the liquidity profile (holding by group,
-days to sell) driven by the main tab's inputs. Inputs persist in the browser (localStorage).
+Every market tab shows that market's share of the liquidity profile (holding by group, days to
+sell) driven by the Liquidity profile tab's inputs, optionally with its own selling assumptions,
+and ends with its sources and caveats. The Liquidity profile tab can download the current
+results as CSV. Inputs persist in the browser (localStorage).
 
 ## Method
 
