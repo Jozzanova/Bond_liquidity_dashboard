@@ -1,4 +1,4 @@
-"""JSDA OTC bond trading volume (JPY, JGBs). Port of jpy_jsda_turnover.R.
+"""JSDA OTC bond trading volume (JPY, JGBs).
 
 Source: https://www.jsda.or.jp/shiryoshitsu/toukei/tentoubaibai/koushasai.xlsx (current FY)
         https://www.jsda.or.jp/shiryoshitsu/toukei/tentoubaibai/koushasaiYYYY.xlsx (FY YYYY)

@@ -1,5 +1,5 @@
 """Deutsche Finanzagentur annual trading volumes (EUR, Bunds) and the scaled
-French OAT level. Port of eur_bund_turnover.R.
+French OAT level.
 
 Source: https://www.deutsche-finanzagentur.de/en/federal-securities/trading/secondary-market/trading-volumes/year
 Gross = sales plus purchases reported by a representative subset of Bund Issues

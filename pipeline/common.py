@@ -1,6 +1,6 @@
 """Shared settings and helpers for the bond liquidity pipeline.
 
-Port of the input block of main_liquidity.R. Every number that is an
+Every number that is an
 assumption rather than data is set here and carried into data/liquidity.json
 so the page can show it.
 """

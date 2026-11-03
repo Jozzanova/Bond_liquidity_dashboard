@@ -1,4 +1,4 @@
-"""UK DMO gilt turnover reported by GEMMs (GBP). Port of dmo_gilt_turnover.R.
+"""UK DMO gilt turnover reported by GEMMs (GBP).
 
 Source: https://www.dmo.gov.uk/data/gilt-market/turnover-data (the site sits
 behind a bot check, so the three files are downloaded by hand into

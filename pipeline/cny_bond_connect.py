@@ -1,4 +1,4 @@
-"""Bond Connect monthly Flash Reports (CNY, CGBs). Port of cny_bond_connect.R.
+"""Bond Connect monthly Flash Reports (CNY, CGBs).
 
 Source: https://www.chinabondconnect.com/en/Resource/Flash-Report.html
 Each report states Northbound monthly trading volume (RMB bn), average daily

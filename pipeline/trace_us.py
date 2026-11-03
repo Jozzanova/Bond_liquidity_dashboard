@@ -1,4 +1,4 @@
-"""FINRA TRACE Treasury monthly aggregates (USD). Port of trace_treasury_aggregates.R.
+"""FINRA TRACE Treasury monthly aggregates (USD).
 
 Source: https://cdn.finra.org/trace/treasury-aggregates/monthly/ts-monthly-aggregates-YYYY-MM.xlsx
 Par value in USD bn for the month, single-counted per trade. Venues: "ATS &
