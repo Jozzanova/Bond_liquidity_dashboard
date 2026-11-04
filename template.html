@@ -123,7 +123,9 @@ ul.caveats li { margin-bottom: .25rem; }
 .itbl input { font-family: var(--mono); font-size: .78rem; width: 3.3rem; padding: .12rem .25rem; -moz-appearance: textfield; appearance: textfield; border: 1px solid var(--line); border-radius: 5px; background: var(--card2); color: var(--fg); text-align: right; }
 .itbl input::-webkit-outer-spin-button, .itbl input::-webkit-inner-spin-button, .mats input::-webkit-outer-spin-button, .mats input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .mats input[type=number] { -moz-appearance: textfield; appearance: textfield; }
-.itbl input.cut, .mats input.cut { opacity: .35; text-decoration: line-through; }
+.itbl input.cut, .mats input.cut, .itbl span.ro.cut { opacity: .35; text-decoration: line-through; }
+.itbl span.ro { font-family: var(--mono); font-size: .8rem; display: inline-block; padding: .12rem .25rem; }
+.itbl span.ro.part { color: var(--warn); }
 .itbl input.part, .mats input.part { border-style: dashed; border-color: var(--warn); }
 .ovtop { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; align-items: center; margin-bottom: .7rem; font-size: .92rem; }
 .ovtop label { cursor: pointer; } .ovtop input { accent-color: var(--accent); }
@@ -158,7 +160,6 @@ label.chk input { accent-color: var(--accent); margin: 0; }
 .itbl.mk td:nth-child(2) { text-align: left; white-space: nowrap; }
 .itbl input[type=checkbox] { width: auto; margin: 0; accent-color: var(--accent); vertical-align: middle; cursor: pointer; }
 .itbl tr.off td:not(:first-child), .tbl tr.off td { opacity: .45; }
-details.mw { margin-top: .4rem; }
 .chartctl { position: absolute; top: .7rem; right: .9rem; display: flex; gap: .2rem; z-index: 2; }
 .chartctl button { font: inherit; font-size: .7rem; line-height: 1.3; padding: .05rem .45rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card2); color: var(--muted); cursor: pointer; }
 .chartctl button.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
@@ -168,7 +169,6 @@ details.sec summary h3 { margin: 0; }
 details.sec summary h3::before { content: "▸ "; color: var(--accent); }
 details.sec[open] summary h3::before { content: "▾ "; }
 details.sec { margin-top: .9rem; }
-details.mw summary { cursor: pointer; color: var(--accent); font-size: .9rem; margin-bottom: .3rem; }
 .btns { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
 .btn { border: 1px solid var(--line); background: var(--card2); color: var(--fg); border-radius: 6px; padding: .25rem .6rem; cursor: pointer; font: inherit; font-size: .82rem; }
 .btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -406,7 +406,7 @@ const SEGS = {
 const MATD = (D.maturity && D.maturity.markets) || {};
 const SEGADV = {d2c: 'd2c_all', total: 'total'};   // window_adv key per segment (d2c_all = d2c_off + d2c_on for USD, = customer turnover elsewhere)
 const DEF = {
-  base: 'NOK', size: 500, part: 3, haircut: 0, seg: 'd2c', horizon: 0, otr: 0.5, matOn: false, matMax: 10, grm: 'days', ov: {}, cmpB: {on: false, part: 1, haircut: 50, seg: 'd2c', otr: null},
+  base: 'NOK', size: 500, part: 3, haircut: 0, seg: 'd2c', horizon: 0, otr: 0.5, matOn: false, matMax: 10, grm: 'days', ov: {}, matMode: 'market', tpl: [20, 20, 20, 20, 20], cmpB: {on: false, part: 1, haircut: 50, seg: 'd2c', otr: null},
   on: Object.fromEntries(MK.map(m => [m, true])),
   alloc: {USD: 50, GBP: 7, 'EUR-DE': 18, 'EUR-FR': 16, JPY: 7, CNY: 2},
   // default maturity weights: the market's outstanding stock by remaining maturity (pipeline/maturity.py); null where no source
@@ -414,7 +414,7 @@ const DEF = {
 };
 const matKnown = m => !!(MATD[m] && MATD[m].available);
 let S = JSON.parse(JSON.stringify(DEF));
-try { const s = localStorage.getItem('bondliq.inputs.v3'); if (s) { const o = JSON.parse(s); S = Object.assign(S, o); S.on = Object.assign({}, DEF.on, o.on || {}); S.ov = Object.assign({}, o.ov || {}); S.alloc = Object.assign({}, DEF.alloc, o.alloc || {}); S.mat = Object.assign({}, DEF.mat, o.mat || {}); S.cmpB = Object.assign({}, DEF.cmpB, o.cmpB || {}); } } catch (e) {}
+try { const s = localStorage.getItem('bondliq.inputs.v3'); if (s) { const o = JSON.parse(s); S = Object.assign(S, o); S.on = Object.assign({}, DEF.on, o.on || {}); S.ov = Object.assign({}, o.ov || {}); S.alloc = Object.assign({}, DEF.alloc, o.alloc || {}); S.mat = Object.assign({}, DEF.mat, o.mat || {}); S.cmpB = Object.assign({}, DEF.cmpB, o.cmpB || {}); if (!['market', 'template', 'custom'].includes(S.matMode)) S.matMode = 'market'; if (!Array.isArray(S.tpl) || S.tpl.length !== 5) S.tpl = DEF.tpl.slice(); } } catch (e) {}
 if (!SEGS[S.seg]) S.seg = DEF.seg;
 for (const m of MK) if (!S.ov[m]) S.ov[m] = Object.assign({on: true, part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: !!(DEF.mat[m] && DEF.mat[m].every(x => x != null)), matMax: S.matMax, mat: DEF.mat[m].slice()});
 function save() { try { localStorage.setItem('bondliq.inputs.v3', JSON.stringify(S)); } catch (e) {} }
@@ -426,7 +426,8 @@ function cmpParams(m) { const b = S.cmpB; return Object.assign({}, globalParams(
 function fxLocalPerBase(cur) { return D.fx.per_eur[cur] / D.fx.per_eur[S.base]; }
 const OTR_PREFIX = {d2c: 'd2c', total: 'total'};
 // selling assumptions: the Liquidity profile tab's, or a market tab's own set (S.ov[m]) when switched on there
-function globalParams(m) { return {part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: S.matOn, matMax: S.matMax, mat: S.mat[m]}; }
+function matWeights(m) { return S.matMode === 'template' ? S.tpl.slice() : S.matMode === 'custom' ? S.mat[m] : DEF.mat[m]; }
+function globalParams(m) { return {part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: S.matOn, matMax: S.matMax, mat: matWeights(m)}; }
 function ownParams(m) { const o = S.ov[m]; return !!(o && o.on); }
 function params(m) { const o = S.ov[m]; return ownParams(m) ? {part: o.part, haircut: o.haircut, seg: SEGS[o.seg] ? o.seg : 'd2c', otr: o.otr, matOn: !!o.matOn, matMax: o.matMax, mat: o.mat} : globalParams(m); }
 function calcMarket(m, share, P) {
@@ -503,7 +504,6 @@ function solveTime(items, frac) {
 
 /* ---------- side panel ---------- */
 function secOpen(k, active) { try { const v = localStorage.getItem('bondliq.sec.' + k); if (v === '1' || v === '0') return v === '1'; } catch (e) {} return !!active; }
-function mwOpen() { try { const v = localStorage.getItem('bondliq.mw'); if (v === '1' || v === '0') return v === '1'; } catch (e) {} return MK.some(m => S.mat[m].some((x, i) => (x == null ? null : +x) !== DEF.mat[m][i])); }
 function buildSide() {
   const side = $('#side');
   const curs = ['USD', 'EUR', 'GBP', 'NOK', 'JPY', 'CNY', 'SEK', 'CHF'].filter(c => D.fx.per_eur[c] != null);
@@ -539,19 +539,23 @@ function buildSide() {
   <div id="matBlock" class="${S.matOn ? '' : 'dis'}">
   <div class="row"><label for="inMax">Maturity limit, years (longest bond held)</label><input type="number" id="inMax" min="1" max="30" step="1" value="${S.matMax}"></div>
   <div class="hint">Buckets beyond the limit are dropped and the remaining weights are rescaled; a bucket the limit cuts through keeps a proportional part (10y+ counted as 10 to 30 years). 30 keeps everything.</div>
-  <details class="mw"${mwOpen() ? ' open' : ''}><summary>Maturity weights per market, % (editable)</summary>
-  <div class="hint">Share of the holding by remaining maturity, one row per market; type over any cell. Default: the market's nominal bonds outstanding by remaining maturity (sources and dates on the Methods & sources tab); the reset button below puts those back. A market with no figures (${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ') || 'none'}) is sold as one pool unless weights are typed in.</div>
-  <table class="itbl"><thead><tr><th></th>${B.map(b => `<th>${b}</th>`).join('')}</tr></thead><tbody>
-  <tr><td>Template</td>${B.map((b, i) => `<td><input type="number" data-tpl="${i}" min="0" step="0.1" value="20"></td>`).join('')}</tr>
-  ${MK.map(m => `<tr><td><span class="sw" style="background:${col(m)}"></span>${m}${matKnown(m) ? '' : '<span class="badge warn" title="no source for the outstanding stock by maturity">n/a</span>'}</td>${B.map((b, i) => `<td><input type="number" data-mat="${m}" data-i="${i}" min="0" step="0.1" value="${S.mat[m][i] == null ? '' : S.mat[m][i]}"></td>`).join('')}</tr>`).join('')}
+  <div class="row" style="margin-top:.4rem"><label>Weights</label></div>
+  <div class="segs" id="matModes">
+    <label><input type="radio" name="matMode" value="market"${S.matMode === 'market' ? ' checked' : ''}><span>Each market as its outstanding stock<small>the market-weighted split by remaining maturity (default)</small></span></label>
+    <label><input type="radio" name="matMode" value="template"${S.matMode === 'template' ? ' checked' : ''}><span>One split for all markets<small>type five weights once</small></span></label>
+    <label><input type="radio" name="matMode" value="custom"${S.matMode === 'custom' ? ' checked' : ''}><span>Own split per market<small>edit every market's row</small></span></label>
+  </div>
+  <table class="itbl" id="matTbl"><thead><tr><th></th>${B.map(b => `<th>${b}</th>`).join('')}</tr></thead><tbody>
+  ${S.matMode === 'template' ? `<tr><td>All markets</td>${B.map((b, i) => `<td><input type="number" data-tpl="${i}" min="0" step="0.1" value="${S.tpl[i]}"></td>`).join('')}</tr>` :
+    MK.map(m => `<tr><td><span class="sw" style="background:${col(m)}"></span>${m}${matKnown(m) ? '' : '<span class="badge warn" title="no source for the outstanding stock by maturity">n/a</span>'}</td>${B.map((b, i) => { const v = S.matMode === 'custom' ? S.mat[m][i] : DEF.mat[m][i]; return S.matMode === 'custom' ? `<td><input type="number" data-mat="${m}" data-i="${i}" min="0" step="0.1" value="${v == null ? '' : v}"></td>` : `<td><span class="ro" data-ro="${i}">${v == null ? '–' : fmt(v, 1)}</span></td>`; }).join('')}</tr>`).join('')}
   </tbody></table>
-  <div class="btns"><button class="btn" id="btnMkt" type="button" title="Put back each market's outstanding-stock shares">Reset to outstanding-stock shares</button><button class="btn" id="btnTpl" type="button">Apply template to all</button></div></details>
+  <div class="hint" id="matHint">${S.matMode === 'market' ? `Shares of each market's nominal bonds outstanding by remaining maturity, in % (sources and dates on the Methods &amp; sources tab).${MK.some(m => !matKnown(m)) ? ` ${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ')}: no figures, sold as one pool.` : ''} A greyed column lies beyond the maturity limit.` : S.matMode === 'template' ? 'The same five weights for every market, in %; they are rescaled to 100 after the maturity limit is applied.' : 'Weights in % per market; leave a row empty to sell that market as one pool.'}</div>
+  ${S.matMode === 'custom' ? `<div class="btns"><button class="btn" id="btnMkt" type="button">Fill in the outstanding-stock shares</button><button class="btn" id="btnTpl" type="button">Fill in ${S.tpl.map(v => fmt(v, 0)).join(' / ')}</button></div>` : ''}
   </div>
   </details>
   <div class="btns" style="margin-top:.9rem"><button class="btn" id="btnAllOn" type="button">All markets on</button><button class="btn" id="btnReset" type="button">Reset everything</button></div>`;
   side.innerHTML = h;
   const on = (sel, ev, fn) => side.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn));
-  on('details.mw', 'toggle', e => { try { localStorage.setItem('bondliq.mw', e.target.open ? '1' : '0'); } catch (x) {} });
   on('details.sec', 'toggle', e => { try { localStorage.setItem('bondliq.sec.' + e.target.dataset.sec, e.target.open ? '1' : '0'); } catch (x) {} });
   on('input[data-on]', 'change', e => { S.on[e.target.dataset.on] = e.target.checked; update(); });
   on('#btnAllOn', 'click', () => { for (const m of MK) S.on[m] = true; side.querySelectorAll('input[data-on]').forEach(i => { i.checked = true; }); update(); });
@@ -574,11 +578,13 @@ function buildSide() {
   on('[data-otr]', 'click', e => { e.preventDefault(); S.otr = +e.currentTarget.dataset.otr; $('#inOtr').value = S.otr; update(); });
   on('#inMax', 'input', e => { S.matMax = Math.min(30, Math.max(1, +e.target.value || 1)); update(); });
   on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); const b = $('#secMatBadge'); b.textContent = S.matOn ? 'on' : 'off'; b.classList.toggle('ok', S.matOn); update(); });
+  on('input[name=matMode]', 'change', e => { S.matMode = e.target.value; if (S.matMode === 'custom' && MK.every(m => S.mat[m].every((v, i) => v === DEF.mat[m][i]))) { /* start the custom rows from the stock shares */ } save(); buildSide(); update(); });
   on('#btnMkt', 'click', () => { for (const m of MK) S.mat[m] = DEF.mat[m].slice(); side.querySelectorAll('input[data-mat]').forEach(i => { const v = S.mat[i.dataset.mat][+i.dataset.i]; i.value = v == null ? '' : v; }); update(); });
   on('input[data-alloc]', 'input', e => { S.alloc[e.target.dataset.alloc] = Math.max(0, +e.target.value || 0); update(); });
   on('button[data-step]', 'click', e => { const m = e.currentTarget.dataset.step, d = +e.currentTarget.dataset.d * (e.shiftKey ? 5 : 1); S.alloc[m] = Math.max(0, Math.round(((+S.alloc[m] || 0) + d) * 10) / 10); side.querySelector(`input[data-alloc="${m}"]`).value = S.alloc[m]; update(); });
   on('input[data-mat]', 'input', e => { S.mat[e.target.dataset.mat][+e.target.dataset.i] = e.target.value === '' ? null : Math.max(0, +e.target.value || 0); update(); });
-  on('#btnTpl', 'click', () => { const t = [...side.querySelectorAll('input[data-tpl]')].map(i => Math.max(0, +i.value || 0)); for (const m of MK) { S.mat[m] = t.slice(); } side.querySelectorAll('input[data-mat]').forEach(i => { i.value = S.mat[i.dataset.mat][+i.dataset.i]; }); update(); });
+  on('#btnTpl', 'click', () => { for (const m of MK) S.mat[m] = S.tpl.slice(); side.querySelectorAll('input[data-mat]').forEach(i => { i.value = S.mat[i.dataset.mat][+i.dataset.i]; }); update(); });
+  on('input[data-tpl]', 'input', e => { S.tpl[+e.target.dataset.tpl] = Math.max(0, +e.target.value || 0); update(); });
   on('#btnReset', 'click', () => { S = JSON.parse(JSON.stringify(DEF)); initOv(); save(); buildSide(); update(); });
 }
 
@@ -591,7 +597,7 @@ function update() {
   const el = $('#allocSum'); if (el) { el.textContent = fmt(sum, 0) + ' %'; el.classList.toggle('bad', Math.abs(sum - 100) > 0.01); }
   document.querySelectorAll('#side tr[data-row]').forEach(tr => tr.classList.toggle('off', !S.on[tr.dataset.row]));
   const cov = matCov();
-  document.querySelectorAll('#side input[data-mat], #side input[data-tpl]').forEach(el => { const c = cov[+(el.dataset.i ?? el.dataset.tpl)]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); });
+  document.querySelectorAll('#side input[data-mat], #side input[data-tpl], #side span[data-ro]').forEach(el => { const c = cov[+(el.dataset.i ?? el.dataset.tpl ?? el.dataset.ro)]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); });
   drawMain();
   if (drawn.cmp) tabCmp();
   for (const m of MK) if (drawn[TAB[m]]) drawMarketProfile(m);
@@ -804,7 +810,7 @@ function downloadXlsx() {
   for (const m of MK) {
     const r = R.markets[m], on = S.on[m];
     rows.push([name(m), D.markets[m].currency, on ? 'yes' : 'no', pct(S.alloc[m] / 100), on ? pct(r.share) : null, on ? num(r.holdBase / 1000) : null, on ? num(r.holdLocal / 1000) : null,
-      ...(S.matOn ? S.mat[m].map(w => w == null ? null : pct(w / 100)) : []), ownParams(m) ? 'yes (apply to that tab only)' : 'no']);
+      ...(S.matOn ? matWeights(m).map(w => w == null ? null : pct(w / 100)) : []), ownParams(m) ? 'yes (apply to that tab only)' : 'no']);
   }
   rows.push([c('Combined', 'tb'), c(bc, 'tb'), c(AM.length + ' of ' + MK.length, 'tb'), pct(MK.reduce((a, m) => a + (+S.alloc[m] || 0), 0) / 100, 'tpct'), pct(1, 'tpct'), num(sz, 'tn1'), c('', 'tb'), ...(S.matOn ? B.map(() => c('', 'tb')) : []), c('', 'tb')]);
   sheets.push({name: 'Summary', rows, cols: [32, 14, 12, 16, 12, 16, 16, 12, 12, 12, 12, 12, 26], grid: false});
@@ -1143,7 +1149,7 @@ function profileBlock(m) {
   </div></div>
   <div class="grid2" style="margin-top:1rem"><div class="card"><h3>Cumulative share sold</h3><div class="sub" id="pfs-${t}"></div><div class="plot" id="pf-${t}"></div></div><div class="card"><h3>By liquidity group</h3><div id="pt-${t}"></div></div></div></div>`;
 }
-function newOv(m) { return Object.assign({on: true}, globalParams(m), {mat: S.mat[m].slice()}); }   // copy of the Liquidity profile tab's settings
+function newOv(m) { return Object.assign({on: true}, globalParams(m), {mat: matWeights(m).slice()}); }   // copy of the Liquidity profile tab's settings
 // default for a market tab: own assumptions on, with the market-weighted maturity distribution applied where one exists
 function defaultOv(m) { return Object.assign(newOv(m), {matOn: matKnown(m), mat: DEF.mat[m].slice()}); }
 function initOv() { for (const m of MK) if (!S.ov[m]) S.ov[m] = defaultOv(m); }
