@@ -61,10 +61,6 @@ section.pane > .block:first-child { margin-top: 0; }
 .pagehead { position: sticky; top: var(--navh, 64px); z-index: 15; background: var(--bg); padding: .15rem 0 .55rem; margin-top: 0; }
 .pagehead + .block { margin-top: .5rem; }
 .pagehead.stuck { border-bottom: 1px solid var(--line); box-shadow: 0 6px 10px -8px rgba(0,0,0,.25); }
-.pagehead.stuck h1 { font-size: 1.15rem; margin-bottom: .1rem; }
-.pagehead.stuck .lede { font-size: .84rem; margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.pagehead.stuck .meta { display: none; }
-.pagehead.stuck .lede .btn { display: none; }
 .block > p.note, .card > p.note { color: var(--muted); font-size: .9rem; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); min-width: 0; overflow-x: auto; }
 .card h3 { margin-bottom: .1rem; }
@@ -1710,7 +1706,7 @@ function showTab(t) {
 }
 function current() { return (location.hash || '#main').slice(1).split('?')[0]; }
 // Sticky page head: the nav height feeds --navh (the tab rows wrap on narrow screens), the active
-// pane's head feeds --headh so the side panel sits below both; .stuck compacts the head once it pins.
+// pane's head feeds --headh so the side panel sits below both; .stuck adds a divider once it pins.
 const navEl = document.querySelector('nav');
 function headEl() { const p = document.querySelector('section.pane.on'); return p && p.querySelector('.pagehead'); }
 function layoutHead() {
