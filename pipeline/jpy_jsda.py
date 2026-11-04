@@ -100,12 +100,27 @@ def build(df) -> dict:
         for cls, grp in CLASS_MAP.items():
             vals = [seg[(m, cls)][f"{k}_adv"] for m in recent]
             window[k][grp] = clean_num(sum(vals) / len(vals))
+    # bridge from the JSDA headline (all investor categories, all classes, both legs of member-to-member trades) to the figures used
+    def wavg(fn):
+        return clean_num(sum(fn(m) / td[m] for m in recent) / len(recent))
+    bonds = [c for c in CLASSES if c in CLASS_MAP]
+    tot = lambda cls: lambda m: seg[(m, cls)]["customer"] + seg[(m, cls)]["dealers"] + seg[(m, cls)]["others"]
+    bridge = {
+        "headline_all": wavg(lambda m: sum(tot(c)(m) for c in CLASSES)),
+        "tbills": wavg(lambda m: tot("tbills")(m)),
+        "zero_coupon": wavg(lambda m: tot("zero_coupon")(m)),
+        "bonds_all": wavg(lambda m: sum(tot(c)(m) for c in bonds)),
+        "others_bonds": wavg(lambda m: sum(seg[(m, c)]["others"] for c in bonds)),
+        "dealers_half_bonds": wavg(lambda m: 0.5 * sum(seg[(m, c)]["dealers"] for c in bonds)),
+        "customer_bonds": wavg(lambda m: sum(seg[(m, c)]["customer"] for c in bonds)),
+    }
+    bridge["dashboard_total"] = clean_num(bridge["customer_bonds"] + bridge["dealers_half_bonds"])
     # Investor-category breakdown of JGB outright volume, latest window (face value, JPY bn per month avg)
     inv = df[df.month.dt.date.isin(recent)].groupby("category")[["jgb_total"] + CLASSES].mean() * 100 / 1000
     inv = inv.drop(index=[c for c in ["Total"] if c in inv.index])
     investors = {c: {k: clean_num(v) for k, v in row.items()} for c, row in inv.iterrows()}
     return {
-        "code": "JPY", "name": "Japanese government bonds", "currency": "JPY", "unit": "JPY mn per trading day",
+        "code": "JPY", "name": "Japanese government bonds", "currency": "JPY", "unit": "JPY mn per trading day", "bridge": bridge,
         "source": "JSDA, Trading Volume of OTC Bonds (sheet B, outright transactions, all members)",
         "source_url": "https://www.jsda.or.jp/en/statistics/bonds/index.html",
         "counting": "members report their own legs: customer trades appear once, member-to-member (Bond Dealers) trades twice and are halved",

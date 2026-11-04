@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 14:18",
+ "generated": "2026-11-04 16:32",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -17561,6 +17561,16 @@
    "name": "Japanese government bonds",
    "currency": "JPY",
    "unit": "JPY mn per trading day",
+   "bridge": {
+    "headline_all": 12771341.5495,
+    "tbills": 3749062.5078,
+    "zero_coupon": 0.0,
+    "bonds_all": 9022279.0416,
+    "others_bonds": 617123.2409,
+    "dealers_half_bonds": 2336901.4926,
+    "customer_bonds": 3731352.8156,
+    "dashboard_total": 6068254.3082
+   },
    "source": "JSDA, Trading Volume of OTC Bonds (sheet B, outright transactions, all members)",
    "source_url": "https://www.jsda.or.jp/en/statistics/bonds/index.html",
    "counting": "members report their own legs: customer trades appear once, member-to-member (Bond Dealers) trades twice and are halved",
@@ -19282,5 +19292,5 @@
    "checked": "2026-11-04"
   }
  ],
- "built": "2026-11-04 16:26"
+ "built": "2026-11-04 16:33"
 }

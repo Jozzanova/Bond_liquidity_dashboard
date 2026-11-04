@@ -1095,6 +1095,22 @@ function yearTable(periods, tdays, cols, note, title, lastN) {
   return h + `</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">${note}</p>`;
 }
 
+// JGBs: from the JSDA headline volume to the dashboard figures, window averages in JPY bn per day
+function jsdaBridge(M) {
+  const b = M.bridge; if (!b) return '';
+  const bn = v => fmt(v / 1000, 0);
+  const rows = [
+    ['JSDA headline: all investor categories, all classes, both legs of member-to-member trades', b.headline_all, 'h'],
+    ['less T-bills', -b.tbills], ['less zero-coupon JGBs', -b.zero_coupon],
+    ['= interest-bearing JGBs, all investor categories', b.bonds_all, 'h'],
+    ['less Others (incl. auction allotments of members)', -b.others_bonds],
+    ['less half of Bond Dealers (the second report of each member-to-member trade)', -b.dealers_half_bonds],
+    ['= Total used on this page (customer + half of Bond Dealers)', b.dashboard_total, 'h'],
+    ['less the other half of Bond Dealers', -b.dealers_half_bonds],
+    ['= Dealer-to-customer used in the profile', b.customer_bonds, 'h']];
+  return `<div class="sub" style="margin-top:.9rem;font-weight:600;color:var(--fg)">From the JSDA headline to the figures above, ${esc(M.window.label)}, JPY bn per trading day</div><table class="tbl small" style="margin-top:.3rem"><tbody>${rows.map(([l, v, k]) => `<tr${k ? ' class="tot"' : ''}><td style="white-space:normal">${l}</td><td class="num">${v < 0 ? '−' + bn(-v) : bn(v)}</td></tr>`).join('')}</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">Published JGB turnover figures usually quote the first line. The JSDA file is in units of 100 million yen; all lines are face value.</p>`;
+}
+
 /* ---------- market tabs ---------- */
 function srcLine(m) {
   const M = D.markets[m];
@@ -1430,7 +1446,7 @@ function tabJPY() {
   <div class="block"><h2>Window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">medium (2/4/5y) → 0-5y; long (6/10y) → 5-10y; super-long → 10y+; ${esc(M.window.label)}</div><div class="plot" id="jp-grp"></div></div>
   <div class="card"><h3>Who trades JGBs</h3><div class="sub">Average monthly outright volume by investor category, JPY trn, ${esc(M.window.label)}</div><div class="plot" id="jp-inv"></div></div></div></div>
-  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}${jsdaBridge(M)}</div></div>
   ${profileBlock(m)}
   <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Classes are by original maturity: a 10-year JGB with two years left is still "long" (5-10y group).</li>
