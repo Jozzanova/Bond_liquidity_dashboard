@@ -539,13 +539,13 @@ function buildSide() {
   <div id="matBlock" class="${S.matOn ? '' : 'dis'}">
   <div class="row"><label for="inMax">Maturity limit, years (longest bond held)</label><input type="number" id="inMax" min="1" max="30" step="1" value="${S.matMax}"></div>
   <div class="hint">Buckets beyond the limit are dropped and the remaining weights are rescaled; a bucket the limit cuts through keeps a proportional part (10y+ counted as 10 to 30 years). 30 keeps everything.</div>
-  <details class="mw"${mwOpen() ? ' open' : ''}><summary>Maturity weights by market, %</summary>
-  <div class="hint">Share of the holding by remaining maturity. Default: the market's nominal bonds outstanding by remaining maturity (sources and dates on the Methods & sources tab). A market with no figures (${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ') || 'none'}) is sold as one pool unless weights are typed in.</div>
+  <details class="mw"${mwOpen() ? ' open' : ''}><summary>Maturity weights per market, % (editable)</summary>
+  <div class="hint">Share of the holding by remaining maturity, one row per market; type over any cell. Default: the market's nominal bonds outstanding by remaining maturity (sources and dates on the Methods & sources tab); the reset button below puts those back. A market with no figures (${MK.filter(m => !matKnown(m)).map(m => SHORT[m]).join(', ') || 'none'}) is sold as one pool unless weights are typed in.</div>
   <table class="itbl"><thead><tr><th></th>${B.map(b => `<th>${b}</th>`).join('')}</tr></thead><tbody>
   <tr><td>Template</td>${B.map((b, i) => `<td><input type="number" data-tpl="${i}" min="0" step="0.1" value="20"></td>`).join('')}</tr>
   ${MK.map(m => `<tr><td><span class="sw" style="background:${col(m)}"></span>${m}${matKnown(m) ? '' : '<span class="badge warn" title="no source for the outstanding stock by maturity">n/a</span>'}</td>${B.map((b, i) => `<td><input type="number" data-mat="${m}" data-i="${i}" min="0" step="0.1" value="${S.mat[m][i] == null ? '' : S.mat[m][i]}"></td>`).join('')}</tr>`).join('')}
   </tbody></table>
-  <div class="btns"><button class="btn" id="btnMkt" type="button">Market-weighted (default)</button><button class="btn" id="btnTpl" type="button">Apply template to all</button></div></details>
+  <div class="btns"><button class="btn" id="btnMkt" type="button" title="Put back each market's outstanding-stock shares">Reset to outstanding-stock shares</button><button class="btn" id="btnTpl" type="button">Apply template to all</button></div></details>
   </div>
   </details>
   <div class="btns" style="margin-top:.9rem"><button class="btn" id="btnAllOn" type="button">All markets on</button><button class="btn" id="btnReset" type="button">Reset everything</button></div>`;
