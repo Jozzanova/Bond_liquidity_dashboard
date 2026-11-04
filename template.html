@@ -1232,11 +1232,10 @@ function marketHead(m) {
   const M = D.markets[m];
   const prov = M.provisional ? `<div class="callout"><b>Provisional figures.</b> ${esc(M.origin)}. The DMO publishes quarterly turnover by maturity band and counterparty type as spreadsheets behind a bot check; put <code>gemm-turnover-by-maturity-band-*.xlsx</code>, <code>all-gemms-turnover-*.xls</code> and <code>annual-turnover-report-*.xls</code> in <code>rawData/dmo_gilts</code> and rebuild to replace this block with the full quarterly series.</div>` : '';
   return `<div class="block pagehead"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
-  <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div></div>
-  <div class="block">${prov}
+  <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div>
   <div class="callout info" id="pfm-${TAB[m]}"></div>
   <div class="subtabs"><button type="button" data-sub="market">Overview</button><button type="button" data-sub="data">Data and sources</button></div>
-  <div class="tiles" id="tiles-${TAB[m]}"></div></div>`;
+  <div class="tiles" id="tiles-${TAB[m]}"></div></div>${prov ? `<div class="block">${prov}</div>` : ''}`;
 }
 function marketTiles(m) {
   const M = D.markets[m], a = M.window_adv, s = g => Object.values(g).every(v => v != null) ? Object.values(g).reduce((x, y) => x + y, 0) : null;
