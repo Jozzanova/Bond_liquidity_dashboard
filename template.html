@@ -233,7 +233,6 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
         <div class="card"><h3>Average daily turnover by market</h3><div class="sub" id="advSub"></div><div class="plot" id="advChart"></div></div>
         <div class="card"><h3>Holding as days of turnover</h3><div class="sub">Holding divided by the daily turnover of its liquidity group, before any participation assumption</div><div class="plot" id="covChart"></div></div>
       </div>
-      <div class="card" id="scCard" style="margin-top:1rem;display:none"><h3>Scenario comparison</h3><div class="sub" id="scSub"></div><div id="scTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Cash raised by horizon</h3><div class="sub" id="hzSub"></div><div id="hzTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Markets</h3><div class="sub" id="mtSub"></div><div id="mtTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Holdings and turnover by maturity bucket</h3><div class="sub">Local currency bn. Columns are the holding's maturity buckets. A cell that spans several buckets is one turnover pool: the source splits turnover no finer, so the holding in those buckets is sold against the pool together.</div><div id="grTable"></div></div>
@@ -418,7 +417,7 @@ const SEGS = {
 const MATD = (D.maturity && D.maturity.markets) || {};
 const SEGADV = {d2c: 'd2c_all', total: 'total'};   // window_adv key per segment (d2c_all = d2c_off + d2c_on for USD, = customer turnover elsewhere)
 const DEF = {
-  base: 'NOK', size: 500, part: 3, haircut: 0, seg: 'd2c', horizon: 0, otr: 0.5, matOn: false, matMax: 10, grm: 'days', ov: {}, matMode: 'market', tpl: [20, 20, 20, 20, 20], cmpB: {on: false, part: 1, haircut: 50, seg: 'd2c', otr: null},
+  base: 'NOK', size: 500, part: 3, haircut: 0, seg: 'd2c', horizon: 0, otr: 0.5, matOn: false, matMax: 10, grm: 'days', ov: {}, matMode: 'market', tpl: [20, 20, 20, 20, 20],
   on: Object.fromEntries(MK.map(m => [m, true])),
   alloc: {USD: 50, GBP: 7, 'EUR-DE': 18, 'EUR-FR': 16, JPY: 7, CNY: 2},
   // default maturity weights: the market's outstanding stock by remaining maturity (pipeline/maturity.py); null where no source
@@ -426,13 +425,11 @@ const DEF = {
 };
 const matKnown = m => !!(MATD[m] && MATD[m].available);
 let S = JSON.parse(JSON.stringify(DEF));
-try { const s = localStorage.getItem('bondliq.inputs.v3'); if (s) { const o = JSON.parse(s); S = Object.assign(S, o); S.on = Object.assign({}, DEF.on, o.on || {}); S.ov = Object.assign({}, o.ov || {}); S.alloc = Object.assign({}, DEF.alloc, o.alloc || {}); S.mat = Object.assign({}, DEF.mat, o.mat || {}); S.cmpB = Object.assign({}, DEF.cmpB, o.cmpB || {}); if (!['market', 'template', 'custom'].includes(S.matMode)) S.matMode = 'market'; if (!Array.isArray(S.tpl) || S.tpl.length !== 5) S.tpl = DEF.tpl.slice(); } } catch (e) {}
+try { const s = localStorage.getItem('bondliq.inputs.v3'); if (s) { const o = JSON.parse(s); S = Object.assign(S, o); S.on = Object.assign({}, DEF.on, o.on || {}); S.ov = Object.assign({}, o.ov || {}); S.alloc = Object.assign({}, DEF.alloc, o.alloc || {}); S.mat = Object.assign({}, DEF.mat, o.mat || {}); delete S.cmpB; if (!['market', 'template', 'custom'].includes(S.matMode)) S.matMode = 'market'; if (!Array.isArray(S.tpl) || S.tpl.length !== 5) S.tpl = DEF.tpl.slice(); } } catch (e) {}
 if (!SEGS[S.seg]) S.seg = DEF.seg;
 for (const m of MK) if (!S.ov[m]) S.ov[m] = Object.assign({on: true, part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: !!(DEF.mat[m] && DEF.mat[m].every(x => x != null)), matMax: S.matMax, mat: DEF.mat[m].slice()});
 function save() { try { localStorage.setItem('bondliq.inputs.v3', JSON.stringify(S)); } catch (e) {} }
-let RB = null;   // the comparison scenario, when switched on
 const PRESETS = [['Normal', 3, 0], ['Stressed', 2, 25], ['Severe', 1, 50]];   // participation %, haircut %: illustrative, not calibrated
-function cmpParams(m) { const b = S.cmpB; return Object.assign({}, globalParams(m), {part: b.part, haircut: b.haircut, seg: SEGS[b.seg] ? b.seg : S.seg, otr: b.otr == null ? S.otr : b.otr}); }
 
 /* ---------- the liquidity profile ---------- */
 function fxLocalPerBase(cur) { return D.fx.per_eur[cur] / D.fx.per_eur[S.base]; }
@@ -535,16 +532,6 @@ function buildSide() {
   <div class="row" style="margin-top:.5rem"><label for="inOtr">US on-the-run share of holding, %</label><input type="number" id="inOtr" min="0" max="100" step="0.5" value="${S.otr}"></div>
   <div class="hint">Share of each US maturity group that sells against on-the-run turnover; the rest sells against off-the-run turnover. ${(() => { const o = MATD.USD && MATD.USD.on_the_run; return o ? `On ${MATD.USD.as_of} the current issue of each benchmark tenor made up ${fmt(o.share_pct, 1)} % of nominal notes and bonds outstanding (MSPD), the figure for a holding that tracks the market: <a href="#main" data-otr="${o.share_pct}">use ${fmt(o.share_pct, 1)} %</a>. ` : 'The current on-the-run coupons are about 2 % of marketable coupon debt. '; })()}0.5 % describes a holding of mostly seasoned bonds; 0 % is the most conservative case.</div>
   <div class="row"><label for="inHor">Chart horizon, days (0 = automatic)</label><input type="number" id="inHor" min="0" max="500" step="5" value="${S.horizon}"></div>
-  <details class="sec" data-sec="cmp"${secOpen('cmp', S.cmpB.on) ? ' open' : ''}><summary><h3>Comparison scenario</h3><span class="badge${S.cmpB.on ? ' ok' : ''}" id="secCmpBadge">${S.cmpB.on ? 'on' : 'off'}</span></summary>
-  <label class="chk"><input type="checkbox" id="inCmpOn"${S.cmpB.on ? ' checked' : ''}> Show a second set of selling assumptions</label>
-  <div class="hint">Drawn as a dashed combined line on the curve and compared in a table below the tiles. The holding, the markets and the maturity settings are shared; only the selling assumptions differ.</div>
-  <div id="cmpBlock" class="${S.cmpB.on ? '' : 'dis'}">
-  <div class="row"><label for="inCmpPart">Participation, %</label><input type="number" id="inCmpPart" min="1" max="100" step="1" value="${S.cmpB.part}"></div>
-  <div class="row"><label for="inCmpHair">Turnover haircut, %</label><input type="number" id="inCmpHair" min="0" max="95" step="5" value="${S.cmpB.haircut}"></div>
-  <div class="row"><label for="inCmpSeg">Turnover segment</label><select id="inCmpSeg">${Object.entries(SEGS).map(([k, v]) => `<option value="${k}"${S.cmpB.seg === k ? ' selected' : ''}>${v.label}</option>`).join('')}</select></div>
-  <div class="row"><label for="inCmpOtr">US on-the-run share, % (blank = same)</label><input type="number" id="inCmpOtr" min="0" max="100" step="0.5" value="${S.cmpB.otr == null ? '' : S.cmpB.otr}" placeholder="${S.otr}"></div>
-  </div>
-  </details>
   <details class="sec" data-sec="mat"${secOpen('mat', S.matOn) ? ' open' : ''}><summary><h3>Maturity of the holding</h3><span class="badge${S.matOn ? ' ok' : ''}" id="secMatBadge">${S.matOn ? 'on' : 'off'}</span></summary>
   <label class="chk"><input type="checkbox" id="inMatOn"${S.matOn ? ' checked' : ''}> Apply a maturity distribution</label>
   <div class="hint">Off: each market's holding is one pool sold against the market's turnover across all maturities (the same as holding it in proportion to turnover), and no maturity limit applies. On: the holding is spread over the buckets below, by default in proportion to the market's outstanding stock by remaining maturity.</div>
@@ -582,11 +569,6 @@ function buildSide() {
   on('input[name=seg]', 'change', e => { S.seg = e.target.value; update(); });
   on('#inOtr', 'input', e => { S.otr = Math.min(100, Math.max(0, +e.target.value || 0)); update(); });
   on('[data-preset]', 'click', e => { const [p, h] = e.currentTarget.dataset.preset.split(',').map(Number); S.part = p; S.haircut = h; $('#inPart').value = p; $('#inPartR').value = p; $('#inHair').value = h; $('#inHairR').value = h; side.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('on', b.dataset.preset === e.currentTarget.dataset.preset)); update(); });
-  on('#inCmpOn', 'change', e => { S.cmpB.on = e.target.checked; $('#cmpBlock').classList.toggle('dis', !S.cmpB.on); const b = $('#secCmpBadge'); b.textContent = S.cmpB.on ? 'on' : 'off'; b.classList.toggle('ok', S.cmpB.on); update(); });
-  on('#inCmpPart', 'input', e => { S.cmpB.part = Math.min(100, Math.max(1, +e.target.value || 1)); update(); });
-  on('#inCmpHair', 'input', e => { S.cmpB.haircut = Math.min(95, Math.max(0, +e.target.value || 0)); update(); });
-  on('#inCmpSeg', 'change', e => { S.cmpB.seg = e.target.value; update(); });
-  on('#inCmpOtr', 'input', e => { S.cmpB.otr = e.target.value === '' ? null : Math.min(100, Math.max(0, +e.target.value || 0)); update(); });
   on('[data-otr]', 'click', e => { e.preventDefault(); S.otr = +e.currentTarget.dataset.otr; $('#inOtr').value = S.otr; update(); });
   on('#inMax', 'input', e => { S.matMax = Math.min(30, Math.max(1, +e.target.value || 1)); update(); });
   on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); const b = $('#secMatBadge'); b.textContent = S.matOn ? 'on' : 'off'; b.classList.toggle('ok', S.matOn); update(); });
@@ -604,7 +586,7 @@ function buildSide() {
 let R = null;
 const drawn = {};
 function update() {
-  save(); R = calc(); RB = S.cmpB.on ? calc(cmpParams) : null;
+  save(); R = calc();
   const sum = R.active.reduce((s, m) => s + (+S.alloc[m] || 0), 0);
   const el = $('#allocSum'); if (el) { el.textContent = fmt(sum, 0) + ' %'; el.classList.toggle('bad', Math.abs(sum - 100) > 0.01); }
   document.querySelectorAll('#side tr[data-row]').forEach(tr => tr.classList.toggle('off', !S.on[tr.dataset.row]));
@@ -631,8 +613,7 @@ function drawMain() {
   const H = horizon(), n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
   const traces = AM.map(m => ({x: ts, y: ts.map(t => R.markets[m].holdLocal > 0 ? 100 * R.markets[m].curve(t) / R.markets[m].holdLocal : null), name: D.markets[m].name, mode: 'lines', line: {color: col(m), width: 1.8}, hovertemplate: '%{y:.0f} %<extra>' + esc(D.markets[m].name) + '</extra>'}));
   traces.push({x: ts, y: ts.map(t => 100 * R.curve(t) / R.sizeMn), name: 'Combined', mode: 'lines', line: {color: css('--tot'), width: 3}, hovertemplate: '%{y:.0f} %<extra>Combined</extra>'});
-  if (RB) traces.push({x: ts, y: ts.map(t => 100 * RB.curve(t) / RB.sizeMn), name: 'Combined, scenario B', mode: 'lines', line: {color: css('--tot'), width: 2, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Combined, scenario B</extra>'});
-  $('#cvSub').textContent = `Share of each market's holding sold by day t at ${S.part} % of ${segLab}${S.haircut ? `, turnover cut by ${S.haircut} %` : ''}; combined line in ${bc}${RB ? `; dashed: scenario B at ${S.cmpB.part} %${S.cmpB.haircut ? ` with a ${S.cmpB.haircut} % haircut` : ''}` : ''}`;
+  $('#cvSub').textContent = `Share of each market's holding sold by day t at ${S.part} % of ${segLab}${S.haircut ? `, turnover cut by ${S.haircut} %` : ''}; combined line in ${bc}`;
   plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
   // ADV by market in base currency bn/day
   const toB = (m, v) => v == null ? null : v / R.markets[m].fx / 1000;
@@ -681,16 +662,6 @@ function drawMain() {
   for (const m of AM) { const r = R.markets[m]; const Hb = r.holdBase / 1000; h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || D.markets[m].name)}</td><td class="num">${fmt(Hb, 1)}</td>${HZ.map(([d]) => cell(r.curve(d) / r.fx / 1000, Hb)).join('')}</tr>`; }
   h += `<tr class="tot"><td>Combined</td><td class="num">${fmt(sz, 1)}</td>${HZ.map(([d]) => cell(R.curve(d) / 1000, sz)).join('')}</tr></tbody></table>`;
   $('#hzTable').innerHTML = h;
-  // comparison scenario
-  $('#scCard').style.display = RB ? '' : 'none';
-  if (RB) {
-    const b = S.cmpB, segB = SEGS[SEGS[b.seg] ? b.seg : S.seg].label.toLowerCase();
-    $('#scSub').textContent = `Current: ${S.part} % of ${segLab}${S.haircut ? `, haircut ${S.haircut} %` : ''}, US on-the-run ${S.otr} %. Scenario B: ${b.part} % of ${segB}${b.haircut ? `, haircut ${b.haircut} %` : ''}, US on-the-run ${b.otr == null ? S.otr : b.otr} %. Same holding, markets and maturity settings.`;
-    const dd = v => v == null ? '–' : !isFinite(v) ? '∞' : fmtDays(v);
-    const rows = [['Half sold, days', R.t50, RB.t50, 'd'], ['90 % sold, days', R.t90, RB.t90, 'd'], ['Fully sold, days', R.t100, RB.t100, 'd'],
-      [`Cash in 1 day, ${bc} bn`, R.curve(1) / 1000, RB.curve(1) / 1000, 'c'], [`Cash in 5 days, ${bc} bn`, R.curve(5) / 1000, RB.curve(5) / 1000, 'c'], [`Cash in 20 days, ${bc} bn`, R.curve(20) / 1000, RB.curve(20) / 1000, 'c']];
-    $('#scTable').innerHTML = `<table class="tbl"><thead><tr><th style="text-align:left">Measure</th><th>Current</th><th>Scenario B</th><th>Difference</th></tr></thead><tbody>${rows.map(([k, a, bv, t]) => `<tr><td>${k}</td><td class="num">${t === 'd' ? dd(a) : fmt(a, 1)}</td><td class="num">${t === 'd' ? dd(bv) : fmt(bv, 1)}</td><td class="num ${isFinite(a) && isFinite(bv) && bv !== a ? ((t === 'd' ? bv < a : bv > a) ? 'pos' : 'neg') : ''}">${isFinite(a) && isFinite(bv) ? (t === 'd' ? (bv - a >= 0 ? '+' : '') + fmtDays(Math.abs(bv - a)).replace(/^/, bv - a < 0 ? '-' : '') : (bv - a >= 0 ? '+' : '') + fmt(bv - a, 1) + ` (${fmt(100 * (bv - a) / (a || 1), 0)} %)`) : '–'}</td></tr>`).join('')}</tbody></table>`;
-  }
   // bucket matrix: markets x maturity buckets, pooled buckets merged into one cell; one figure at a time
   const GRM = {
     days: ['Days to sell', x => fmtDays(x.days), r => fmtDays(r.t100)],
