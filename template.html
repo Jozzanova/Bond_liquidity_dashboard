@@ -611,7 +611,7 @@ function drawMain() {
   // curves
   const H = horizon(), n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
   const traces = AM.map(m => ({x: ts, y: ts.map(t => R.markets[m].holdLocal > 0 ? 100 * R.markets[m].curve(t) / R.markets[m].holdLocal : null), name: D.markets[m].name, mode: 'lines', line: {color: col(m), width: 1.8}, hovertemplate: '%{y:.0f} %<extra>' + esc(D.markets[m].name) + '</extra>'}));
-  traces.push({x: ts, y: ts.map(t => 100 * R.curve(t) / R.sizeMn), name: 'Combined', mode: 'lines', line: {color: css('--tot'), width: 3}, hovertemplate: '%{y:.0f} %<extra>Combined</extra>'});
+  traces.push({x: ts, y: ts.map(t => 100 * R.curve(t) / R.sizeMn), name: 'Combined', mode: 'lines', line: {color: css('--tot'), width: 2.5, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Combined</extra>'});
   $('#cvSub').textContent = `Share of each market's holding sold by day t at ${S.part} % of ${segLab}${S.haircut ? `, turnover cut by ${S.haircut} %` : ''}; combined line in ${bc}`;
   plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, hoverformat: '.1f'})}));
   // ADV by market in base currency bn/day
