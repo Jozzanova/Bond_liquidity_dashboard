@@ -151,6 +151,10 @@ label.chk input { accent-color: var(--accent); margin: 0; }
 .itbl td.sum { font-family: var(--mono); color: var(--muted); }
 .itbl td.sum.bad { color: var(--warn); font-weight: 600; }
 .itbl.mk td:first-child { width: 1.5rem; padding-right: 0; }
+.itbl.mk td.stepcell { white-space: nowrap; }
+.itbl.mk td.stepcell input { width: 2.9rem; margin: 0 .15rem; }
+.itbl.mk button.step { width: 1.35rem; height: 1.35rem; line-height: 1; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: var(--card2); color: var(--muted); cursor: pointer; font: inherit; font-size: .85rem; vertical-align: middle; }
+.itbl.mk button.step:hover { color: var(--accent); border-color: var(--accent); }
 .itbl.mk td:nth-child(2) { text-align: left; white-space: nowrap; }
 .itbl input[type=checkbox] { width: auto; margin: 0; accent-color: var(--accent); vertical-align: middle; cursor: pointer; }
 .itbl tr.off td:not(:first-child), .tbl tr.off td { opacity: .45; }
@@ -507,9 +511,9 @@ function buildSide() {
   <div class="row"><label for="inBase">Base currency</label><select id="inBase">${curs.map(c => `<option value="${c}"${c === S.base ? ' selected' : ''}>${c}</option>`).join('')}</select></div>
   <div class="row"><label for="inSize">Portfolio size, bn</label><input type="number" id="inSize" min="0" step="1" value="${S.size}"></div>
   <h3>Markets and allocation, %</h3>
-  <table class="itbl mk"><tbody>${MK.map(m => `<tr data-row="${m}"${S.on[m] ? '' : ' class="off"'}><td><input type="checkbox" data-on="${m}"${S.on[m] ? ' checked' : ''} title="Include ${esc(D.markets[m].name)} in the profile"></td><td><span class="sw" style="background:${col(m)}"></span>${esc(D.markets[m].name)}</td><td><input type="number" data-alloc="${m}" min="0" step="1" value="${S.alloc[m]}"></td></tr>`).join('')}
+  <table class="itbl mk"><tbody>${MK.map(m => `<tr data-row="${m}"${S.on[m] ? '' : ' class="off"'}><td><input type="checkbox" data-on="${m}"${S.on[m] ? ' checked' : ''} title="Include ${esc(D.markets[m].name)} in the profile"></td><td><span class="sw" style="background:${col(m)}"></span>${esc(D.markets[m].name)}</td><td class="stepcell"><button type="button" class="step" data-step="${m}" data-d="-1" title="minus 1 point">−</button><input type="number" data-alloc="${m}" min="0" step="1" value="${S.alloc[m]}"><button type="button" class="step" data-step="${m}" data-d="1" title="plus 1 point">+</button></td></tr>`).join('')}
   <tr><td></td><td>Sum of included</td><td class="sum" id="allocSum"></td></tr></tbody></table>
-  <div class="hint">Untick a market to leave it out of the profile. The shares of the included markets are scaled to 100 %.</div>
+  <div class="hint">Untick a market to leave it out of the profile. The shares of the included markets are scaled to 100 %. The − and + buttons step by one point, or five with Shift held.</div>
   <h3>Selling assumptions</h3>
   <div class="row"><label for="inPart">Participation, % of daily turnover</label><input type="number" id="inPart" min="1" max="100" step="1" value="${S.part}"><input type="range" id="inPartR" min="1" max="100" step="1" value="${S.part}"></div>
   <div class="row"><label for="inHair">Turnover haircut, % (stress)</label><input type="number" id="inHair" min="0" max="95" step="5" value="${S.haircut}"><input type="range" id="inHairR" min="0" max="95" step="5" value="${S.haircut}"></div>
@@ -572,6 +576,7 @@ function buildSide() {
   on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); const b = $('#secMatBadge'); b.textContent = S.matOn ? 'on' : 'off'; b.classList.toggle('ok', S.matOn); update(); });
   on('#btnMkt', 'click', () => { for (const m of MK) S.mat[m] = DEF.mat[m].slice(); side.querySelectorAll('input[data-mat]').forEach(i => { const v = S.mat[i.dataset.mat][+i.dataset.i]; i.value = v == null ? '' : v; }); update(); });
   on('input[data-alloc]', 'input', e => { S.alloc[e.target.dataset.alloc] = Math.max(0, +e.target.value || 0); update(); });
+  on('button[data-step]', 'click', e => { const m = e.currentTarget.dataset.step, d = +e.currentTarget.dataset.d * (e.shiftKey ? 5 : 1); S.alloc[m] = Math.max(0, Math.round(((+S.alloc[m] || 0) + d) * 10) / 10); side.querySelector(`input[data-alloc="${m}"]`).value = S.alloc[m]; update(); });
   on('input[data-mat]', 'input', e => { S.mat[e.target.dataset.mat][+e.target.dataset.i] = e.target.value === '' ? null : Math.max(0, +e.target.value || 0); update(); });
   on('#btnTpl', 'click', () => { const t = [...side.querySelectorAll('input[data-tpl]')].map(i => Math.max(0, +i.value || 0)); for (const m of MK) { S.mat[m] = t.slice(); } side.querySelectorAll('input[data-mat]').forEach(i => { i.value = S.mat[i.dataset.mat][+i.dataset.i]; }); update(); });
   on('#btnReset', 'click', () => { S = JSON.parse(JSON.stringify(DEF)); initOv(); save(); buildSide(); update(); });
