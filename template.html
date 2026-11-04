@@ -1034,14 +1034,17 @@ function downloadCmpXlsx() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bond_market_comparison_${now.toISOString().slice(0, 10)}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
-// calendar-year averages of monthly ADV series (trading-day weighted); cols = [[label, series in mn/day], ...]
-function yearTable(M, cols, note, title) {
-  const years = [...new Set(M.months.map(d => d.slice(0, 4)))];
-  let h = `<div class="sub" style="margin-top:.7rem;font-weight:600;color:var(--fg)">${esc(title || 'Average daily volume by calendar year, USD bn per trading day')}</div><table class="tbl small" style="margin-top:.3rem"><thead><tr><th>Year</th><th>Months</th>${cols.map(([l]) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`;
-  for (const y of years) {
-    const idx = M.months.map((d, i) => d.startsWith(y) ? i : -1).filter(i => i >= 0), w = idx.reduce((a, i) => a + M.trading_days[i], 0);
-    h += `<tr><td>${y}${idx.length < 12 ? '*' : ''}</td><td class="num">${idx.length}</td>${cols.map(([, v]) => `<td class="num">${fmt(idx.reduce((a, i) => a + (v[i] || 0) * M.trading_days[i], 0) / w / 1000, 0)}</td>`).join('')}</tr>`;
-  }
+// calendar-year averages of a per-period ADV series (mn per day), weighted by trading days. periods: 'YYYY-MM-01', 'YYYYQn' or 'YYYY'.
+function yearTable(periods, tdays, cols, note, title, lastN) {
+  const P = periods.map(String), annual = P.every(p => p.length === 4), quarterly = P.some(p => p[4] === 'Q');
+  let years = [...new Set(P.map(p => p.slice(0, 4)))]; if (lastN) years = years.slice(-lastN);
+  const rows = years.map(y => {
+    const idx = P.map((p, i) => p.startsWith(y) ? i : -1).filter(i => i >= 0), w = idx.reduce((a, i) => a + (tdays[i] || 0), 0);
+    return {y, n: idx.length, partial: !annual && idx.length < (quarterly ? 4 : 12), v: cols.map(([, s]) => w ? idx.reduce((a, i) => a + (s[i] || 0) * (tdays[i] || 0), 0) / w / 1000 : null)};
+  });
+  const dec = Math.max(...rows.flatMap(r => r.v.map(v => v || 0))) < 100 ? 1 : 0;
+  let h = `<div class="sub" style="margin-top:.7rem;font-weight:600;color:var(--fg)">${esc(title)}</div><table class="tbl small" style="margin-top:.3rem"><thead><tr><th>Year</th>${annual ? '' : `<th>${quarterly ? 'Quarters' : 'Months'}</th>`}${cols.map(([l]) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`;
+  for (const r of rows) h += `<tr><td>${r.y}${r.partial ? '*' : ''}</td>${annual ? '' : `<td class="num">${r.n}</td>`}${r.v.map(v => `<td class="num">${fmt(v, dec)}</td>`).join('')}</tr>`;
   return h + `</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">${note}</p>`;
 }
 
@@ -1193,9 +1196,9 @@ function tabUSD() {
     {x, y: sum('d2c_on'), name: 'D2C on-the-run', type: 'bar', marker: {color: css('--d2con')}},
     {x, y: sum('d2d_all'), name: 'ATS and interdealer', type: 'bar', marker: {color: css('--d2d')}},
   ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
-  $('#us-ts-years').innerHTML = yearTable(M, [['D2C off-the-run', sumArr(B.map(b => ma.d2c_off[b]))], ['D2C on-the-run', sumArr(B.map(b => ma.d2c_on[b]))], ['ATS and interdealer', sumArr(B.map(b => ma.d2d_all[b]))], ['Total', sumArr(B.map(b => ma.total_all[b]))]], 'Nominal coupons; volume in the year divided by its trading days; * partial year.', 'Average daily volume by calendar year, USD bn per trading day');
+  $('#us-ts-years').innerHTML = yearTable(M.months, M.trading_days, [['D2C off-the-run', sumArr(B.map(b => ma.d2c_off[b]))], ['D2C on-the-run', sumArr(B.map(b => ma.d2c_on[b]))], ['ATS and interdealer', sumArr(B.map(b => ma.d2d_all[b]))], ['Total', sumArr(B.map(b => ma.total_all[b]))]], 'Nominal coupons; volume in the year divided by its trading days; * partial year.', 'Average daily volume by calendar year, USD bn per trading day');
   const bt = M.by_type_adv;
-  $('#us-type-years').innerHTML = yearTable(M, ['All', 'Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map(t => [t === 'All' ? 'All Treasuries' : t, bt[t].total]), 'All security types, all venues; volume in the year divided by its trading days; * partial year.', 'Average daily volume by calendar year, USD bn per trading day');
+  $('#us-type-years').innerHTML = yearTable(M.months, M.trading_days, ['All', 'Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map(t => [t === 'All' ? 'All Treasuries' : t, bt[t].total]), 'All security types, all venues; volume in the year divided by its trading days; * partial year.', 'Average daily volume by calendar year, USD bn per trading day');
   plot('us-type', ['Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map((t, i) => ({x, y: bt[t].total.map(v => v / 1000), name: t, mode: 'lines', line: {width: 2}})),
     base({yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
   groupBars(m, 'us-grp');
@@ -1215,7 +1218,7 @@ function tabGBP() {
   const full = !M.provisional;
   $('#pane-gbp').innerHTML = marketHead(m) + `
   <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
-  <div class="grid2"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3><div class="plot" id="gb-ts"></div></div>
+  <div class="grid2"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3><div class="plot" id="gb-ts"></div><div id="gb-ts-years"></div></div>
   <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week (totals, not daily averages). The sharp dip every year-end is the Christmas and New Year weeks: two or three bank holidays and thin holiday trading in a weekly total; the smaller dips are the Easter and May bank-holiday weeks.' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div></div></div></div>
   <div class="block"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="gb-grp"></div></div>
@@ -1233,6 +1236,7 @@ function tabGBP() {
       {x, y: sumArr(B.map(b => q.d2c[b])).map(v => v / 1000), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
       {x, y: sumArr(B.map(b => q.d2d[b])).map(v => v / 1000), name: 'Professional', type: 'bar', marker: {color: css('--d2d')}},
     ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}}), xaxis: Object.assign(base().xaxis, {tickvals: x.filter(q => q.endsWith('Q1') && +q.slice(0, 4) % 2 === 0), ticktext: x.filter(q => q.endsWith('Q1') && +q.slice(0, 4) % 2 === 0).map(q => q.slice(0, 4)), tickangle: 0})}));
+    $('#gb-ts-years').innerHTML = yearTable(x, M.trading_days, [['Customer', sumArr(B.map(b => q.d2c[b]))], ['Professional', sumArr(B.map(b => q.d2d[b]))], ['Total', sumArr(B.map(b => q.total[b]))]], 'Conventional gilts, market value; volume in the year divided by its trading days; last ten years, the full series from 2001 is in the downloads; * partial year.', 'Average daily turnover by calendar year, GBP bn per trading day', 10);
     if (M.weekly) plot('gb-wk', [
       {x: M.weekly.week_ending, y: M.weekly.customer.map(v => v / 1000), name: 'Customer', mode: 'lines', line: {color: css('--d2c'), width: 1.5}},
       {x: M.weekly.week_ending, y: M.weekly.professional.map(v => v / 1000), name: 'Professional', mode: 'lines', line: {color: css('--d2d'), width: 1.5}},
@@ -1270,7 +1274,7 @@ function tabDE() {
   <div class="block"><h2>Annual trading volumes</h2><p class="note">Gross volume (sales plus purchases) reported by a representative subset of Bund Issues Auction Group banks, EUR bn per calendar year, by instrument (original maturity) and by counterparty. "Broker" counterparties are the interdealer leg, reported by both banks and halved; all other counterparties are reported once and taken as dealer-to-customer. ${M.trading_days} TARGET trading days per year.</p>
   <div class="grid3"><div class="card"><h3>By instrument</h3><div class="sub">Gross, EUR bn per year</div><div class="plot" id="de-inst"></div></div>
   <div class="card"><h3>By counterparty</h3><div class="sub">Gross, EUR bn per year (${M.year})</div><div class="plot" id="de-cp"></div></div>
-  <div class="card"><h3>Implied daily turnover</h3><div class="sub">Schatz to Bund 30 only; customer vs halved broker legs</div><div class="plot" id="de-ts"></div></div></div></div>
+  <div class="card"><h3>Implied daily turnover</h3><div class="sub">Schatz to Bund 30 only; customer vs halved broker legs</div><div class="plot" id="de-ts"></div><div id="de-ts-years"></div></div></div></div>
   <div class="block"><h2>By original maturity, ${M.year}</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">Schatz + Bobl → 0-5y; Bund 7 + Bund 10 → 5-10y; Bund 15 + Bund 30 → 10y+</div><div class="plot" id="de-grp"></div></div>
   <div class="card"><h3>Instrument detail</h3><div id="de-tab"></div></div></div></div>
@@ -1292,6 +1296,7 @@ function tabDE() {
     {x: yrs, y: an.map(a => a.d2c_adv_mn / 1000), name: 'Customer-facing', type: 'bar', marker: {color: css('--d2c')}},
     {x: yrs, y: an.map(a => a.d2d_adv_mn / 1000), name: 'Broker, halved', type: 'bar', marker: {color: css('--d2d')}},
   ], base({barmode: 'stack', hovermode: 'x unified', xaxis: Object.assign(base().xaxis, {type: 'category'}), yaxis: Object.assign(base().yaxis, {title: {text: 'EUR bn per day'}})}));
+  $('#de-ts-years').innerHTML = yearTable(yrs.map(String), an.map(() => 1), [['Customer-facing', an.map(a => a.d2c_adv_mn)], ['Broker, halved', an.map(a => a.d2d_adv_mn)], ['Total', an.map(a => a.total_adv_mn)]], 'Schatz to Bund 30, gross volume of the reporting banks over 255 TARGET days.', 'Average daily turnover by calendar year, EUR bn per trading day');
   groupBars(m, 'de-grp');
   let h = `<table class="tbl"><thead><tr><th>Instrument</th><th>Group</th><th>Gross, bn</th><th>Customer, bn</th><th>Broker, bn</th><th>D2C per day</th><th>D2D per day</th><th>Total per day</th></tr></thead><tbody>`;
   for (const r of M.instruments) h += `<tr><td>${r.instrument}</td><td>${r.group}</td><td class="num">${fmt(r.gross_eur_bn, 0)}</td><td class="num">${fmt(r.customer_bn, 0)}</td><td class="num">${fmt(r.broker_bn, 0)}</td><td class="num">${fmt(r.d2c_adv_mn / 1000, 2)}</td><td class="num">${fmt(r.d2d_adv_mn / 1000, 2)}</td><td class="num">${fmt(r.total_adv_mn / 1000, 2)}</td></tr>`;
@@ -1325,7 +1330,7 @@ function tabJPY() {
   const m = 'JPY', M = D.markets[m];
   $('#pane-jpy').innerHTML = marketHead(m) + `
   <div class="block"><h2>Turnover over time</h2><p class="note">JSDA members' outright OTC transactions in JGBs (repos excluded), face value, JPY bn per trading day. Members report their own legs: trades with customers appear once, member-to-member trades ("Bond Dealers") twice and are halved. "Others", which includes members' auction allotments, is ${M.include_others ? 'included in' : 'excluded from'} customer volume. Zero-coupon bonds and T-bills are excluded from the groups.</p>
-  <div class="grid2"><div class="card"><h3>By counterparty</h3><div class="sub">Interest-bearing JGBs (medium, long, super-long)</div><div class="plot" id="jp-ts"></div></div>
+  <div class="grid2"><div class="card"><h3>By counterparty</h3><div class="sub">Interest-bearing JGBs (medium, long, super-long)</div><div class="plot" id="jp-ts"></div><div id="jp-ts-years"></div></div>
   <div class="card"><h3>By original maturity class, customer volume</h3><div class="plot" id="jp-cls"></div></div></div></div>
   <div class="block"><h2>Window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">medium (2/4/5y) → 0-5y; long (6/10y) → 5-10y; super-long → 10y+; ${esc(M.window.label)}</div><div class="plot" id="jp-grp"></div></div>
@@ -1343,6 +1348,7 @@ function tabJPY() {
     {x, y: sumArr(cls.map(c => ma.d2c[c])).map(v => v / 1000), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
     {x, y: sumArr(cls.map(c => ma.d2d[c])).map(v => v / 1000), name: 'Bond Dealers, halved', type: 'bar', marker: {color: css('--d2d')}},
   ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'JPY bn per day'}})}));
+  $('#jp-ts-years').innerHTML = yearTable(x, M.trading_days, [['Customer', sumArr(cls.map(c => ma.d2c[c]))], ['Bond Dealers, halved', sumArr(cls.map(c => ma.d2d[c]))], ['Total', sumArr(cls.map(c => ma.total[c]))]], 'Interest-bearing JGBs (medium, long, super-long), face value; volume in the year divided by its trading days; * partial year.', 'Average daily turnover by calendar year, JPY bn per trading day');
   plot('jp-cls', [
     {x, y: ma.d2c.medium.map(v => v / 1000), name: 'Medium (2/4/5y)', mode: 'lines', line: {width: 2}},
     {x, y: ma.d2c.long.map(v => v / 1000), name: 'Long (6/10y)', mode: 'lines', line: {width: 2}},
@@ -1360,7 +1366,7 @@ function tabCNY() {
   const m = 'CNY', M = D.markets[m];
   $('#pane-cny').innerHTML = marketHead(m) + `
   <div class="block"><h2>Northbound Bond Connect turnover</h2><p class="note">Monthly average daily turnover of all bonds through Bond Connect (RMB bn) and the share of Chinese government bonds, from the monthly Flash Reports. Where a report does not state the CGB share, the turnover-weighted mean of the months that do (${fmt(100 * M.fill_cgb_share, 0)} %) is used. ${M.channel === 'all_foreign' ? `The level is scaled up by 1 / ${M.bondconnect_share} to approximate all foreign-investor CGB turnover including CIBM Direct (HKMA: Bond Connect carries over ${fmt(100 * M.bondconnect_share, 0)} % of foreign turnover).` : 'Bond Connect only.'}</p>
-  <div class="grid2"><div class="card"><h3>Average daily turnover</h3><div class="sub">All bonds and the CGB part, RMB bn per day</div><div class="plot" id="cn-ts"></div></div>
+  <div class="grid2"><div class="card"><h3>Average daily turnover</h3><div class="sub">All bonds and the CGB part, RMB bn per day</div><div class="plot" id="cn-ts"></div><div id="cn-ts-years"></div></div>
   <div class="card"><h3>Bond type shares</h3><div class="sub">Policy financial bonds and CGBs as stated in the reports</div><div class="plot" id="cn-sh"></div></div></div></div>
   <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}
   <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Volume, bn</th><th>ADT, bn</th><th>Trading days</th><th>CGB share</th><th>CGB ADT, bn</th></tr></thead><tbody>${M.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${fmt(r.volume_bn, 1)}</td><td class="num">${fmt(r.adt_bn, 1)}</td><td class="num">${r.trading_days ?? '–'}</td><td class="num${r.cgb_share == null ? ' na' : ''}">${r.cgb_share == null ? fmt(100 * r.cgb_share_used, 0) + ' %*' : fmt(100 * r.cgb_share, 0) + ' %'}</td><td class="num">${fmt(r.cgb_adt_bn, 1)}</td></tr>`).join('')}</tbody></table>
@@ -1370,7 +1376,7 @@ function tabCNY() {
   ${M.ccdc ? (C => `<div class="card" style="margin-top:.8rem"><h3>CCDC settlement statistics, ${esc(C.window.label)}</h3><div class="sub"><a href="${esc(C.source_url)}" target="_blank" rel="noopener">${esc(C.source)}</a>. Downloaded by hand from ChinaBond: Data, Statistics, Monthly Bulletin of Statistics, pick the month, click the table title and choose Excel; files in <code>rawData/ccdc_cgb</code> (${C.files.length} files, ${esc(C.months[0])} to ${esc(C.months[C.months.length - 1])}).</div>
   <p>Window averages: CGBs <b>${fmt(C.window_avg.cgb_adv_mn / 1000, 1)} bn per day</b> (${fmt(C.window_avg.cgb_mn_per_month / 1e6, 2)} trn per month, ${C.window_avg.trading_days} trading days in ${C.window.n} months); all CCDC-registered bonds ${fmt(C.window_avg.all_adv_mn / 1000, 0)} bn per day, so CGBs are ${fmt(100 * C.window_avg.cgb_share, 0)} % of interbank cash settlement. Foreign investors settled ${fmt(C.window_avg.foreign_adv_mn / 1000, 1)} bn per day of all CCDC bonds, ${fmt(100 * C.window_avg.foreign_share, 1)} % of the market by side.${C.reference_bn ? ` Your earlier estimate of ${fmt(C.reference_bn, 0)} bn per day (${esc(C.reference_note)}) is ${fmt(100 * (C.reference_bn * 1000 / C.window_avg.cgb_adv_mn - 1), 0).replace('-', '−')} % ${C.reference_bn * 1000 >= C.window_avg.cgb_adv_mn ? 'above' : 'below'} the CCDC figure for this window.` : ''}</p>
   <p class="note">${esc(C.counting)}. Coverage: ${esc(C.coverage)}. ${esc(C.trading_days_note)}. The foreign-investor column is all CCDC bonds (CGBs plus policy bank and other bonds, excluding NCDs, which settle at the Shanghai Clearing House), so it is not the same quantity as the all-foreign CGB estimate used in the profile; the two are shown side by side in the right-hand chart as a cross-check.</p>
-  <div class="grid2"><div><h3>Interbank cash settlement per day</h3><div class="sub">CGBs and all CCDC-registered bonds, RMB bn per trading day</div><div class="plot" id="cn-mk"></div></div>
+  <div class="grid2"><div><h3>Interbank cash settlement per day</h3><div class="sub">CGBs and all CCDC-registered bonds, RMB bn per trading day</div><div class="plot" id="cn-mk"></div><div id="cn-mk-years"></div></div>
   <div><h3>Foreign investors</h3><div class="sub">CCDC settlement by foreign investors (all CCDC bonds, own side) and the all-foreign CGB estimate from Bond Connect, RMB bn per day</div><div class="plot" id="cn-fo"></div></div></div>
   <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Trading days</th><th>CGB settlement, bn</th><th>CGB bn/day</th><th>All CCDC bonds bn/day</th><th>CGB share</th><th>Foreign investors bn/day</th><th>Foreign share</th></tr></thead><tbody>${C.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${r.trading_days}</td><td class="num">${fmt(r.cgb_mn / 1000, 0)}</td><td class="num">${fmt(r.cgb_adv_mn / 1000, 1)}</td><td class="num">${fmt(r.all_adv_mn / 1000, 0)}</td><td class="num">${fmt(100 * r.cgb_share, 0)} %</td><td class="num">${r.foreign_adv_mn == null ? '–' : fmt(r.foreign_adv_mn / 1000, 1)}</td><td class="num">${r.foreign_share == null ? '–' : fmt(100 * r.foreign_share, 1) + ' %'}</td></tr>`).join('')}</tbody></table></div>`)(M.ccdc) : ''}</div>` : ''}
   ${profileBlock(m)}
@@ -1385,6 +1391,7 @@ function tabCNY() {
     {x, y: mo.map(r => r.adt_bn), name: 'All bonds', type: 'bar', marker: {color: css('--d2d')}},
     {x, y: mo.map(r => r.cgb_adt_bn), name: 'Chinese government bonds', type: 'bar', marker: {color: css('--d2c')}},
   ], base({barmode: 'overlay', yaxis: Object.assign(base().yaxis, {title: {text: 'RMB bn per day'}})}));
+  $('#cn-ts-years').innerHTML = yearTable(x, mo.map(r => r.trading_days || 0), [['All bonds', mo.map(r => r.adt_bn * 1000)], ['Chinese government bonds', mo.map(r => r.cgb_adt_bn * 1000)]], 'Bond Connect Northbound, all foreign investors through that channel; months weighted by implied trading days; * partial year.', 'Average daily turnover by calendar year, RMB bn per trading day');
   plot('cn-sh', [
     {x, y: mo.map(r => r.cgb_share == null ? null : 100 * r.cgb_share), name: 'CGB share (stated)', mode: 'lines+markers', line: {color: css('--d2c'), width: 2}, connectgaps: true},
     {x, y: mo.map(r => r.pfb_share == null ? null : 100 * r.pfb_share), name: 'Policy financial bond share', mode: 'lines+markers', line: {color: css('--d2d'), width: 2}, connectgaps: true},
@@ -1395,6 +1402,7 @@ function tabCNY() {
       {x: cx, y: C.monthly.map(r => r.all_adv_mn / 1000), name: 'All CCDC bonds', type: 'bar', marker: {color: css('--d2d')}},
       {x: cx, y: C.monthly.map(r => r.cgb_adv_mn / 1000), name: 'Chinese government bonds', type: 'bar', marker: {color: css('--d2c')}},
     ], base({barmode: 'overlay', yaxis: Object.assign(base().yaxis, {title: {text: 'RMB bn per day'}})}));
+    $('#cn-mk-years').innerHTML = yearTable(cx, C.monthly.map(r => r.trading_days || 0), [['Chinese government bonds', C.monthly.map(r => r.cgb_adv_mn)], ['All CCDC bonds', C.monthly.map(r => r.all_adv_mn)]], 'Interbank cash settlement, face value; volume in the year divided by its interbank trading days; * partial year.', 'Average daily settlement by calendar year, RMB bn per trading day');
     const bc = Object.fromEntries(M.monthly.map(r => [r.month, r.cgb_adt_bn / M.bondconnect_share]));
     plot('cn-fo', [
       {x: cx, y: C.monthly.map(r => r.foreign_adv_mn == null ? null : r.foreign_adv_mn / 1000), name: 'CCDC: foreign investors, all CCDC bonds', type: 'bar', marker: {color: css('--d2d')}},
