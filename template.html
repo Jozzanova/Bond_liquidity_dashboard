@@ -355,7 +355,7 @@ function applyHl(el) {
   Plotly.restyle(el, {opacity: el.data.map(t => n == null || t.name === n ? 1 : 0.18)});
 }
 // bars-or-lines selector for time-series charts (remembered per chart in this browser)
-const CS_NO = new Set(['cvChart', 'fr-cmp', 'cmp-trend', 'cn-sh', 'cmp-scatter']);
+const CS_NO = new Set(['cvChart', 'fr-cmp', 'cmp-trend', 'cn-sh', 'cmp-scatter', 'gb-wk']);
 function csPref(id) { try { const v = localStorage.getItem('bondliq.cs.' + id); if (v === 'bar' || v === 'line') return v; } catch (e) {} return null; }
 function restyleKind(traces, layout, kind) {
   const strip = (t, keys) => { const o = Object.assign({}, t); for (const k of keys) delete o[k]; return o; };
@@ -1281,7 +1281,7 @@ function tabGBP() {
   <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
   <div class="${full ? 'grid3' : 'grid2'}"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3>${full ? '<div class="sub">Conventional gilts, quarterly, GBP bn per day</div>' : ''}<div class="plot" id="gb-ts"></div><div id="gb-ts-years"></div></div>
   ${full ? `<div class="card"><h3>By gilt type</h3><div class="sub">Conventional and index-linked, customer and professional combined, quarterly, GBP bn per day</div><div class="plot" id="gb-type"></div><div id="gb-type-years"></div></div>` : ''}
-  <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week (totals, not daily averages; all gilts, the weekly file has no split by type, see the quarterly chart by gilt type). The sharp dip every year-end is the Christmas and New Year weeks: two or three bank holidays and thin holiday trading in a weekly total; the smaller dips are the Easter and May bank-holiday weeks.' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div><div id="gb-wk-years"></div></div></div></div>
+  <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week (totals, not daily averages; all gilts, the weekly file has no split by type, see the quarterly chart by gilt type). Bold lines are 13-week averages; the faint lines behind are the single weeks. Their sharp dip every year-end is the Christmas and New Year weeks (bank holidays and thin trading in a weekly total), the smaller dips the Easter and May bank-holiday weeks.' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div><div id="gb-wk-years"></div></div></div></div>
   <div class="block"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="gb-grp"></div></div>
   ${full ? `<div class="card"><h3>DMO maturity bands</h3><div class="sub">Customer and professional</div><div class="plot" id="gb-bands"></div></div>` : `<div class="card"><h3>Annual turnover by segment</h3><div id="gb-ann"></div></div>`}</div></div>
@@ -1322,10 +1322,17 @@ function tabGBP() {
       $('#gb-wk-years').innerHTML = `<div class="sub" style="margin-top:.7rem;font-weight:600;color:var(--fg)">DMO annual turnover report, all gilts, financial years</div><table class="tbl small" style="margin-top:.3rem"><thead><tr><th>Financial year</th><th>Average daily turnover, GBP bn</th><th>Annual turnover, GBP bn</th><th>Gilt portfolio, market value, GBP bn</th><th>Turnover ratio</th></tr></thead><tbody>${an.map(a => `<tr><td>${esc(a.financial_year)}</td><td class="num">${fmt(a.adv_gbp_bn, 1)}</td><td class="num">${fmt(a.annual_turnover_gbp_bn, 0)}</td><td class="num">${fmt(a.gross_portfolio_mv_gbp_bn, 0)}</td><td class="num">${fmt(a.turnover_ratio_gross, 1)}</td></tr>`).join('')}</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">As published by the DMO: all gilts, so index-linked gilts and strips are included, and financial years (April to March). The same underlying data as the left table; the difference is the index-linked gilts and the year boundary.${recon} Turnover ratio is annual turnover over the gilt portfolio at market value.</p>`;
     }
     $('#gb-ts-years').innerHTML = yearTable(x, M.trading_days, [['Customer', sumArr(B.map(b => q.d2c[b]))], ['Professional', sumArr(B.map(b => q.d2d[b]))], ['Total', sumArr(B.map(b => q.total[b]))]], 'Conventional gilts, market value, customer and professional; volume in the year divided by its trading days; last ten years, the full series from 2001 is in the downloads; * partial year.', 'Average daily turnover by calendar year, GBP bn per trading day', 10);
-    if (M.weekly) plot('gb-wk', [
-      {x: M.weekly.week_ending, y: M.weekly.customer.map(v => v / 1000), name: 'Customer', mode: 'lines', line: {color: css('--d2c'), width: 1.5}},
-      {x: M.weekly.week_ending, y: M.weekly.professional.map(v => v / 1000), name: 'Professional', mode: 'lines', line: {color: css('--d2d'), width: 1.5}},
-    ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per week'}}), xaxis: Object.assign(base().xaxis, {type: 'date', hoverformat: 'week ending %d %b %Y'})}));
+    if (M.weekly) {
+      // the weekly file is ascending in time here; 13-week (one quarter) trailing averages carry the picture, the raw weeks sit faint behind
+      const wk = M.weekly, wx = wk.week_ending, ma = (a, n) => a.map((_, i) => i < n - 1 ? null : a.slice(i - n + 1, i + 1).reduce((t, v) => t + v, 0) / n / 1000);
+      const raw = (y, color) => ({x: wx, y: y.map(v => v / 1000), mode: 'lines', line: {color, width: 1}, opacity: .22, showlegend: false, hoverinfo: 'skip'});
+      plot('gb-wk', [
+        raw(wk.customer, css('--d2c')), raw(wk.professional, css('--d2d')),
+        {x: wx, y: ma(wk.customer, 13), name: 'Customer, 13-week average', mode: 'lines', line: {color: css('--d2c'), width: 2}, hovertemplate: '%{y:,.1f}<extra>Customer</extra>'},
+        {x: wx, y: ma(wk.professional, 13), name: 'Professional, 13-week average', mode: 'lines', line: {color: css('--d2d'), width: 2}, hovertemplate: '%{y:,.1f}<extra>Professional</extra>'},
+        {x: wx, y: ma(wk.combined, 13), name: 'Total, 13-week average', mode: 'lines', line: {color: css('--tot'), width: 1.5, dash: 'dot'}, hovertemplate: '%{y:,.1f}<extra>Total</extra>'},
+      ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per week'}}), xaxis: Object.assign(base().xaxis, {type: 'date', hoverformat: 'week ending %d %b %Y'})}));
+    }
     const bands = M.bands, bq = M.quarterly_adv_bands, idx = x.map((_, i) => i).filter(i => x[i] >= M.window.from);
     const avg = k => bands.map(b => idx.reduce((s, i) => s + (bq[k][b][i] ?? 0), 0) / idx.length / 1000);
     plot('gb-bands', [
