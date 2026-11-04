@@ -882,8 +882,8 @@ function tabCmp() {
       <div class="card"><h3>Turnover ratio by remaining maturity</h3><div class="sub">D2C turnover per trading day as % of the stock in the same maturity range. US Treasuries and gilts have five groups; Bunds and JGBs three (0-5, 5-10, 10y+, by original maturity, shown across the buckets they cover). OATs and CGBs have one pool and are left out.</div><div class="plot tall" id="cmp-bucket"></div></div>
       <div class="card"><h3>D2C turnover over time</h3><div class="sub">Rolling average in local currency, indexed to the 2024 average = 100: monthly for US Treasuries and JGBs, quarterly for gilts, calendar years for Bunds. OATs follow Bunds; the CGB series is too short. Shown from 2016; the gilt series runs from 2001 (drag to zoom out).</div><div class="plot tall" id="cmp-trend"></div></div>
     </div></div>
-  <div class="block"><h2>What one seller can take out per day</h2>
-    <p class="note">D2C turnover times a participation rate, ${bc} bn per trading day. The participation rate is the share of a day's customer volume one seller can be without moving the price; the Liquidity profile tab applies one such rate to a holding.</p>
+  <div class="block"><h2>Daily capacity at a given participation rate</h2>
+    <p class="note">Dealer-to-customer turnover times a participation rate, ${bc} bn per trading day: the volume that corresponds to a given share of a day's customer flow in each market. The Liquidity profile tab applies one such rate to a holding.</p>
     <div class="card"><div id="cmpCap"></div></div></div>
   <div class="block"><h2>Reading the comparison</h2><div class="card"><ul class="caveats">
     <li>D2C for US Treasuries is all issues here, on-the-run included, because the other markets include their benchmarks too; the profile sells seasoned holdings into the off-the-run pool, shown in small print.</li>
