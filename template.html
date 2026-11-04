@@ -81,6 +81,10 @@ section.pane > .block:first-child { margin-top: 0; }
 .tbl td.num { font-family: var(--mono); font-size: .86rem; }
 .tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
 .tbl td.na { color: var(--muted); }
+.tbl.bridge { width: auto; max-width: 100%; }
+.tbl.bridge td:first-child { white-space: normal; padding-right: 1.2rem; }
+.tbl.bridge tr.used td { background: var(--accent-soft); color: var(--accent); }
+.tbl.bridge tr.used td:first-child { border-left: 3px solid var(--accent); }
 #segTable { table-layout: fixed; }
 #segTable th, #segTable td { white-space: normal; vertical-align: top; }
 #segTable th:nth-child(1), #segTable td:nth-child(1) { width: 13%; }
@@ -1124,11 +1128,11 @@ function jsdaBridge(M) {
     ['= interest-bearing JGBs, all investor categories', b.bonds_all, 'h'],
     ['less Others (incl. auction allotments of members)', -b.others_bonds],
     ['less half of Bond Dealers (the second report of each member-to-member trade)', -b.dealers_half_bonds],
-    ['= Total used on this page (customer + half of Bond Dealers)', b.dashboard_total, 'h'],
+    ['= Total used on this page (customer + half of Bond Dealers): the "total" segment', b.dashboard_total, 'u'],
     ['less the other half of Bond Dealers', -b.dealers_half_bonds],
-    ['= Dealer-to-customer used in the profile', b.customer_bonds, 'h']];
+    ['= Dealer-to-customer used in the profile: the default segment', b.customer_bonds, 'u']];
   return `<div class="sub" style="margin-top:.9rem;font-weight:600;color:var(--fg)">From the JSDA headline to the figures above, ${esc(M.window.label)}, JPY bn per trading day</div>
-  <p class="note" style="margin-top:.3rem">The JSDA publishes one headline number for JGB trading: every member reports its own trades, summed over all investor categories and all classes. Three things in it do not belong in a selling capacity for a bond holding. <b>T-bills</b> (and zero-coupon JGBs) are not the bonds the holding sells, so they are removed. <b>Others</b> is mostly the members' own take-up at auctions, primary-market volume rather than trading, so it is removed. <b>Bond Dealers</b> are trades between two members; both report the same trade, so the headline counts it twice, and the dashboard keeps one leg (half). What remains is customer trading plus one leg of interdealer trading, the "total" segment; customer trading alone is the dealer-to-customer pool the profile sells into.</p><table class="tbl small" style="margin-top:.3rem"><tbody>${rows.map(([l, v, k]) => `<tr${k ? ' class="tot"' : ''}><td style="white-space:normal">${l}</td><td class="num">${Math.abs(v) < 500 ? '0' : v < 0 ? '−' + bn(-v) : bn(v)}</td></tr>`).join('')}</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">Published JGB turnover figures usually quote the first line. The JSDA file is in units of 100 million yen; all lines are face value.</p>`;
+  <p class="note" style="margin-top:.3rem">The JSDA publishes one headline number for JGB trading: every member reports its own trades, summed over all investor categories and all classes. Three things in it do not belong in a selling capacity for a bond holding. <b>T-bills</b> (and zero-coupon JGBs) are not the bonds the holding sells, so they are removed. <b>Others</b> is mostly the members' own take-up at auctions, primary-market volume rather than trading, so it is removed. <b>Bond Dealers</b> are trades between two members; both report the same trade, so the headline counts it twice, and the dashboard keeps one leg (half). What remains is customer trading plus one leg of interdealer trading, the "total" segment; customer trading alone is the dealer-to-customer pool the profile sells into.</p><table class="tbl small bridge" style="margin-top:.3rem"><tbody>${rows.map(([l, v, k]) => `<tr class="${k === 'u' ? 'tot used' : k ? 'tot' : ''}"><td>${l}</td><td class="num">${Math.abs(v) < 500 ? '0' : v < 0 ? '−' + bn(-v) : bn(v)}</td></tr>`).join('')}</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">Published JGB turnover figures usually quote the first line. The JSDA file is in units of 100 million yen; all lines are face value.</p>`;
 }
 
 /* ---------- market tabs ---------- */
