@@ -42,7 +42,7 @@ PAGES = {
     "dmo_gilts_in_issue": ("UK gilts: Gilts in issue", "https://www.dmo.gov.uk/data/gilt-market/gilts-in-issue/",
                            "export the 'Gilts in issue' list to Excel"),
     "ccdc": ("CGBs: CCDC monthly settlement statistics", "https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/",
-             "for each new month open table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel"),
+             "switch the page to English first (the Chinese export is not readable by the pipeline), then for each new month open table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; an empty (0-byte) download means the site did not send the file, try again"),
 }
 MON = {m: i for i, m in enumerate(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
 
@@ -96,6 +96,10 @@ def classify(path: Path) -> tuple[str, Path] | None:
     n = path.name.lower()
     if n.endswith((".crdownload", ".tmp", ".part")):
         return None
+    if path.stat().st_size == 0:
+        if n.endswith((".xls", ".xlsx", ".csv")):
+            print(f"  skipped {path.name}: the download is empty (0 bytes); the site did not send the file, try the download again")
+        return None
     if n.startswith("gemm-turnover-by-maturity-band") and n.endswith(".xlsx"):
         return "dmo_turnover", Path("dmo_gilts") / path.name
     if n.startswith("all-gemms-turnover") and n.endswith((".xls", ".xlsx")):
@@ -107,6 +111,9 @@ def classify(path: Path) -> tuple[str, Path] | None:
     cells = first_cells(path)
     if cells and cells[0].strip().lower().startswith("data date:") or "gilts in issue" in n or "gilts-in-issue" in n:
         return "dmo_gilts_in_issue", Path("maturity") / ("gilts-in-issue" + path.suffix.lower())
+    if cells and re.search(r"银行间市场债券交易结算情况", cells[0]):
+        print(f"  skipped {path.name}: this is the Chinese-language table; the pipeline reads the English one (switch the site to English before choosing Excel)")
+        return None
     if cells:
         m = re.match(r"\s*(7|8)\s*\.?\s*CIBM Bond Settlement \(By (Bond|Investor) Type\)", cells[0], re.I)
         if m:

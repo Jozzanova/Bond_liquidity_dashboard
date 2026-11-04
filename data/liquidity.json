@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 19:26",
+ "generated": "2026-11-04 19:32",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -19160,7 +19160,7 @@
    "cadence": "monthly, around the 10th of the following month",
    "next_expected": "2026-11-12",
    "status": "up to date",
-   "how": "chinabond.com.cn > Data > Statistics > Monthly Bulletin of Statistics. For each new month click table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)', choose Excel and save them as 'CIBM Bond Settlement (By Bond Type)_YYYYMM.xls' and 'CIBM Bond Settlement (By Investor Type)_YYYYMM.xls' in rawData/ccdc_cgb.",
+   "how": "chinabond.com.cn > Data > Statistics > Monthly Bulletin of Statistics, with the page switched to English (the Chinese-language export has different labels and is not read). For each new month click table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; update.bat files them as 'CIBM Bond Settlement (By Bond Type)_YYYYMM.xls' and '(By Investor Type)_YYYYMM.xls' in rawData/ccdc_cgb (or save them under those names by hand). A 0-byte download means the site did not send the file.",
    "available": true,
    "note": "the download endpoint rejects scripted requests",
    "checked": null
