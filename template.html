@@ -70,7 +70,9 @@ section.pane > .block:first-child { margin-top: 0; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .8rem; margin: .8rem 0 1rem; }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .7rem .9rem; box-shadow: var(--shadow); min-width: 0; }
 .tile .k { font-size: .78rem; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; }
-.tile .v { font-family: var(--mono); font-size: 1.45rem; font-weight: 500; line-height: 1.2; margin-top: .15rem; }
+.tile .v { font-family: var(--mono); font-size: 1.45rem; font-weight: 500; line-height: 1.2; margin-top: .15rem; overflow-wrap: anywhere; }
+.tile .v span { white-space: nowrap; }
+@media (max-width: 700px) { .tile .v { font-size: 1.2rem; } }
 .tile .u { font-size: .8rem; color: var(--muted); }
 .tbl { border-collapse: collapse; width: 100%; font-size: .86rem; }
 .tbl th, .tbl td { padding: .35rem .4rem; border-bottom: 1px solid var(--line2); text-align: right; white-space: nowrap; }
@@ -98,6 +100,7 @@ ul.caveats li { margin-bottom: .25rem; }
 .content { min-width: 0; }
 .side { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
 @media (max-width: 1000px) { .side { position: static; max-height: none; } }
+@media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { width: 100%; margin: 0; } }
 .side h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: .9rem 0 .4rem; }
 .side h3:first-child { margin-top: 0; }
 .row { display: grid; grid-template-columns: 1fr auto; gap: .4rem; align-items: center; margin-bottom: .4rem; font-size: .9rem; }
@@ -230,7 +233,9 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <p class="lede">Every number on this page comes from files in <code>rawData/</code>, read by the Python pipeline and baked into the page at build time. Most sources are downloaded by the pipeline itself; four need a file fetched by hand because the issuer's site blocks scripts. This tab shows how fresh each dataset is and what to do to bring it forward.</p>
   </div>
   <div class="block"><h2>Status by dataset</h2>
-    <p class="note">Mode: <span class="badge ok">automatic</span> the pipeline downloads it, <span class="badge warn">manual</span> a file must be fetched in a browser first, <span class="badge">derived</span> computed from another dataset. Status: <span class="badge ok">up to date</span> nothing newer is expected, or the source was checked after the expected date and had nothing new; <span class="badge warn">refresh due</span> an automatic source should have new data, run the pipeline with --refresh; <span class="badge warn">new data likely</span> a hand-fetched file is probably available; <span class="badge bad">file needed</span> no file at all. Latest data point is the last period in the data; raw files updated is when the files in <code>rawData/</code> were last written; next data expected is a rough publication date after which newer figures are probably available at the source.</p>
+    <p class="note"><b>Mode.</b> <span class="badge ok">automatic</span> the pipeline downloads it &middot; <span class="badge warn">manual</span> a file must be fetched in a browser first &middot; <span class="badge">derived</span> computed from another dataset.</p>
+    <p class="note"><b>Status.</b> <span class="badge ok">up to date</span> nothing newer is expected, or the source was checked after the expected date and had nothing new &middot; <span class="badge warn">refresh due</span> an automatic source should have new data, run the pipeline with --refresh &middot; <span class="badge warn">new data likely</span> a hand-fetched file is probably available &middot; <span class="badge bad">file needed</span> no file at all.</p>
+    <p class="note">Latest data point is the last period in the data; raw files updated is when the files in <code>rawData/</code> were last written; next data expected is a rough publication date after which newer figures are probably available at the source.</p>
     <div class="card"><div id="upTable"></div></div>
   </div>
   <div class="block"><h2>Manual files</h2>
@@ -529,7 +534,7 @@ function drawMain() {
   const bc = S.base, sz = S.size, AM = R.active;
   const segLab = SEGS[S.seg].label.toLowerCase();
   const f1 = R.curve(1) / R.sizeMn, f5 = R.curve(5) / R.sizeMn, f20 = R.curve(20) / R.sizeMn;
-  $('#mainTiles').innerHTML = tile('Holding', `${fmt(sz, 0)} <span style="font-size:.8em">${bc} bn</span>`, AM.length < MK.length ? `${AM.length} of ${MK.length} markets, ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}` : `at ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}`) +
+  $('#mainTiles').innerHTML = tile('Holding', fmt(sz, 0), `${bc} bn${AM.length < MK.length ? `, ${AM.length} of ${MK.length} markets` : ''}, ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}`) +
     tile('Sold in 1 day', fmt(100 * f1, 0) + ' %', `${fmt(S.part, 0)} % of ${segLab}`) +
     tile('Sold in 5 days', fmt(100 * f5, 0) + ' %', 'one week') +
     tile('Sold in 20 days', fmt(100 * f20, 0) + ' %', 'one month') +
@@ -566,8 +571,8 @@ function drawMain() {
   ], base({hovermode: 'closest', margin: {l: 100, r: 14, t: 30, b: 40}, xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, rangemode: 'tozero'}), yaxis: Object.assign(base().yaxis, {autorange: 'reversed'}), showlegend: true}));
   // coverage chart: holding / ADV (days of turnover) per market x group
   const covTr = [];
-  AM.forEach(m => { const g = R.markets[m].groups; covTr.push({x: g.map(x => SHORT[m] + ' ' + x.g), y: g.map(x => isFinite(x.daysAdv) ? x.daysAdv : null), type: 'bar', name: D.markets[m].name, marker: {color: col(m)}, hovertemplate: '%{x}: %{y:.2f} days of turnover<extra></extra>'}); });
-  plot('covChart', covTr, base({hovermode: 'closest', showlegend: false, margin: {l: 52, r: 14, t: 30, b: 80}, xaxis: Object.assign(base().xaxis, {tickangle: -45, tickfont: {size: 10, color: css('--axis')}}), yaxis: Object.assign(base().yaxis, {title: {text: 'days of turnover'}})}));
+  AM.forEach(m => { const g = R.markets[m].groups; covTr.push({x: g.map(x => SHORT[m] + (x.g === 'all' ? '' : ' ' + x.g)), y: g.map(x => isFinite(x.daysAdv) ? x.daysAdv : null), type: 'bar', name: D.markets[m].name, marker: {color: col(m)}, hovertemplate: '%{x}: %{y:.2f} days of turnover<extra></extra>'}); });
+  plot('covChart', covTr, base({hovermode: 'closest', showlegend: false, margin: {l: 52, r: 14, t: 30, b: covTr.some(t => t.x.length > 1) ? 96 : 60}, xaxis: Object.assign(base().xaxis, {tickangle: covTr.some(t => t.x.length > 1) ? -40 : 0, automargin: true, tickfont: {size: 10, color: css('--axis')}}), yaxis: Object.assign(base().yaxis, {title: {text: 'days of turnover'}})}));
   // market table
   $('#mtSub').textContent = `Turnover in local currency bn per day (window averages). Days at ${S.part} % participation${S.haircut ? ` and a ${S.haircut} % haircut` : ''}. Markets switched off are greyed out and carry no holding.`;
   let h = `<table class="tbl"><thead><tr><th>Market</th><th>Share</th><th>Holding, ${bc} bn</th><th>Holding, local bn</th><th>D2C</th><th>D2D</th><th>Total</th><th>D2C share</th><th>Holding / D2C, days</th><th>Half sold, days</th><th>Fully sold, days</th></tr></thead><tbody>`;
@@ -981,7 +986,8 @@ function groupTable(m) {
     h += `<tr><td>${g}</td><td style="text-align:left">${B.filter(b => M.group_map[b] === g).join(', ')}</td><td class="num">${v('d2c_base')}</td>${us ? `<td class="num">${v('d2c_all')}</td>` : ''}<td class="num">${v('d2d')}</td><td class="num">${v('total')}</td><td class="num">${a.total[g] ? fmt(100 * a.d2c_all[g] / a.total[g], 0) + ' %' : '–'}</td></tr>`;
   }
   h += `</tbody></table><table class="tbl" style="margin-top:.8rem"><thead><tr><th>Segment</th><th style="text-align:left">Definition</th></tr></thead><tbody>`;
-  for (const [k, s] of Object.entries(M.segments)) h += `<tr><td>${k}</td><td style="text-align:left;white-space:normal"><b>${esc(s.label)}</b>: ${esc(s.note)}</td></tr>`;
+  const SEGNAME = {d2c_base: us ? 'D2C off-the-run' : 'Dealer-to-customer', d2c_all: 'D2C all issues', d2d: 'Dealer-to-dealer', total: 'Total'};
+  for (const [k, s] of Object.entries(M.segments)) { if (k === 'd2c_all' && !us) continue; h += `<tr><td style="white-space:nowrap">${SEGNAME[k] || esc(k)}</td><td style="text-align:left;white-space:normal"><b>${esc(s.label)}</b>: ${esc(s.note)}</td></tr>`; }
   return h + '</tbody></table>';
 }
 function profileBlock(m) {
@@ -1055,7 +1061,8 @@ function drawMarketProfile(m) {
   if (r.split) h += `<p class="note" style="margin-top:.5rem">US Treasuries: ${fmt(P.otr, 1)} % of each group is treated as on-the-run and sells against on-the-run turnover; the rest sells against off-the-run turnover. Days to sell is the slower of the two parts and pace is the effective pace (holding ÷ days).</p>`;
   $('#pt-' + TAB[m]).innerHTML = h;
 }
-const monthLab = s => { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-GB', {month: 'short', year: 'numeric'}); };
+const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLab = s => MONS[+s.slice(5, 7) - 1] + ' ' + s.slice(0, 4);
 const sumArr = arrs => arrs[0].map((_, i) => arrs.reduce((s, a) => s + (a[i] ?? 0), 0));
 
 function tabUSD() {
@@ -1103,7 +1110,7 @@ function tabGBP() {
   $('#pane-gbp').innerHTML = marketHead(m) + `
   <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
   <div class="grid2"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3><div class="plot" id="gb-ts"></div></div>
-  <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div></div></div></div>
+  <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week (totals, not daily averages). The sharp dip every year-end is the Christmas and New Year weeks: two or three bank holidays and thin holiday trading in a weekly total; the smaller dips are the Easter and May bank-holiday weeks.' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div></div></div></div>
   <div class="block"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="gb-grp"></div></div>
   ${full ? `<div class="card"><h3>DMO maturity bands</h3><div class="sub">Customer and professional</div><div class="plot" id="gb-bands"></div></div>` : `<div class="card"><h3>Annual turnover by segment</h3><div id="gb-ann"></div></div>`}</div></div>
@@ -1123,7 +1130,7 @@ function tabGBP() {
     if (M.weekly) plot('gb-wk', [
       {x: M.weekly.week_ending, y: M.weekly.customer.map(v => v / 1000), name: 'Customer', mode: 'lines', line: {color: css('--d2c'), width: 1.5}},
       {x: M.weekly.week_ending, y: M.weekly.professional.map(v => v / 1000), name: 'Professional', mode: 'lines', line: {color: css('--d2d'), width: 1.5}},
-    ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per week'}})}));
+    ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per week'}}), xaxis: Object.assign(base().xaxis, {type: 'date', hoverformat: 'week ending %d %b %Y'})}));
     const bands = M.bands, bq = M.quarterly_adv_bands, idx = x.map((_, i) => i).filter(i => x[i] >= M.window.from);
     const avg = k => bands.map(b => idx.reduce((s, i) => s + (bq[k][b][i] ?? 0), 0) / idx.length / 1000);
     plot('gb-bands', [
@@ -1301,7 +1308,7 @@ function tabUpdate() {
   let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Dataset</th><th>Mode</th><th>Latest data point</th><th>Raw files updated</th><th>Next data expected</th><th>Status</th></tr></thead><tbody>`;
   for (const x of ST) {
     h += `<tr class="main"><td>${esc(x.title)}</td><td>${modeLab[x.mode] || esc(x.mode)}</td><td class="num">${esc(x.latest || '–')}</td><td class="num">${x.files_updated ? `${esc(x.files_updated)} <span class="u">(${x.n_files} file${x.n_files === 1 ? '' : 's'})</span>` : '–'}</td><td class="num">${esc(x.next_expected || '–')}</td><td>${badge(stat(x))}</td></tr>
-    <tr><td colspan="6" class="src">${esc(x.cadence)}. ${esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.checked ? ` Source last checked ${esc(x.checked)}${stat(x) === 'up to date' && x.next_expected && todayIso >= x.next_expected ? ', nothing newer there yet' : ''}.` : ''}${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
+    <tr><td colspan="6" class="src">${esc(x.cadence)}. ${x.how.includes('For exact figures: ') ? `${esc(x.how.split('For exact figures: ')[0])}<details class="src" style="display:inline-block;margin:0"><summary>Optional: exact per-issue figures from ChinaBond</summary>${esc(x.how.split('For exact figures: ')[1])}</details>` : esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.checked ? ` Source last checked ${esc(x.checked)}${stat(x) === 'up to date' && x.next_expected && todayIso >= x.next_expected ? ', nothing newer there yet' : ''}.` : ''}${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
   }
   $('#upTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}.</p>`;
   const man = ST.filter(x => x.mode === 'manual');
@@ -1331,7 +1338,7 @@ function tabNotes() {
     }
   }
   $('#matTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Shares in % of nominal outstanding. Bucket boundaries are on remaining maturity at the as-of date; 10y+ runs to the longest bond. The per-issue lists stay in rawData/maturity; the five sums per market are in the maturity_profile workbook under Downloads.</p>`;
-  $('#fxTable').innerHTML = `<p class="note">${esc(D.fx.source)}, ${D.fx.date} (<a href="${esc(D.fx.source_url)}" target="_blank" rel="noopener">source</a>). Units of currency per euro. ${D.fx.live ? `Fetched from the ECB when this page was opened${D.fx.built_date !== D.fx.date ? `; the rates stored at build time were of ${D.fx.built_date}` : ''}. The ECB publishes new rates around 16:00 CET on its working days and the page checks every time it is opened.` : 'Stored at build time; the page also tries to fetch the current rates from the ECB when it is opened, which did not succeed this time.'}</p><table class="tbl"><thead><tr>${Object.keys(D.fx.per_eur).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(D.fx.per_eur).map(v => `<td class="num">${fmt(v, 4)}</td>`).join('')}</tr></tbody></table>`;
+  $('#fxTable').innerHTML = `<p class="note">${esc(D.fx.source)}, ${D.fx.date} (<a href="${esc(D.fx.source_url)}" target="_blank" rel="noopener">source</a>). Units of currency per euro. ${D.fx.live ? `Fetched from the ECB when this page was opened${D.fx.built_date !== D.fx.date ? `; the rates stored at build time were of ${D.fx.built_date}` : ''}. The ECB publishes new rates around 16:00 CET on its working days and the page checks every time it is opened.` : 'Rates stored at build time. The page also asks the ECB for the current rates each time it is opened; that request did not succeed this time, so the stored rates are in use.'}</p><table class="tbl"><thead><tr>${Object.keys(D.fx.per_eur).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(D.fx.per_eur).map(v => `<td class="num">${fmt(v, 4)}</td>`).join('')}</tr></tbody></table>`;
 }
 
 /* ---------- tabs and boot ---------- */
