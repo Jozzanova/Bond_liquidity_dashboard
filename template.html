@@ -58,6 +58,13 @@ section.pane.on { display: block; }
 .lede { color: var(--muted); max-width: 80ch; margin-bottom: 1rem; }
 .block { margin-top: 1.6rem; }
 section.pane > .block:first-child { margin-top: 0; }
+.pagehead { position: sticky; top: var(--navh, 64px); z-index: 15; background: var(--bg); padding: .15rem 0 .55rem; margin-top: 0; }
+.pagehead + .block { margin-top: .5rem; }
+.pagehead.stuck { border-bottom: 1px solid var(--line); box-shadow: 0 6px 10px -8px rgba(0,0,0,.25); }
+.pagehead.stuck h1 { font-size: 1.15rem; margin-bottom: .1rem; }
+.pagehead.stuck .lede { font-size: .84rem; margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pagehead.stuck .meta { display: none; }
+.pagehead.stuck .lede .btn { display: none; }
 .block > p.note, .card > p.note { color: var(--muted); font-size: .9rem; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); min-width: 0; overflow-x: auto; }
 .card h3 { margin-bottom: .1rem; }
@@ -129,7 +136,7 @@ ul.caveats li { margin-bottom: .25rem; }
 .mainwrap { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 @media (max-width: 1000px) { .mainwrap { grid-template-columns: minmax(0, 1fr); align-items: stretch; } }
 .content { min-width: 0; }
-.side { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
+.side { position: sticky; top: calc(var(--navh, 64px) + var(--headh, 0px) + 12px); max-height: calc(100vh - var(--navh, 64px) - var(--headh, 0px) - 28px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
 @media (max-width: 1000px) { .side { position: static; max-height: none; } }
 @media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { width: 100%; margin: 0; } }
 .side h3 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 1.1rem 0 .45rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line); }
@@ -239,7 +246,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <main class="wrap">
 
 <section class="pane" id="pane-main">
-  <div class="block">
+  <div class="block pagehead">
     <h1>Liquidity profile of a multi-currency government bond holding</h1>
     <p class="lede">How long it would take to sell a government bond portfolio of a given size and currency mix at a chosen share of each market's daily turnover, and how much cash that raises by horizon. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers and can carry its own selling assumptions. Click a market anywhere, in a legend, a chart or a table row, to highlight it in every chart and table; click it again to clear. Double-click a legend entry to hide or show that series.</p>
   </div>
@@ -278,7 +285,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <section class="pane" id="pane-cny"></section>
 
 <section class="pane" id="pane-dl">
-  <div class="block">
+  <div class="block pagehead">
     <h1>Downloads</h1>
     <p class="lede">The structured datasets behind every chart and table on this page, as Excel workbooks. Series datasets open on a <b>Wide</b> sheet (one row per period or market, one column per series, ready for formulas), followed by a <b>Data</b> sheet with the same figures in long form (one observation per row) and an <b>About</b> sheet with the description, source, counting convention and a column dictionary. Local currency millions unless the column name says otherwise; empty cells mean not available. The first entry bundles every dataset into one workbook, in wide form. <a href="data/README.txt" download>data/README.txt</a> repeats the descriptions as a plain-text data dictionary. The files are regenerated on every build, so they always match the page.</p>
     <div class="card"><div id="dlList"></div></div>
@@ -286,7 +293,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 </section>
 
 <section class="pane" id="pane-update">
-  <div class="block">
+  <div class="block pagehead">
     <h1>Updating the data</h1>
     <p class="lede">Every number on this page comes from files in <code>rawData/</code>, read by the Python pipeline and baked into the page at build time. Most sources are downloaded by the pipeline itself; four need a file fetched by hand because the issuer's site blocks scripts. This tab shows how fresh each dataset is and what to do to bring it forward.</p>
   </div>
@@ -318,7 +325,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 </section>
 
 <section class="pane" id="pane-notes">
-  <div class="block">
+  <div class="block pagehead">
     <h1>Methods, sources and assumptions</h1>
     <p class="lede">How the liquidity profile is calculated, what each source measures and where the figures stop being data and start being assumptions. The datasets behind every chart are on the Downloads tab; the freshness of each one is on the Update data tab.</p>
   </div>
@@ -1040,9 +1047,11 @@ function tabCmp() {
   const top = ms.slice().sort((a, b) => (C[b].d2c || 0) - (C[a].d2c || 0))[0];
   const lo = withR[withR.length - 1];
   $('#pane-cmp').innerHTML = `
-  <div class="block">
+  <div class="block pagehead">
     <h1>Market comparison</h1>
     <p class="lede">The six markets side by side, independent of any holding: turnover per trading day, the stock of bonds behind it, how liquidity differs along the curve and how it has moved. Amounts in ${bc} bn at ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}; the base currency follows the Liquidity profile side panel. <button class="btn" id="btnCmpXlsx" type="button" style="margin-left:.4rem">Download this comparison (Excel)</button></p>
+  </div>
+  <div class="block">
     <div class="tiles">
       ${tile('D2C turnover, six markets', `${fmt(sumD2c, 0)} <span style="font-size:.8em">${bc} bn/day</span>`, 'dealer-to-customer, window averages')}
       ${tile('Largest market', esc(SHORT[top]), `${fmt(100 * C[top].d2c / sumD2c, 0)} % of that turnover`)}
@@ -1226,8 +1235,9 @@ function srcLine(m) {
 function marketHead(m) {
   const M = D.markets[m];
   const prov = M.provisional ? `<div class="callout"><b>Provisional figures.</b> ${esc(M.origin)}. The DMO publishes quarterly turnover by maturity band and counterparty type as spreadsheets behind a bot check; put <code>gemm-turnover-by-maturity-band-*.xlsx</code>, <code>all-gemms-turnover-*.xls</code> and <code>annual-turnover-report-*.xls</code> in <code>rawData/dmo_gilts</code> and rebuild to replace this block with the full quarterly series.</div>` : '';
-  return `<div class="block"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
-  <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div>${prov}
+  return `<div class="block pagehead"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
+  <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div></div>
+  <div class="block">${prov}
   <div class="callout info" id="pfm-${TAB[m]}"></div>
   <div class="subtabs"><button type="button" data-sub="market">Overview</button><button type="button" data-sub="data">Data and sources</button></div>
   <div class="tiles" id="tiles-${TAB[m]}"></div></div>`;
@@ -1696,8 +1706,24 @@ function showTab(t) {
   if (TABMK[t]) setSubView(t, subPref(t));
   document.querySelectorAll('#pane-' + t + ' .plot').forEach(el => { if (el.data && el.offsetParent) Plotly.Plots.resize(el); });
   window.scrollTo({top: 0});
+  requestAnimationFrame(layoutHead);
 }
 function current() { return (location.hash || '#main').slice(1).split('?')[0]; }
+// Sticky page head: the nav height feeds --navh (the tab rows wrap on narrow screens), the active
+// pane's head feeds --headh so the side panel sits below both; .stuck compacts the head once it pins.
+const navEl = document.querySelector('nav');
+function headEl() { const p = document.querySelector('section.pane.on'); return p && p.querySelector('.pagehead'); }
+function layoutHead() {
+  const navh = navEl.offsetHeight;
+  document.documentElement.style.setProperty('--navh', navh + 'px');
+  const h = headEl();
+  if (!h) { document.documentElement.style.setProperty('--headh', '0px'); return; }
+  const stuck = window.scrollY > 0 && h.getBoundingClientRect().top <= navh + 0.5;
+  h.classList.toggle('stuck', stuck);
+  document.documentElement.style.setProperty('--headh', h.offsetHeight + 'px');
+}
+window.addEventListener('scroll', () => requestAnimationFrame(layoutHead), {passive: true});
+new ResizeObserver(() => layoutHead()).observe(navEl);
 // market tabs have two views: Overview (turnover over time, the market in the profile) and Data and sources
 function subPref(t) { try { const v = localStorage.getItem('bondliq.sub.' + t); if (v === 'data' || v === 'market') return v; } catch (e) {} return 'market'; }
 function setSubView(t, v) {
