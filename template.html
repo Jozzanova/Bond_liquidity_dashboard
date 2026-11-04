@@ -862,7 +862,7 @@ function tabCmp() {
   const lo = withR[withR.length - 1];
   $('#pane-cmp').innerHTML = `
   <div class="block">
-    <h1>Markets compared</h1>
+    <h1>Market comparison</h1>
     <p class="lede">The six markets side by side, independent of any holding: turnover per trading day, the stock of bonds behind it, how liquidity differs along the curve and how it has moved. Amounts in ${bc} bn at ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}; the base currency follows the Liquidity profile side panel.</p>
     <div class="tiles">
       ${tile('D2C turnover, six markets', `${fmt(sumD2c, 0)} <span style="font-size:.8em">${bc} bn/day</span>`, 'dealer-to-customer, window averages')}
@@ -1335,8 +1335,8 @@ function tabNotes() {
 }
 
 /* ---------- tabs and boot ---------- */
-const TABS = {main: null, cmp: tabCmp, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, notes: tabNotes, update: tabUpdate};
-const TABLABEL = {main: 'Liquidity profile', cmp: 'Markets compared', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', notes: 'Methods & sources', update: 'Update data'};
+const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, cmp: tabCmp, notes: tabNotes, update: tabUpdate};
+const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data'};
 const TABMK = {usd: 'USD', gbp: 'GBP', de: 'EUR-DE', fr: 'EUR-FR', jpy: 'JPY', cny: 'CNY'};
 function buildTabs() {
   $('#tabs').innerHTML = Object.keys(TABS).filter(t => !TABMK[t] || D.markets[TABMK[t]]).map(t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`).join('');
