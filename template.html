@@ -40,9 +40,12 @@ h3 { font-size: .98rem; font-weight: 600; margin: 0 0 .3rem; }
 p { margin: 0 0 .7rem; max-width: 72ch; }
 code, .mono { font-family: var(--mono); font-size: .9em; }
 nav { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
-nav .in { display: flex; align-items: center; gap: .6rem; max-width: 1500px; margin: 0 auto; padding: .45rem max(16px, env(safe-area-inset-right, 0px)) .45rem max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
+nav .in { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; max-width: 1500px; margin: 0 auto; padding: .45rem max(16px, env(safe-area-inset-right, 0px)) .45rem max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
 nav .brand { font-weight: 600; margin-right: .3rem; white-space: nowrap; font-size: .92rem; }
 nav .tabs { display: flex; gap: .22rem; flex-wrap: wrap; flex: 1; }
+nav .tabs.markets { flex: 0 0 100%; align-items: center; }
+nav .tabs.markets .mlab { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: .35rem; }
+nav .tabs.markets a { font-size: .8rem; padding: .22rem .5rem; }
 nav .tabs a { padding: .32rem .58rem; border-radius: 999px; color: var(--fg); font-weight: 500; font-size: .86rem; white-space: nowrap; border: 1px solid var(--line); background: var(--card2); }
 nav .tabs a:hover { background: var(--accent-soft); border-color: var(--accent); text-decoration: none; color: var(--fg); }
 nav .tabs a.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
@@ -81,6 +84,10 @@ section.pane > .block:first-child { margin-top: 0; }
 .tbl td.num { font-family: var(--mono); font-size: .86rem; }
 .tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
 .tbl td.na { color: var(--muted); }
+.pane[data-view="market"] .sub-data, .pane[data-view="data"] .sub-market { display: none; }
+.subtabs { display: flex; gap: .3rem; margin: .2rem 0 .8rem; }
+.subtabs button { font: inherit; font-size: .85rem; padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card2); color: var(--fg); cursor: pointer; }
+.subtabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 tr[data-m] { cursor: pointer; }
 tr.dim td { opacity: .35; }
 tr.focus td { background: var(--accent-soft); }
@@ -124,6 +131,8 @@ ul.caveats li { margin-bottom: .25rem; }
 @media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { width: 100%; margin: 0; } }
 .side h3 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 1.1rem 0 .45rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line); }
 .side details.sec summary h3 { border-bottom: none; padding-bottom: 0; margin: 0; }
+.side details.sec details.sec { margin-top: .7rem; }
+.side details.sec details.sec summary h3 { font-size: .78rem; }
 .side h3:first-child { margin-top: 0; }
 .row { display: grid; grid-template-columns: 1fr auto; gap: .4rem; align-items: center; margin-bottom: .4rem; font-size: .9rem; }
 .row label { color: var(--fg); }
@@ -221,6 +230,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
   <span class="brand">Government bond liquidity</span>
   <div class="tabs" id="tabs"></div>
   <button id="themeBtn" type="button">Dark</button>
+  <div class="tabs markets" id="mtabs"></div>
 </div></nav>
 
 <main class="wrap">
@@ -234,7 +244,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <aside class="side" id="side"></aside>
     <div class="content">
       <div class="callout info" id="focusBar" style="display:none;margin-bottom:.6rem"></div>
-      <div class="tools"><span class="note" id="toolNote">Excel workbook: summary, markets, cash by horizon, groups, curve, sources, notes</span><button class="btn" id="btnXlsx" type="button">Download these results (Excel)</button></div>
+      <div class="tools"><span class="note" id="toolNote">Excel workbook: summary, markets, cash by horizon, groups, curve, sources, notes</span><button class="btn" id="btnLink" type="button" title="Copy a link that opens this page with the current inputs">Copy link to this scenario</button><button class="btn" id="btnXlsx" type="button">Download these results (Excel)</button></div>
       <div class="tiles" id="mainTiles"></div>
       <div class="grid2">
         <div class="card"><h3>Cumulative share sold</h3><div class="sub" id="cvSub"></div><div class="plot tall" id="cvChart"></div></div>
@@ -247,7 +257,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       </div>
       <div class="card" style="margin-top:1rem"><h3>Cash raised by horizon</h3><div class="sub" id="hzSub"></div><div id="hzTable"></div></div>
       <div class="card" style="margin-top:1rem"><h3>Markets</h3><div class="sub" id="mtSub"></div><div id="mtTable"></div></div>
-      <div class="card" style="margin-top:1rem"><h3>Holdings and turnover by maturity bucket</h3><div class="sub">Local currency bn. Columns are the holding's maturity buckets. A cell that spans several buckets is one turnover pool: the source splits turnover no finer, so the holding in those buckets is sold against the pool together.</div><div id="grTable"></div></div>
+      <div class="card" id="grCard" style="margin-top:1rem"><h3>Holdings and turnover by maturity bucket</h3><div class="sub">Local currency bn, by the holding's maturity buckets. A cell spanning several buckets is one turnover pool.</div><div id="grTable"></div></div>
       <details class="card method" style="margin-top:1rem"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand; the full method is on the Methods &amp; sources tab)</span></summary><div id="methodBody">
         <p>Holding in market <i>m</i> = portfolio size × allocation share, converted to local currency at the ECB reference rate (<span id="fxDate"></span>). With the maturity option off (the default) the holding is one pool sold against the market's turnover across all maturities, which is the same as holding the market in proportion to its turnover. With the option on, the holding is spread over the five maturity buckets with the weights entered (default: the market's outstanding stock by remaining maturity, see the outstanding stock table on the Methods &amp; sources tab), buckets beyond the maturity limit are removed (a bucket the limit cuts through keeps a proportional share), the weights are rescaled and the buckets pooled into the market's liquidity groups. Each group is sold at a constant pace equal to the participation rate times the group's average daily turnover in the chosen segment (after the haircut), all groups in parallel. For US Treasuries, the on-the-run share of the holding set in the side panel sells against on-the-run volume and the rest against off-the-run volume, as two parallel parts of each group; at 0 % the whole holding sells against off-the-run volume only. A market switched off in the side panel is left out and the allocation is rescaled over the rest. Each market tab can apply its own selling assumptions to that market alone (its holding stays linked to this tab); nothing here changes when it does. The curve is the sum over groups of min(holding, pace × days). "Days to sell" is where that sum reaches the holding; the combined profile sums markets in the base currency.</p>
         <p class="note">This is a capacity calculation, not a price-impact model: it says how many days of turnover a holding represents, at a participation rate you judge to be absorbable without moving the market. It assumes turnover stays at its window average while you sell, which stress episodes contradict; use the haircut for that. Dealer-to-customer volume is the relevant pool for an investor that trades with dealers; interdealer volume (shown as D2D) is the dealers' own recycling of risk and is included only in the "total" segment.</p>
@@ -302,6 +312,22 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <p class="lede">How the liquidity profile is calculated, what each source measures and where the figures stop being data and start being assumptions. The datasets behind every chart can be downloaded at the bottom of this tab; the freshness of each one is on the Update data tab.</p>
   </div>
   <div class="block"><details class="card method"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand)</span></summary><div id="methodNotes" style="margin-top:.5rem"></div></details>
+  </div>
+  <div class="block"><h2>Glossary</h2>
+    <div class="card"><dl class="kv">
+      <dt>Average daily turnover</dt><dd>Volume traded in a period divided by the trading days in it. Each source counts volume its own way (par or market value, one or both sides); the Sources table below says how.</dd>
+      <dt>Dealer-to-customer (D2C)</dt><dd>Trades between dealers and their customers: the pool an investor selling through dealers competes for. The profile sells into it by default.</dd>
+      <dt>Dealer-to-dealer (D2D)</dt><dd>Trades between dealers, including those through interdealer brokers and platforms. The dealers' own recycling of risk; included only in the "total" segment.</dd>
+      <dt>On-the-run / off-the-run</dt><dd>US Treasuries: the most recently auctioned issue of each tenor is on-the-run, every older issue off-the-run. On-the-run issues carry most of the volume; a seasoned holding sells into the off-the-run pool.</dd>
+      <dt>Participation rate</dt><dd>The share of a day's turnover one seller takes. 3 % of daily D2C turnover is the default; the rate is a judgement about what the market absorbs without moving.</dd>
+      <dt>Haircut</dt><dd>A cut to the turnover before the participation rate is applied, standing for volume that would not be available to a seller in a stress.</dd>
+      <dt>Liquidity group</dt><dd>The maturity range for which a source reports one turnover figure. Five groups for US Treasuries and gilts, three for Bunds and JGBs, one for OATs and CGBs.</dd>
+      <dt>Maturity bucket</dt><dd>The five remaining-maturity ranges of the holding (0-3, 3-5, 5-7, 7-10, 10+ years). Buckets map onto a market's liquidity groups.</dd>
+      <dt>Pooled</dt><dd>A market sold as one pool: the whole holding against the market's turnover across all maturities. The default when the maturity option is off.</dd>
+      <dt>Days to sell</dt><dd>Holding divided by the selling pace (participation rate times turnover). Half, 90 % and fully sold are the days at which the cumulative sale reaches those shares.</dd>
+      <dt>Turnover ratio</dt><dd>Daily turnover divided by the outstanding stock; its inverse is the days of trading it would take to turn the whole stock over once.</dd>
+      <dt>Window</dt><dd>The period the averages cover: the latest twelve months, four quarters or calendar year each source allows, stated on every market tab.</dd>
+    </dl></div>
   </div>
   <div class="block"><h2>Turnover segments</h2>
     <p class="note">The profile sells into one of two pools per market. <b>Dealer-to-customer</b> is the turnover an investor trading with dealers competes for; <b>total</b> adds the interdealer leg and is an upper bound. The table shows what each source lets us count as each segment.</p>
@@ -573,8 +599,9 @@ function buildSide() {
   <h3>Selling assumptions</h3>
   <div class="row"><label for="inPart">Participation, % of daily turnover</label><input type="number" id="inPart" min="1" max="100" step="1" value="${S.part}"><input type="range" id="inPartR" min="1" max="100" step="1" value="${S.part}"></div>
   <div class="row"><label for="inHair">Turnover haircut, % (stress)</label><input type="number" id="inHair" min="0" max="95" step="5" value="${S.haircut}"><input type="range" id="inHairR" min="0" max="95" step="5" value="${S.haircut}"></div>
-  <div class="btns" style="margin-top:.2rem">${PRESETS.map(([n, p, h]) => `<button class="btn${S.part === p && S.haircut === h ? ' on' : ''}" type="button" data-preset="${p},${h}" title="participation ${p} %, haircut ${h} %">${n} ${p} % / ${h} %</button>`).join('')}</div>
-  <div class="hint">Illustrative presets, not calibrated. The haircut stands for the share of reported volume a seller could actually use: in a stress, volumes can rise while depth falls.</div>
+  <div class="row"><label for="inPreset">Preset</label><select id="inPreset">${PRESETS.map(([n, p, h]) => `<option value="${p},${h}"${S.part === p && S.haircut === h ? ' selected' : ''}>${n}: ${p} % / ${h} % haircut</option>`).join('')}<option value="custom"${PRESETS.some(([n, p, h]) => S.part === p && S.haircut === h) ? '' : ' selected'}>Custom</option></select></div>
+  <div class="hint">Presets are illustrative, not calibrated. The haircut stands for the share of reported volume a seller could actually use.</div>
+  <details class="sec" data-sec="adv"${secOpen('adv', S.seg !== DEF.seg || S.otr !== DEF.otr) ? ' open' : ''}><summary><h3>Advanced</h3><span class="badge${S.seg !== DEF.seg || S.otr !== DEF.otr || S.matOn ? ' warn' : ''}" id="secAdvBadge">${S.seg !== DEF.seg || S.otr !== DEF.otr || S.matOn ? 'changed' : 'default'}</span></summary>
   <div class="segs">${Object.entries(SEGS).map(([k, v]) => `<label><input type="radio" name="seg" value="${k}"${S.seg === k ? ' checked' : ''}><span>${v.label}<small>${v.small}</small></span></label>`).join('')}</div>
   <div class="row" style="margin-top:.5rem"><label for="inOtr">US on-the-run share of holding, %</label><input type="number" id="inOtr" min="0" max="100" step="0.5" value="${S.otr}"></div>
   <div class="hint">Share of the US holding sold against on-the-run turnover, the rest against off-the-run. ${(() => { const o = MATD.USD && MATD.USD.on_the_run; return o ? `Current issues are ${fmt(o.share_pct, 1)} % of notes and bonds outstanding (<a href="#main" data-otr="${o.share_pct}">use ${fmt(o.share_pct, 1)} %</a> for a market-tracking holding); ` : ''; })()}0.5 % fits mostly seasoned bonds, 0 % is the most conservative.</div>
@@ -598,6 +625,7 @@ function buildSide() {
   ${S.matMode === 'custom' ? `<div class="btns"><button class="btn" id="btnMkt" type="button">Fill in the outstanding-stock shares</button><button class="btn" id="btnTpl" type="button">Fill in ${S.tpl.map(v => fmt(v, 0)).join(' / ')}</button></div>` : ''}
   </div>
   </details>
+  </details>
   <div class="btns" style="margin-top:.9rem"><button class="btn" id="btnAllOn" type="button">All markets on</button><button class="btn" id="btnReset" type="button">Reset everything</button></div>`;
   side.innerHTML = h;
   const on = (sel, ev, fn) => side.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn));
@@ -606,14 +634,14 @@ function buildSide() {
   on('#btnAllOn', 'click', () => { for (const m of MK) S.on[m] = true; side.querySelectorAll('input[data-on]').forEach(i => { i.checked = true; }); update(); });
   on('#inBase', 'change', e => { S.base = e.target.value; update(); });
   on('#inSize', 'input', e => { S.size = Math.max(0, +e.target.value || 0); update(); });
-  const presetMark = () => side.querySelectorAll('[data-preset]').forEach(b => { const [p, h] = b.dataset.preset.split(',').map(Number); b.classList.toggle('on', S.part === p && S.haircut === h); });
+  const presetMark = () => { const sel = $('#inPreset'); if (!sel) return; const hit = PRESETS.find(([n, p, h]) => S.part === p && S.haircut === h); sel.value = hit ? `${hit[1]},${hit[2]}` : 'custom'; };
   on('#inPart', 'input', e => { S.part = Math.min(100, Math.max(1, +e.target.value || 1)); $('#inPartR').value = S.part; presetMark(); update(); });
   on('#inPartR', 'input', e => { S.part = +e.target.value; $('#inPart').value = S.part; update(); });
   on('#inHair', 'input', e => { S.haircut = Math.min(95, Math.max(0, +e.target.value || 0)); $('#inHairR').value = S.haircut; presetMark(); update(); });
   on('#inHairR', 'input', e => { S.haircut = +e.target.value; $('#inHair').value = S.haircut; update(); });
   on('input[name=seg]', 'change', e => { S.seg = e.target.value; update(); });
   on('#inOtr', 'input', e => { S.otr = Math.min(100, Math.max(0, +e.target.value || 0)); update(); });
-  on('[data-preset]', 'click', e => { const [p, h] = e.currentTarget.dataset.preset.split(',').map(Number); S.part = p; S.haircut = h; $('#inPart').value = p; $('#inPartR').value = p; $('#inHair').value = h; $('#inHairR').value = h; side.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('on', b.dataset.preset === e.currentTarget.dataset.preset)); update(); });
+  on('#inPreset', 'change', e => { if (e.target.value === 'custom') return; const [p, h] = e.target.value.split(',').map(Number); S.part = p; S.haircut = h; $('#inPart').value = p; $('#inPartR').value = p; $('#inHair').value = h; $('#inHairR').value = h; update(); });
   on('[data-otr]', 'click', e => { e.preventDefault(); S.otr = +e.currentTarget.dataset.otr; $('#inOtr').value = S.otr; update(); });
   on('#inMax', 'input', e => { S.matMax = Math.min(30, Math.max(1, +e.target.value || 1)); update(); });
   on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); const b = $('#secMatBadge'); b.textContent = S.matOn ? 'on' : 'off'; b.classList.toggle('ok', S.matOn); update(); });
@@ -667,7 +695,7 @@ function drawMain() {
   const d2cB = MK.map(m => toB(m, R.markets[m].advD2c)), d2cOn = MK.map(m => toB(m, R.markets[m].advD2cOn));
   const d2d = MK.map(m => toB(m, R.markets[m].advD2d)), tot = MK.map(m => toB(m, R.markets[m].advTot));
   const usOn = R.markets.USD && R.markets.USD.advD2cOn ? toB('USD', R.markets.USD.advD2cOn) : null;
-  $('#advSub').textContent = `All six markets, window averages, ${bc} bn per trading day at ECB rates, log scale. US D2C is off-the-run volume${usOn ? `; on-the-run D2C (${fmt(usOn, 0)} bn) is stacked on top and only the on-the-run share of the holding sells against it` : ''}. D2D and total follow each source's own counting; CNY has no D2D figure and its total is whole-market interbank CGB settlement (CCDC).`;
+  $('#advSub').textContent = `Window averages, ${bc} bn per trading day, log scale. US D2C is off-the-run volume with on-the-run stacked on top. D2D and total follow each source's own counting (Methods & sources).`;
   plot('advChart', [
     {x: names, y: d2cB, name: 'Dealer-to-customer', type: 'bar', offsetgroup: 'd2c', marker: {color: css('--d2c')}, customdata: MK.map(m => m === 'USD' ? 'D2C, off-the-run' : 'D2C'), hovertemplate: '%{y:.1f}<extra>%{customdata}</extra>'},
     {x: names, y: d2cOn, base: d2cB, name: 'US on-the-run D2C', type: 'bar', offsetgroup: 'd2c', marker: {color: css('--d2con')}, hovertemplate: '%{y:.1f}<extra>D2C, on-the-run (stacked on off-the-run)</extra>'},
@@ -688,17 +716,16 @@ function drawMain() {
   AM.forEach(m => { const g = R.markets[m].groups; covTr.push({x: g.map(x => SHORT[m] + (x.g === 'all' ? '' : ' ' + x.g)), y: g.map(x => isFinite(x.daysAdv) ? x.daysAdv : null), type: 'bar', name: D.markets[m].name, marker: {color: col(m)}, hovertemplate: '%{x}: %{y:.2f} days of turnover<extra></extra>'}); });
   plot('covChart', covTr, base({hovermode: 'closest', showlegend: false, margin: {l: 52, r: 14, t: 30, b: covTr.some(t => t.x.length > 1) ? 96 : 60}, xaxis: Object.assign(base().xaxis, {tickangle: covTr.some(t => t.x.length > 1) ? -40 : 0, automargin: true, tickfont: {size: 10, color: css('--axis')}}), yaxis: Object.assign(base().yaxis, {title: {text: 'days of turnover'}})}));
   // market table
-  $('#mtSub').textContent = `Turnover in local currency bn per day (window averages). Days at ${S.part} % participation${S.haircut ? ` and a ${S.haircut} % haircut` : ''}. Markets switched off are greyed out and carry no holding.`;
-  let h = `<table class="tbl"><thead><tr><th>Market</th><th>Share</th><th>Holding, ${bc} bn</th><th>Holding, local bn</th><th>D2C</th><th>D2D</th><th>Total</th><th>D2C share</th><th>Holding / D2C, days</th><th>Half sold, days</th><th>Fully sold, days</th></tr></thead><tbody>`;
+  $('#mtSub').textContent = `Holding and days to sell per market at ${S.part} % of ${segLab}${S.haircut ? ` after a ${S.haircut} % haircut` : ''}.`;
+  let h = `<table class="tbl"><thead><tr><th>Market</th><th>Share</th><th>Holding, ${bc} bn</th><th>Holding, local bn</th><th>Half sold, days</th><th>90 % sold, days</th><th>Fully sold, days</th></tr></thead><tbody>`;
   for (const m of MK) {
     const r = R.markets[m], M = D.markets[m], off = !S.on[m];
     const d2c = r.advD2c, tt = r.advTot;
     h += `<tr data-m="${m}"${off ? ' class="off"' : ''}><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}" title="${esc(M.name)}">${esc(SHORT[m] || M.name)}</a>${M.provisional ? '<span class="badge warn">provisional</span>' : ''}${off ? '<span class="badge">off</span>' : ''}</td><td class="num">${off ? '–' : fmt(100 * r.share, 1) + ' %'}</td><td class="num">${off ? '–' : fmt(r.holdBase / 1000, 1)}</td><td class="num">${off ? '–' : fmt(r.holdLocal / 1000, 1) + ' ' + M.currency}</td>
-      <td class="num">${fmt(d2c / 1000, 1)}${m === 'USD' ? '*' : ''}</td><td class="num${r.advD2d == null ? ' na' : ''}">${r.advD2d == null ? 'n/a' : fmt(r.advD2d / 1000, 1)}</td><td class="num${tt == null ? ' na' : ''}">${tt == null ? 'n/a' : fmt(tt / 1000, 1)}</td><td class="num">${tt ? fmt(100 * d2c / tt, 0) + ' %' : '–'}</td>
-      <td class="num">${off ? '–' : d2c ? fmt(r.holdLocal / d2c, 1) : '–'}</td><td class="num">${off ? '–' : fmtDays(r.t50)}</td><td class="num">${off ? '–' : fmtDays(r.t100)}</td></tr>`;
+      <td class="num">${off ? '–' : fmtDays(r.t50)}</td><td class="num">${off ? '–' : fmtDays(r.t90)}</td><td class="num">${off ? '–' : fmtDays(r.t100)}</td></tr>`;
   }
-  h += `<tr class="tot"><td>Combined${AM.length < MK.length ? ' (included markets)' : ''}</td><td class="num">100 %</td><td class="num">${fmt(sz, 1)}</td><td></td><td class="num">${fmt(AM.reduce((s, m) => s + (R.markets[m].advD2c || 0) / R.markets[m].fx, 0) / 1000, 1)}</td><td class="num">${fmt(AM.reduce((s, m) => s + (R.markets[m].advD2d || 0) / R.markets[m].fx, 0) / 1000, 1)}</td><td></td><td></td><td></td><td class="num">${fmtDays(R.t50)}</td><td class="num">${fmtDays(R.t100)}</td></tr></tbody></table>
-  <p class="note" style="margin-top:.5rem">* US D2C is off-the-run dealer-to-customer volume, the pool a holding of seasoned Treasuries sells into; on-the-run D2C (${R.markets.USD && R.markets.USD.advD2cOn ? fmt(R.markets.USD.advD2cOn / 1000, 0) : '–'} USD bn per day) is used only for the on-the-run share of the holding. Combined turnover columns are sums in ${bc}; D2D and total are shown as reported and are not comparable across markets (see each market's counting convention). CNY has no interdealer figure; its total is whole-market interbank CGB settlement (CCDC), not foreign-investor turnover.</p>`;
+  h += `<tr class="tot"><td>Combined${AM.length < MK.length ? ' (included markets)' : ''}</td><td class="num">100 %</td><td class="num">${fmt(sz, 1)}</td><td></td><td class="num">${fmtDays(R.t50)}</td><td class="num">${fmtDays(R.t90)}</td><td class="num">${fmtDays(R.t100)}</td></tr></tbody></table>
+  <p class="note" style="margin-top:.5rem">Markets switched off carry no holding. The turnover each market sells into is in the assumptions table above; counting conventions are on the Methods &amp; sources tab.</p>`;
   $('#mtTable').innerHTML = h;
   // the turnover each part of the holding sells into, local and base currency
   {
@@ -749,6 +776,7 @@ function drawMain() {
   }
   h += `</tbody></table><p class="note" style="margin-top:.5rem">${S.grm === 'days' ? 'Days to sell the holding in each cell at the chosen participation rate; the last column is the whole market holding (its slowest cell).' : S.grm === 'hold' ? 'Holding in each cell after the maturity limit, local currency bn.' : S.grm === 'adv' ? 'Average daily turnover of the pool each cell sells into.' : S.grm === 'pace' ? 'Daily selling pace: participation rate × turnover after the haircut (US: effective pace of the two on/off-the-run parts).' : 'Holding divided by daily turnover of its pool, before any participation assumption.'} ${S.matOn ? 'Buckets beyond the maturity limit hold nothing and show –.' : 'The maturity option is off, so every market is one pool across all maturities.'}${R.split ? ` US Treasuries: ${fmt(S.otr, 1)} % of each cell is treated as on-the-run and sells against on-the-run turnover, the rest against off-the-run; days to sell is the slower of the two parts.` : ''}</p>`;
   $('#grTable').innerHTML = h;
+  $('#grCard').style.display = AM.some(m => R.markets[m].groups.length > 1) ? '' : 'none';   // only informative once a holding is split by maturity
 }
 
 /* ---------- Excel export of the current profile ----------
@@ -1186,7 +1214,9 @@ function marketHead(m) {
   const prov = M.provisional ? `<div class="callout"><b>Provisional figures.</b> ${esc(M.origin)}. The DMO publishes quarterly turnover by maturity band and counterparty type as spreadsheets behind a bot check; put <code>gemm-turnover-by-maturity-band-*.xlsx</code>, <code>all-gemms-turnover-*.xls</code> and <code>annual-turnover-report-*.xls</code> in <code>rawData/dmo_gilts</code> and rebuild to replace this block with the full quarterly series.</div>` : '';
   return `<div class="block"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
   <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div>${prov}
-  <div class="tiles" id="tiles-${TAB[m]}"></div><div class="callout info" id="pfm-${TAB[m]}" style="margin-top:0"></div></div>`;
+  <div class="callout info" id="pfm-${TAB[m]}"></div>
+  <div class="subtabs"><button type="button" data-sub="market">Overview</button><button type="button" data-sub="data">Data and sources</button></div>
+  <div class="tiles" id="tiles-${TAB[m]}"></div></div>`;
 }
 function marketTiles(m) {
   const M = D.markets[m], a = M.window_adv, s = g => Object.values(g).every(v => v != null) ? Object.values(g).reduce((x, y) => x + y, 0) : null;
@@ -1241,7 +1271,7 @@ function groupTable(m) {
 }
 function profileBlock(m) {
   const t = TAB[m], M = D.markets[m], one = M.groups.length === 1;
-  return `<div class="block"><h2>This market in the liquidity profile</h2><p class="note" id="pn-${t}"></p>
+  return `<div class="block sub-market"><h2>This market in the liquidity profile</h2><p class="note" id="pn-${t}"></p>
   <div class="card" id="ov-${t}"><div class="ovtop"><label><input type="checkbox" data-ov="on"> <b>Own selling assumptions for this tab</b></label><span id="ovs-${t}"></span><button class="btn" type="button" data-ov="copy">Copy the Liquidity profile tab's settings</button></div>
   <div class="ovp">
     <label class="ovf">Participation, % of daily turnover<input type="number" data-ov="part" min="1" max="100" step="1"></label>
@@ -1320,15 +1350,15 @@ const sumArr = arrs => arrs[0].map((_, i) => arrs.reduce((s, a) => s + (a[i] ?? 
 function tabUSD() {
   const m = 'USD', M = D.markets[m];
   $('#pane-usd').innerHTML = marketHead(m) + `
-  <div class="block"><h2>Turnover over time</h2><p class="note">Nominal coupon Treasuries, par value, USD bn per trading day (SIFMA calendar). FINRA reports each trade once; ATS and interdealer trades are the dealer-to-dealer leg.</p>
+  <div class="block sub-market"><h2>Turnover over time</h2><p class="note">Nominal coupon Treasuries, par value, USD bn per trading day (SIFMA calendar). FINRA reports each trade once; ATS and interdealer trades are the dealer-to-dealer leg.</p>
   <div class="grid2"><div class="card"><h3>By venue</h3><div class="sub">Stacked: dealer-to-customer (off-the-run and on-the-run) and ATS/interdealer</div><div class="plot" id="us-ts"></div><div id="us-ts-years"></div></div>
   <div class="card"><h3>By security type, all venues</h3><div class="sub">Bills, nominal coupons, TIPS and FRNs</div><div class="plot" id="us-type"></div><div id="us-type-years"></div></div></div></div>
-  <div class="block"><h2>By remaining maturity, window average</h2>
+  <div class="block sub-data"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Common buckets</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="us-grp"></div></div>
   <div class="card"><h3>TRACE buckets</h3><div class="sub">Dealer-to-customer, off- and on-the-run, and ATS/interdealer</div><div class="plot" id="us-tb"></div></div></div></div>
-  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  <div class="block sub-data"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
+  <div class="block sub-data"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Off-the-run dealer-to-customer volume is the conservative measure because an investor selling seasoned bonds competes for that liquidity; on-the-run volume is dominated by hedging and relative-value flow in the current issues.</li>
   <li>Strips are included in off-the-run nominal coupon volume by FINRA.</li>
   <li>TRACE covers FINRA members' trades; trades between two non-members (for example bank dealers that are not broker-dealers) are not captured, and the ATS category includes both interdealer and some customer-facing platforms as FINRA classifies them.</li>
@@ -1362,16 +1392,16 @@ function tabGBP() {
   const m = 'GBP', M = D.markets[m];
   const full = !M.provisional;
   $('#pane-gbp').innerHTML = marketHead(m) + `
-  <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
+  <div class="block sub-market"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
   <div class="${full ? 'grid3' : 'grid2'}"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3>${full ? '<div class="sub">Conventional gilts, quarterly, GBP bn per day</div>' : ''}<div class="plot" id="gb-ts"></div><div id="gb-ts-years"></div></div>
   ${full ? `<div class="card"><h3>By gilt type</h3><div class="sub">Conventional and index-linked, customer and professional combined, quarterly, GBP bn per day</div><div class="plot" id="gb-type"></div><div id="gb-type-years"></div></div>` : ''}
   <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week (totals, not daily averages; all gilts, the weekly file has no split by type, see the quarterly chart by gilt type). Bold lines are 13-week averages; the faint lines behind are the single weeks. Their sharp dip every year-end is the Christmas and New Year weeks (bank holidays and thin trading in a weekly total), the smaller dips the Easter and May bank-holiday weeks.' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div><div id="gb-wk-years"></div></div></div></div>
-  <div class="block"><h2>By remaining maturity, window average</h2>
+  <div class="block sub-data"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="gb-grp"></div></div>
   ${full ? `<div class="card"><h3>DMO maturity bands</h3><div class="sub">Customer and professional</div><div class="plot" id="gb-bands"></div></div>` : `<div class="card"><h3>Annual turnover by segment</h3><div id="gb-ann"></div></div>`}</div></div>
-  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  <div class="block sub-data"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
+  <div class="block sub-data"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>GEMM-reported turnover covers trades with a Gilt-edged Market Maker (one of the 15 to 18 primary dealers recognised by the DMO) on at least one side; it is not the whole gilt market, though it should be most of it.</li>
   <li>Professional turnover is not adjusted for double counting through IDBs, so the D2D and total figures are upper bounds.</li>
   ${full ? '<li>Index-linked gilts and strips are excluded from the liquidity groups.</li>' : `<li>The customer share of ${fmt(100 * M.customer_share, 0)} % is read by eye from the weekly chart in the Quarterly Review April-June 2026 and applied uniformly to all maturities; the proper split by band is in the DMO spreadsheet.</li><li>The three segments (0-7y, 7-15y, 15y+) are coarser than the common buckets: holdings in the 10y+ bucket are matched with the 15y+ pool, which is conservative for 10-15 year bonds.</li>`}</ul></div></div>`;
@@ -1447,16 +1477,16 @@ function tabGBP() {
 function tabDE() {
   const m = 'EUR-DE', M = D.markets[m];
   $('#pane-de').innerHTML = marketHead(m) + `
-  <div class="block"><h2>Annual trading volumes</h2><p class="note">Gross volume (sales plus purchases) reported by a representative subset of Bund Issues Auction Group banks, EUR bn per calendar year, by instrument (original maturity) and by counterparty. "Broker" counterparties are the interdealer leg, reported by both banks and halved; all other counterparties are reported once and taken as dealer-to-customer. ${M.trading_days} TARGET trading days per year.</p>
+  <div class="block sub-market"><h2>Annual trading volumes</h2><p class="note">Gross volume (sales plus purchases) reported by a representative subset of Bund Issues Auction Group banks, EUR bn per calendar year, by instrument (original maturity) and by counterparty. "Broker" counterparties are the interdealer leg, reported by both banks and halved; all other counterparties are reported once and taken as dealer-to-customer. ${M.trading_days} TARGET trading days per year.</p>
   <div class="grid3"><div class="card"><h3>By instrument</h3><div class="sub">Gross, EUR bn per year</div><div class="plot" id="de-inst"></div></div>
   <div class="card"><h3>By counterparty</h3><div class="sub">Gross, EUR bn per year (${M.year})</div><div class="plot" id="de-cp"></div></div>
   <div class="card"><h3>Implied daily turnover</h3><div class="sub">Schatz to Bund 30 only; customer vs halved broker legs</div><div class="plot" id="de-ts"></div><div id="de-ts-years"></div></div></div></div>
-  <div class="block"><h2>By original maturity, ${M.year}</h2>
+  <div class="block sub-data"><h2>By original maturity, ${M.year}</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">Schatz + Bobl → 0-5y; Bund 7 + Bund 10 → 5-10y; Bund 15 + Bund 30 → 10y+</div><div class="plot" id="de-grp"></div></div>
   <div class="card"><h3>Instrument detail</h3><div id="de-tab"></div></div></div></div>
-  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
+  <div class="block sub-data"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
+  <div class="block sub-data"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>The reporting banks are a subset of the auction group, so the level is a lower bound for the whole Bund market.</li>
   <li>The counterparty mix is published for all instruments together; the ${fmt(100 * M.broker_share, 0)} % broker share of ${M.year} is applied to every instrument.</li>
   <li>Instruments are classified by original maturity: a seasoned 10-year Bund stays in the 5-10y group however short its remaining life.</li>
@@ -1485,10 +1515,10 @@ function tabFR() {
   const de010 = k => (DE.window_adv[k]['0-5y'] + DE.window_adv[k]['5-10y']) / 1000;
   $('#pane-fr').innerHTML = marketHead(m) + `
   <div class="callout info"><b>Derived level, no French turnover source.</b> Agence France Trésor publishes SVT-reported daily volumes only as a chart in its monthly bulletin, with no split by maturity or counterparty. <b>Figure used:</b> the German 0-10y customer-facing level (Schatz, Bobl, Bund 7, Bund 10: ${fmt(M.de_010_d2c_mn / 1000, 1)} bn per day in ${M.year}) × ${M.scale} = <b>${fmt(M.window_adv.d2c_base.all / 1000, 1)} bn per day</b>; total incl. halved broker legs ${fmt(M.window_adv.total.all / 1000, 1)} bn. <b>Assumption:</b> OAT turnover is ${M.scale} of Bund turnover and has the same counterparty mix. <b>Reference check:</b> an independent estimate puts gross OAT turnover at about ${fmt(M.reference.total_mn / 1000, 1)} bn per day (${esc(M.reference.note)}). The like-for-like German figure, Finanzagentur gross excluding Bubills but including linkers and green Bunds, is ${fmt(M.reference.de_like_for_like_mn / 1000, 1)} bn per day, so the reference implies an OAT/Bund ratio of ${fmt(M.reference.implied_scale, 2)}; at that ratio the customer-facing level would be ${fmt(M.reference.d2c_at_implied_scale_mn / 1000, 1)} bn per day. The ratio is kept at ${M.scale} because the reference probably includes OATi/OAT€i, whose share of OAT turnover is not in the sources used, and because the French interdealer share is unknown; the nominal-only level is the right basis for a nominal holding. Change <code>EUR_FR_SCALE</code> in <code>pipeline/common.py</code> to use another ratio.</div>
-  <div class="block"><div class="grid2"><div class="card"><h3>Bund 0-10y level and the scaled OAT level</h3><div class="sub">EUR bn per trading day, ${DE.year}</div><div class="plot" id="fr-cmp"></div></div>
+  <div class="block sub-data"><div class="grid2"><div class="card"><h3>Bund 0-10y level and the scaled OAT level</h3><div class="sub">EUR bn per trading day, ${DE.year}</div><div class="plot" id="fr-cmp"></div></div>
   <div class="card"><h3>Figures used in the profile</h3>${groupTable(m)}</div></div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
+  <div class="block sub-data"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>One liquidity group covers all maturities, so the holding's maturity weights do not affect the French result.</li>
   <li>The counterparty split is inherited from the Bund data and says nothing about the OAT market's own interdealer share.</li>
   <li>The single group is meant to cover the benchmark universe up to 10 years; a holding concentrated in long OATs is overstated in liquidity.</li>
@@ -1505,15 +1535,15 @@ function tabFR() {
 function tabJPY() {
   const m = 'JPY', M = D.markets[m];
   $('#pane-jpy').innerHTML = marketHead(m) + `
-  <div class="block"><h2>Turnover over time</h2><p class="note">JSDA members' outright OTC transactions in JGBs (repos excluded), face value, JPY bn per trading day. Members report their own legs: trades with customers appear once, member-to-member trades ("Bond Dealers") twice and are halved. "Others", which includes members' auction allotments, is ${M.include_others ? 'included in' : 'excluded from'} customer volume. Zero-coupon bonds and T-bills are excluded from the groups.</p>
+  <div class="block sub-market"><h2>Turnover over time</h2><p class="note">JSDA members' outright OTC transactions in JGBs (repos excluded), face value, JPY bn per trading day. Members report their own legs: trades with customers appear once, member-to-member trades ("Bond Dealers") twice and are halved. "Others", which includes members' auction allotments, is ${M.include_others ? 'included in' : 'excluded from'} customer volume. Zero-coupon bonds and T-bills are excluded from the groups.</p>
   <div class="grid2"><div class="card"><h3>By counterparty</h3><div class="sub">Interest-bearing JGBs (medium, long, super-long)</div><div class="plot" id="jp-ts"></div><div id="jp-ts-years"></div></div>
   <div class="card"><h3>By original maturity class, customer volume</h3><div class="plot" id="jp-cls"></div><div id="jp-cls-years"></div></div></div></div>
-  <div class="block"><h2>Window average</h2>
+  <div class="block sub-data"><h2>Window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">medium (2/4/5y) → 0-5y; long (6/10y) → 5-10y; super-long → 10y+; ${esc(M.window.label)}</div><div class="plot" id="jp-grp"></div></div>
   <div class="card"><h3>Who trades JGBs</h3><div class="sub">Average monthly outright volume by investor category, JPY trn, ${esc(M.window.label)}</div><div class="plot" id="jp-inv"></div></div></div></div>
-  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}${jsdaBridge(M)}</div></div>
+  <div class="block sub-data"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}${jsdaBridge(M)}</div></div>
   ${profileBlock(m)}
-  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
+  <div class="block sub-data"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Classes are by original maturity: a 10-year JGB with two years left is still "long" (5-10y group).</li>
   <li>Face value, not market value; for super-long JGBs trading well below par the cash turnover is lower than shown.</li>
   <li>"Bond Dealers" is the JSDA category for member-to-member trades; the halving assumes both sides are members, which is the definition of the category.</li>
@@ -1542,13 +1572,13 @@ function tabJPY() {
 function tabCNY() {
   const m = 'CNY', M = D.markets[m];
   $('#pane-cny').innerHTML = marketHead(m) + `
-  <div class="block"><h2>Northbound Bond Connect turnover</h2><p class="note">Monthly average daily turnover of all bonds through Bond Connect (RMB bn) and the share of Chinese government bonds, from the monthly Flash Reports. Where a report does not state the CGB share, the turnover-weighted mean of the months that do (${fmt(100 * M.fill_cgb_share, 0)} %) is used. ${M.channel === 'all_foreign' ? `The level is scaled up by 1 / ${M.bondconnect_share} to approximate all foreign-investor CGB turnover including CIBM Direct (HKMA: Bond Connect carries over ${fmt(100 * M.bondconnect_share, 0)} % of foreign turnover).` : 'Bond Connect only.'}</p>
+  <div class="block sub-market"><h2>Northbound Bond Connect turnover</h2><p class="note">Monthly average daily turnover of all bonds through Bond Connect (RMB bn) and the share of Chinese government bonds, from the monthly Flash Reports. Where a report does not state the CGB share, the turnover-weighted mean of the months that do (${fmt(100 * M.fill_cgb_share, 0)} %) is used. ${M.channel === 'all_foreign' ? `The level is scaled up by 1 / ${M.bondconnect_share} to approximate all foreign-investor CGB turnover including CIBM Direct (HKMA: Bond Connect carries over ${fmt(100 * M.bondconnect_share, 0)} % of foreign turnover).` : 'Bond Connect only.'}</p>
   <div class="grid2"><div class="card"><h3>Average daily turnover</h3><div class="sub">All bonds and the CGB part, RMB bn per day</div><div class="plot" id="cn-ts"></div><div id="cn-ts-years"></div></div>
   <div class="card"><h3>Bond type shares</h3><div class="sub">Policy financial bonds and CGBs as stated in the reports</div><div class="plot" id="cn-sh"></div><p class="note" style="margin-top:.4rem;font-size:.78rem">Policy financial bonds are issued by the three policy banks (China Development Bank, Agricultural Development Bank of China, Export-Import Bank of China): state-backed, quasi-sovereign paper that foreign investors trade alongside CGBs. The two shares are as stated in the Bond Connect reports; the remainder is mostly negotiable certificates of deposit and credit. Only the CGB share enters the profile (Bond Connect volume times CGB share); the policy bank line is context for the shift of foreign trading away from CGBs.</p></div></div></div>
-  <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}
+  <div class="block sub-data"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}
   <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Volume, bn</th><th>ADT, bn</th><th>Trading days</th><th>CGB share</th><th>CGB ADT, bn</th></tr></thead><tbody>${M.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${fmt(r.volume_bn, 1)}</td><td class="num">${fmt(r.adt_bn, 1)}</td><td class="num">${r.trading_days ?? '–'}</td><td class="num${r.cgb_share == null ? ' na' : ''}">${r.cgb_share == null ? fmt(100 * r.cgb_share_used, 0) + ' %*' : fmt(100 * r.cgb_share, 0) + ' %'}</td><td class="num">${fmt(r.cgb_adt_bn, 1)}</td></tr>`).join('')}</tbody></table>
   <p class="note" style="margin-top:.5rem">* share not stated in that report; filled with the weighted mean.</p></div></div>
-  ${M.market_cgb_adv_bn ? `<div class="block"><h2>Whole-market CGB turnover</h2><div class="card"><p>The onshore interbank market settles about <b>${fmt(M.market_cgb_adv_bn, 0)} bn CGBs per day</b> (${esc(M.market_cgb_note)}). That is ${fmt(M.market_cgb_adv_bn * 1000 / M.window_adv.d2c_base.all, 0)} times the foreign-investor turnover used in the profile (${fmt(M.window_adv.d2c_base.all / 1000, 1)} bn per day, ${fmt(100 * M.window_adv.d2c_base.all / (M.market_cgb_adv_bn * 1000), 1)} % of the whole market). It feeds only the "total" segment.</p>
+  ${M.market_cgb_adv_bn ? `<div class="block sub-data"><h2>Whole-market CGB turnover</h2><div class="card"><p>The onshore interbank market settles about <b>${fmt(M.market_cgb_adv_bn, 0)} bn CGBs per day</b> (${esc(M.market_cgb_note)}). That is ${fmt(M.market_cgb_adv_bn * 1000 / M.window_adv.d2c_base.all, 0)} times the foreign-investor turnover used in the profile (${fmt(M.window_adv.d2c_base.all / 1000, 1)} bn per day, ${fmt(100 * M.window_adv.d2c_base.all / (M.market_cgb_adv_bn * 1000), 1)} % of the whole market). It feeds only the "total" segment.</p>
   <p class="note">The profile keeps foreign investors' own turnover as the dealer-to-customer pool. A foreign holder sells through Bond Connect or CIBM Direct against onshore market makers, so the capacity of those channels for one-sided foreign selling is the binding constraint. The whole-market figure is dominated by domestic banks and interbank trading, its counterparty split is not published, and it would overstate what a foreign seller can draw on by a factor of ${fmt(M.market_cgb_adv_bn * 1000 / M.window_adv.d2c_base.all, 0)}. Choosing the "total" segment on the main tab uses it anyway, as an upper bound.</p></div>
   ${M.ccdc ? (C => `<div class="card" style="margin-top:.8rem"><h3>CCDC settlement statistics, ${esc(C.window.label)}</h3><div class="sub"><a href="${esc(C.source_url)}" target="_blank" rel="noopener">${esc(C.source)}</a>. Downloaded by hand from ChinaBond: Data, Statistics, Monthly Bulletin of Statistics, pick the month, click the table title and choose Excel; files in <code>rawData/ccdc_cgb</code> (${C.files.length} files, ${esc(C.months[0])} to ${esc(C.months[C.months.length - 1])}).</div>
   <p>Window averages: CGBs <b>${fmt(C.window_avg.cgb_adv_mn / 1000, 1)} bn per day</b> (${fmt(C.window_avg.cgb_mn_per_month / 1e6, 2)} trn per month, ${C.window_avg.trading_days} trading days in ${C.window.n} months); all CCDC-registered bonds ${fmt(C.window_avg.all_adv_mn / 1000, 0)} bn per day, so CGBs are ${fmt(100 * C.window_avg.cgb_share, 0)} % of interbank cash settlement. Foreign investors settled ${fmt(C.window_avg.foreign_adv_mn / 1000, 1)} bn per day of all CCDC bonds, ${fmt(100 * C.window_avg.foreign_share, 1)} % of the market by side.${C.reference_bn ? ` Your earlier estimate of ${fmt(C.reference_bn, 0)} bn per day (${esc(C.reference_note)}) is ${fmt(100 * (C.reference_bn * 1000 / C.window_avg.cgb_adv_mn - 1), 0).replace('-', '−')} % ${C.reference_bn * 1000 >= C.window_avg.cgb_adv_mn ? 'above' : 'below'} the CCDC figure for this window.` : ''}</p>
@@ -1557,7 +1587,7 @@ function tabCNY() {
   <div><h3>Foreign investors</h3><div class="sub">CCDC settlement by foreign investors (all CCDC bonds, own side) and the all-foreign CGB estimate from Bond Connect, RMB bn per day</div><div class="plot" id="cn-fo"></div></div></div>
   <table class="tbl" style="margin-top:.8rem"><thead><tr><th>Month</th><th>Trading days</th><th>CGB settlement, bn</th><th>CGB bn/day</th><th>All CCDC bonds bn/day</th><th>CGB share</th><th>Foreign investors bn/day</th><th>Foreign share</th></tr></thead><tbody>${C.monthly.map(r => `<tr><td>${monthLab(r.month)}</td><td class="num">${r.trading_days}</td><td class="num">${fmt(r.cgb_mn / 1000, 0)}</td><td class="num">${fmt(r.cgb_adv_mn / 1000, 1)}</td><td class="num">${fmt(r.all_adv_mn / 1000, 0)}</td><td class="num">${fmt(100 * r.cgb_share, 0)} %</td><td class="num">${r.foreign_adv_mn == null ? '–' : fmt(r.foreign_adv_mn / 1000, 1)}</td><td class="num">${r.foreign_share == null ? '–' : fmt(100 * r.foreign_share, 1) + ' %'}</td></tr>`).join('')}</tbody></table></div>`)(M.ccdc) : ''}</div>` : ''}
   ${profileBlock(m)}
-  <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
+  <div class="block sub-data"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
   <li>Bond Connect turnover is foreign investors' trades with onshore market makers: a dealer-to-customer measure for one investor class only. The onshore interbank market is many times larger (see the CCDC figure above), but its CGB cash turnover by counterparty type is not published, only by investor type on each side.</li>
   <li>No maturity split is published, so the holding's maturity weights do not affect the Chinese result.</li>
   <li>The Bond Connect share of foreign turnover (${M.bondconnect_share}) is a single HKMA statement and moves over time.</li>
@@ -1637,23 +1667,68 @@ const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: t
 const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data'};
 const TABMK = {usd: 'USD', gbp: 'GBP', de: 'EUR-DE', fr: 'EUR-FR', jpy: 'JPY', cny: 'CNY'};
 function buildTabs() {
-  $('#tabs').innerHTML = Object.keys(TABS).filter(t => !TABMK[t] || D.markets[TABMK[t]]).map(t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`).join('');
+  const link = t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`;
+  $('#tabs').innerHTML = Object.keys(TABS).filter(t => !TABMK[t]).map(link).join('');
+  $('#mtabs').innerHTML = '<span class="mlab">Markets</span>' + Object.keys(TABS).filter(t => TABMK[t] && D.markets[TABMK[t]]).map(link).join('');
 }
 function showTab(t) {
   if (!TABS.hasOwnProperty(t) || (TABMK[t] && !D.markets[TABMK[t]])) t = 'main';
   document.querySelectorAll('section.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + t));
-  document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === t));
+  document.querySelectorAll('#tabs a, #mtabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === t));
   if (!drawn[t]) { if (TABS[t]) TABS[t](); drawn[t] = true; if (FOCUS) applyFocus(); }
-  document.querySelectorAll('#pane-' + t + ' .plot').forEach(el => { if (el.data) Plotly.Plots.resize(el); });
+  if (TABMK[t]) setSubView(t, subPref(t));
+  document.querySelectorAll('#pane-' + t + ' .plot').forEach(el => { if (el.data && el.offsetParent) Plotly.Plots.resize(el); });
   window.scrollTo({top: 0});
 }
-function current() { return (location.hash || '#main').slice(1); }
+function current() { return (location.hash || '#main').slice(1).split('?')[0]; }
+// market tabs have two views: Overview (turnover over time, the market in the profile) and Data and sources
+function subPref(t) { try { const v = localStorage.getItem('bondliq.sub.' + t); if (v === 'data' || v === 'market') return v; } catch (e) {} return 'market'; }
+function setSubView(t, v) {
+  const pane = $('#pane-' + t); if (!pane) return;
+  pane.dataset.view = v;
+  pane.querySelectorAll('.subtabs [data-sub]').forEach(b => b.classList.toggle('on', b.dataset.sub === v));
+  pane.querySelectorAll('.plot').forEach(el => { if (el.data && el.offsetParent) Plotly.Plots.resize(el); });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.subtabs [data-sub]'); if (!b) return;
+  const t = current(); try { localStorage.setItem('bondliq.sub.' + t, b.dataset.sub); } catch (x) {}
+  setSubView(t, b.dataset.sub); window.scrollTo({top: 0});
+});
+// the main inputs can travel in the link: #main?base=NOK&size=500&part=3&hair=0&alloc=USD:50,GBP:7,...&off=CNY&seg=total&otr=0.5&mat=1&max=10&wmode=market
+function scenarioLink() {
+  const q = new URLSearchParams();
+  q.set('base', S.base); q.set('size', S.size); q.set('part', S.part); if (S.haircut) q.set('hair', S.haircut);
+  if (S.seg !== DEF.seg) q.set('seg', S.seg); if (S.otr !== DEF.otr) q.set('otr', S.otr);
+  if (S.matOn) { q.set('mat', 1); q.set('max', S.matMax); q.set('wmode', S.matMode); }
+  q.set('alloc', MK.map(m => m + ':' + (+S.alloc[m] || 0)).join(','));
+  const off = MK.filter(m => !S.on[m]); if (off.length) q.set('off', off.join(','));
+  return location.origin + location.pathname + '#main?' + q.toString();
+}
+function applyQuery() {
+  const h = location.hash || '', i = h.indexOf('?'); if (i < 0) return;
+  try {
+    const q = new URLSearchParams(h.slice(i + 1)), num = (k, lo, hi) => { const v = +q.get(k); return q.has(k) && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : null; };
+    if (q.has('base') && D.fx.per_eur[q.get('base')]) S.base = q.get('base');
+    const size = num('size', 0, 1e7); if (size != null) S.size = size;
+    const part = num('part', 1, 100); if (part != null) S.part = part;
+    const hair = num('hair', 0, 95); S.haircut = hair == null ? 0 : hair;
+    S.seg = SEGS[q.get('seg')] ? q.get('seg') : DEF.seg;
+    const otr = num('otr', 0, 100); S.otr = otr == null ? DEF.otr : otr;
+    S.matOn = q.get('mat') === '1'; const mx = num('max', 1, 30); if (mx != null) S.matMax = mx;
+    if (['market', 'template', 'custom'].includes(q.get('wmode'))) S.matMode = q.get('wmode');
+    if (q.has('alloc')) for (const kv of q.get('alloc').split(',')) { const [m, v] = kv.split(':'); if (MK.includes(m) && isFinite(+v)) S.alloc[m] = Math.max(0, +v); }
+    for (const m of MK) S.on[m] = true;
+    if (q.has('off')) for (const m of q.get('off').split(',')) if (MK.includes(m)) S.on[m] = false;
+    save();
+  } catch (e) {}
+  history.replaceState(null, '', location.pathname + h.slice(0, i));
+}
 function redrawAll() { for (const k in drawn) delete drawn[k]; drawMain(); showTab(current()); }
 function setTheme(t) { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; $('#themeBtn').textContent = isDark() ? 'Light' : 'Dark'; try { localStorage.setItem('bondliq.theme', t || ''); } catch (e) {} }
 try { const t = localStorage.getItem('bondliq.theme'); document.documentElement.dataset.theme = (t === 'light' || t === 'dark') ? t : 'dark'; } catch (e) {}
 $('#themeBtn').addEventListener('click', () => { setTheme(isDark() ? 'light' : 'dark'); redrawAll(); });
 $('#themeBtn').textContent = isDark() ? 'Light' : 'Dark';
-buildTabs(); buildSide(); update(); showTab(current());
+applyQuery(); buildTabs(); buildSide(); update(); showTab(current());
 /* ---------- live exchange rates ----------
    The worker in front of the site serves /api/fx with today's ECB reference rates. When that works and the date
    is newer than the rates baked into the page, the profile is recomputed; otherwise the baked rates stay. */
@@ -1672,6 +1747,11 @@ async function liveFx() {
   } catch (e) {}
 }
 $('#btnXlsx').addEventListener('click', downloadXlsx);
+$('#btnLink').addEventListener('click', async () => {
+  const url = scenarioLink(), note = $('#toolNote');
+  try { await navigator.clipboard.writeText(url); note.textContent = 'Link copied: it opens the Liquidity profile with these inputs.'; }
+  catch (e) { note.innerHTML = `Copy this link: <input type="text" readonly value="${esc(url)}" style="width:22rem;font-size:.75rem" onclick="this.select()">`; }
+});
 $('#grTable').addEventListener('click', e => { const b = e.target.closest('[data-grm]'); if (b) { S.grm = b.dataset.grm; update(); } });
 window.addEventListener('hashchange', () => showTab(current()));
 function drawFoot() { $('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}${D.fx.live ? ' (live)' : ''}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Methods & sources tab; nothing on this page is investment advice.`; }
