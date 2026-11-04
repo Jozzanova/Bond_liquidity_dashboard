@@ -1131,6 +1131,20 @@ function groupBars(m, id) {
 }
 function groupTable(m) {
   const M = D.markets[m], a = M.window_adv, us = m === 'USD';
+  if (us && M.window_adv_detail) {
+    // US: every venue split into off-the-run and on-the-run issues
+    const w = M.window_adv_detail, K = ['d2c', 'd2d', 'total'], S3 = ['off', 'on', 'all'];
+    const v = (k, g) => w[k] && w[k][g] != null ? fmt(w[k][g] / 1000, 1) : '<span class="na">n/a</span>';
+    let h = `<table class="tbl small"><thead><tr><th rowspan="2" style="vertical-align:bottom">Group</th><th colspan="3">Dealer-to-customer</th><th colspan="3">ATS and interdealer</th><th colspan="3">All venues</th><th rowspan="2" style="vertical-align:bottom">Off-the-run share of D2C</th></tr><tr>${K.map(() => '<th>off-the-run</th><th>on-the-run</th><th>all issues</th>').join('')}</tr></thead><tbody>`;
+    const sums = {}; for (const k of K) for (const x of S3) sums[k + '_' + x] = M.groups.reduce((t, g) => t + (w[k + '_' + x] && w[k + '_' + x][g] || 0), 0);
+    for (const g of M.groups) h += `<tr><td>${g}</td>${K.flatMap(k => S3.map(x => `<td class="num">${v(k + '_' + x, g)}</td>`)).join('')}<td class="num">${w.d2c_all[g] ? fmt(100 * w.d2c_off[g] / w.d2c_all[g], 0) + ' %' : '–'}</td></tr>`;
+    h += `<tr class="tot"><td>All groups</td>${K.flatMap(k => S3.map(x => `<td class="num">${fmt(sums[k + '_' + x] / 1000, 1)}</td>`)).join('')}<td class="num">${sums.d2c_all ? fmt(100 * sums.d2c_off / sums.d2c_all, 0) + ' %' : '–'}</td></tr>`;
+    h += `</tbody></table><p class="note" style="margin-top:.4rem;font-size:.78rem">USD bn per trading day, nominal coupons, window averages by remaining maturity. The profile sells the off-the-run share of the holding into the off-the-run dealer-to-customer column and the on-the-run share into the on-the-run column; the interdealer and all-venue columns are shown for comparison and used only in the "total" segment.</p>`;
+    h += `<table class="tbl" style="margin-top:.8rem"><thead><tr><th>Segment</th><th style="text-align:left">Definition</th></tr></thead><tbody>`;
+    const SEGNAME = {d2c_base: 'D2C off-the-run', d2c_all: 'D2C all issues', d2d: 'Dealer-to-dealer', total: 'Total'};
+    for (const [k, sg] of Object.entries(M.segments)) h += `<tr><td style="white-space:nowrap">${SEGNAME[k] || esc(k)}</td><td style="text-align:left;white-space:normal"><b>${esc(sg.label)}</b>: ${esc(sg.note)}</td></tr>`;
+    return h + '</tbody></table>';
+  }
   let h = `<table class="tbl"><thead><tr><th>Group</th><th>Buckets</th>${us ? '<th>D2C off-the-run</th><th>D2C all issues</th>' : '<th>Dealer-to-customer</th>'}<th>D2D</th><th>Total</th><th>D2C share</th></tr></thead><tbody>`;
   for (const g of M.groups) {
     const v = k => a[k][g] == null ? '<span class="na">n/a</span>' : fmt(a[k][g] / 1000, 2);
