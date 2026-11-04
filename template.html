@@ -1221,7 +1221,6 @@ function marketHead(m) {
   const prov = M.provisional ? `<div class="callout"><b>Provisional figures.</b> ${esc(M.origin)}. The DMO publishes quarterly turnover by maturity band and counterparty type as spreadsheets behind a bot check; put <code>gemm-turnover-by-maturity-band-*.xlsx</code>, <code>all-gemms-turnover-*.xls</code> and <code>annual-turnover-report-*.xls</code> in <code>rawData/dmo_gilts</code> and rebuild to replace this block with the full quarterly series.</div>` : '';
   return `<div class="block pagehead"><h1>${esc(M.name)} <span class="badge">${M.currency}</span></h1>
   <div class="meta"><span>Source <b>${esc(M.source)}</b></span><span>Window <b>${esc(M.window.label)}</b></span><span>Maturity basis <b>${esc(M.maturity_basis)}</b></span><span>Unit <b>${esc(M.unit)}</b></span></div>
-  <div class="callout info" id="pfm-${TAB[m]}"></div>
   <div class="subtabs"><button type="button" data-sub="market">Overview</button><button type="button" data-sub="data">Data and sources</button></div>
   <div class="tiles" id="tiles-${TAB[m]}"></div></div>${prov ? `<div class="block">${prov}</div>` : ''}`;
 }
@@ -1331,10 +1330,6 @@ function drawMarketProfile(m) {
   fillOv(m);
   const M = D.markets[m], g = R.markets[m], own = ownParams(m);
   const r = own ? calcMarket(m, g.share, params(m)) : g, P = r.P, segLab = SEGS[P.seg].label.toLowerCase();
-  const pfm = $('#pfm-' + TAB[m]);
-  if (pfm) pfm.innerHTML = S.on[m]
-    ? `<b>In the liquidity profile:</b> holding ${fmt(r.holdLocal / 1000, 1)} ${M.currency} bn (${fmt(r.holdBase / 1000, 1)} ${S.base} bn, ${fmt(100 * r.share, 1)} % of the portfolio). At ${P.part} % of ${segLab}${P.haircut ? ` with a ${P.haircut} % haircut` : ''}: half sold in ${fmtDays(r.t50)} days, all in ${fmtDays(r.t100)} days${own ? ' (own assumptions for this tab)' : ''}. <a href="#${TAB[m]}" onclick="document.getElementById('ov-${TAB[m]}').scrollIntoView({behavior:'smooth'}); return false;">Details below</a>.`
-    : `<b>Switched off on the Liquidity profile tab</b>, so this market carries no holding. Tick it in the side panel there to include it.`;
   const pn = $('#pn-' + TAB[m]); if (pn) pn.innerHTML = S.on[m] ? `The holding is linked to the Liquidity profile tab: portfolio size × allocation share at ECB rates. The selling assumptions below can be set for this market alone; the Liquidity profile tab keeps its own.` : `<b>This market is switched off on the Liquidity profile tab</b>, so it carries no holding here. Tick it in the Profile side panel to include it.`;
   let H = horizon(); if (S.horizon <= 0 && isFinite(r.t100)) H = Math.max(H, Math.min(500, Math.ceil(r.t100 * 1.3 / 5) * 5));
   const n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
