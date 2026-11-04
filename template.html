@@ -1191,7 +1191,7 @@ function marketHead(m) {
 function marketTiles(m) {
   const M = D.markets[m], a = M.window_adv, s = g => Object.values(g).every(v => v != null) ? Object.values(g).reduce((x, y) => x + y, 0) : null;
   const d2c = s(a.d2c_base), d2cAll = s(a.d2c_all), d2d = s(a.d2d), tot = s(a.total);
-  const u = `${M.currency} bn / day`;
+  const u = `${M.currency} bn per trading day, average ${esc(M.window.label)}`;
   let h = tile(m === 'USD' ? 'D2C, off-the-run' : 'Dealer-to-customer', fmt(d2c / 1000, 1), u);
   if (d2cAll != null && Math.abs(d2cAll - d2c) > 1) h += tile('D2C, all issues', fmt(d2cAll / 1000, 1), u);
   h += tile('D2D (interdealer)', d2d == null ? 'n/a' : fmt(d2d / 1000, 1), u) + tile('Total', tot == null ? 'n/a' : fmt(tot / 1000, 1), u);
