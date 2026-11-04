@@ -230,7 +230,12 @@ def main() -> int:
     if node.exists():
         env["PATH"] = str(node) + os.pathsep + env.get("PATH", "")
     env.setdefault("CLOUDFLARE_ACCOUNT_ID", "2ebd6821cc00c02ed06223a90488785c")
-    npx = "npx.cmd" if os.name == "nt" else "npx"
+    # Windows resolves the executable on the parent's PATH, not on the env passed in, so give the full path
+    npx = shutil.which("npx.cmd" if os.name == "nt" else "npx", path=env["PATH"])
+    if not npx:
+        print("
+npx (Node) not found; the local build is up to date, publish with 'npx wrangler deploy' from a shell where Node is on the PATH.")
+        return 1
     for p in (ROOT / "site").glob("_*.html"):
         p.unlink()
     rc = run([npx, "--yes", "wrangler@latest", "deploy"], env=env)
