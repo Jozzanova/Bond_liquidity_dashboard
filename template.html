@@ -92,9 +92,10 @@ tr.exp { cursor: pointer; }
 tr.exp .caret { display: inline-block; width: 1.1em; color: var(--accent); transition: transform .15s; }
 tr.exp.open .caret { transform: rotate(90deg); }
 .pane[data-view="market"] .sub-data, .pane[data-view="data"] .sub-market { display: none; }
-.subtabs { display: flex; gap: .3rem; margin: .2rem 0 .8rem; }
-.subtabs button { font: inherit; font-size: .85rem; padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card2); color: var(--fg); cursor: pointer; }
-.subtabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.subtabs { display: flex; gap: .5rem; margin: .4rem 0 .9rem; }
+.subtabs button { font: inherit; font-size: .9rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: .5rem 1.1rem; border-radius: 999px; border: 1.5px solid var(--fg); background: transparent; color: var(--accent); cursor: pointer; }
+.subtabs button:hover { background: var(--accent-soft); }
+.subtabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 tr[data-m] { cursor: pointer; }
 tr.dim td { opacity: .35; }
 tr.focus td { background: var(--accent-soft); }
