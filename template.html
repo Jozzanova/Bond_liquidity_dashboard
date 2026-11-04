@@ -387,6 +387,7 @@ const matKnown = m => !!(MATD[m] && MATD[m].available);
 let S = JSON.parse(JSON.stringify(DEF));
 try { const s = localStorage.getItem('bondliq.inputs.v3'); if (s) { const o = JSON.parse(s); S = Object.assign(S, o); S.on = Object.assign({}, DEF.on, o.on || {}); S.ov = Object.assign({}, o.ov || {}); S.alloc = Object.assign({}, DEF.alloc, o.alloc || {}); S.mat = Object.assign({}, DEF.mat, o.mat || {}); S.cmpB = Object.assign({}, DEF.cmpB, o.cmpB || {}); } } catch (e) {}
 if (!SEGS[S.seg]) S.seg = DEF.seg;
+for (const m of MK) if (!S.ov[m]) S.ov[m] = Object.assign({on: true, part: S.part, haircut: S.haircut, seg: S.seg, otr: S.otr, matOn: !!(DEF.mat[m] && DEF.mat[m].every(x => x != null)), matMax: S.matMax, mat: DEF.mat[m].slice()});
 function save() { try { localStorage.setItem('bondliq.inputs.v3', JSON.stringify(S)); } catch (e) {} }
 let RB = null;   // the comparison scenario, when switched on
 const PRESETS = [['Normal', 3, 0], ['Stressed', 2, 25], ['Severe', 1, 50]];   // participation %, haircut %: illustrative, not calibrated
@@ -548,7 +549,7 @@ function buildSide() {
   on('input[data-alloc]', 'input', e => { S.alloc[e.target.dataset.alloc] = Math.max(0, +e.target.value || 0); update(); });
   on('input[data-mat]', 'input', e => { S.mat[e.target.dataset.mat][+e.target.dataset.i] = e.target.value === '' ? null : Math.max(0, +e.target.value || 0); update(); });
   on('#btnTpl', 'click', () => { const t = [...side.querySelectorAll('input[data-tpl]')].map(i => Math.max(0, +i.value || 0)); for (const m of MK) { S.mat[m] = t.slice(); } side.querySelectorAll('input[data-mat]').forEach(i => { i.value = S.mat[i.dataset.mat][+i.dataset.i]; }); update(); });
-  on('#btnReset', 'click', () => { S = JSON.parse(JSON.stringify(DEF)); save(); buildSide(); update(); });
+  on('#btnReset', 'click', () => { S = JSON.parse(JSON.stringify(DEF)); initOv(); save(); buildSide(); update(); });
 }
 
 /* ---------- main tab ---------- */
@@ -1112,7 +1113,10 @@ function profileBlock(m) {
   </div></div>
   <div class="grid2" style="margin-top:1rem"><div class="card"><h3>Cumulative share sold</h3><div class="sub" id="pfs-${t}"></div><div class="plot" id="pf-${t}"></div></div><div class="card"><h3>By liquidity group</h3><div id="pt-${t}"></div></div></div></div>`;
 }
-function newOv(m) { return Object.assign({on: true}, globalParams(m), {mat: S.mat[m].slice()}); }
+function newOv(m) { return Object.assign({on: true}, globalParams(m), {mat: S.mat[m].slice()}); }   // copy of the Liquidity profile tab's settings
+// default for a market tab: own assumptions on, with the market-weighted maturity distribution applied where one exists
+function defaultOv(m) { return Object.assign(newOv(m), {matOn: matKnown(m), mat: DEF.mat[m].slice()}); }
+function initOv() { for (const m of MK) if (!S.ov[m]) S.ov[m] = defaultOv(m); }
 function fillOv(m) {
   const t = TAB[m], pnl = $('#ov-' + t); if (!pnl) return;
   const on = ownParams(m), P = params(m), cov = matCovL(P.matMax);
@@ -1126,7 +1130,7 @@ function fillOv(m) {
     if (document.activeElement !== el) el.value = v == null ? '' : v;
     if (k === 'mat') { const c = cov[+el.dataset.i]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); }
   });
-  $('#ovs-' + t).textContent = on ? 'Used on this tab only; the Liquidity profile tab keeps its own assumptions.' : 'Following the Liquidity profile tab.';
+  $('#ovs-' + t).textContent = on ? 'Used on this tab only (default: the selling assumptions of the Liquidity profile tab with the market-weighted maturity distribution applied); the Liquidity profile tab keeps its own.' : 'Following the Liquidity profile tab.';
   if (!pnl.dataset.bound) {
     pnl.dataset.bound = '1';
     pnl.querySelector('[data-ov=on]').addEventListener('change', e => { if (!S.ov[m]) S.ov[m] = newOv(m); S.ov[m].on = e.target.checked; save(); drawMarketProfile(m); });
