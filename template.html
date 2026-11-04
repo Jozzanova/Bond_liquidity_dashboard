@@ -131,9 +131,9 @@ ul.caveats li { margin-bottom: .25rem; }
 /* main tab: side panel + content */
 .mainwrap { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 @media (max-width: 1000px) { .mainwrap { grid-template-columns: minmax(0, 1fr); align-items: stretch; } }
-.content { min-width: 0; }
+.content { min-width: 0; grid-column: 2; }
 .side { position: fixed; top: var(--sidetop, 120px); left: var(--sidex, 16px); width: 400px; max-height: calc(100vh - var(--sidetop, 120px) - 16px); overflow-y: auto; z-index: 10; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
-@media (max-width: 1000px) { .side { position: static; width: auto; max-height: none; } }
+@media (max-width: 1000px) { .side { position: static; width: auto; max-height: none; } .content { grid-column: auto; } }
 @media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { width: 100%; margin: 0; } }
 .side h3 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 1.1rem 0 .45rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line); }
 .side details.sec summary h3 { border-bottom: none; padding-bottom: 0; margin: 0; }
