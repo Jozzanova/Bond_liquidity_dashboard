@@ -81,6 +81,11 @@ section.pane > .block:first-child { margin-top: 0; }
 .tbl td.num { font-family: var(--mono); font-size: .86rem; }
 .tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
 .tbl td.na { color: var(--muted); }
+tr[data-m] { cursor: pointer; }
+tr.dim td { opacity: .35; }
+tr.focus td { background: var(--accent-soft); }
+#side tr.dim td { opacity: .4; }
+#side tr.focus td { background: var(--accent-soft); }
 .tbl.bridge { width: auto; max-width: 100%; }
 .tbl.bridge td:first-child { white-space: normal; padding-right: 1.2rem; }
 .tbl.bridge tr.used td { background: var(--accent-soft); color: var(--accent); }
@@ -223,11 +228,12 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <section class="pane" id="pane-main">
   <div class="block">
     <h1>Liquidity profile of a multi-currency government bond holding</h1>
-    <p class="lede">How long it would take to sell a government bond portfolio of a given size and currency mix at a chosen share of each market's daily turnover, and how much cash that raises by horizon. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers and can carry its own selling assumptions. In any chart, click a legend entry to highlight that series and dim the rest; double-click it to hide or show it.</p>
+    <p class="lede">How long it would take to sell a government bond portfolio of a given size and currency mix at a chosen share of each market's daily turnover, and how much cash that raises by horizon. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers and can carry its own selling assumptions. Click a market anywhere, in a legend, a chart or a table row, to highlight it in every chart and table; click it again to clear. Double-click a legend entry to hide or show that series.</p>
   </div>
   <div class="mainwrap">
     <aside class="side" id="side"></aside>
     <div class="content">
+      <div class="callout info" id="focusBar" style="display:none;margin-bottom:.6rem"></div>
       <div class="tools"><span class="note" id="toolNote">Excel workbook: summary, markets, cash by horizon, groups, curve, sources, notes</span><button class="btn" id="btnXlsx" type="button">Download these results (Excel)</button></div>
       <div class="tiles" id="mainTiles"></div>
       <div class="grid2">
@@ -360,6 +366,39 @@ function totalTrace(traces) {
   const x = traces[0].x, y = x.map((_, i) => { let s = 0, any = false; for (const t of traces) { const v = t.y[i]; if (v != null && isFinite(v)) { s += v; any = true; } } return any ? s : null; });
   return {x, y, name: 'Total', mode: 'lines', line: {color: css('--tot'), width: 0}, showlegend: false, hovertemplate: '%{y:,.2f}<extra>Total</extra>'};
 }
+// focus on one market: a click on a legend entry, a chart element or a table row of a market highlights that market in
+// every chart and table of the page; clicking it again clears the focus
+let FOCUS = null;
+let NAME2M = null;   // built on first use, after the market constants exist
+function name2m() { if (!NAME2M) { NAME2M = {}; for (const m of MK) { NAME2M[D.markets[m].name] = m; NAME2M[SHORT[m]] = m; NAME2M[m] = m; } } return NAME2M; }
+const mOf = v => { if (v == null) return null; const t = name2m(), k = String(v); return t[k] || t[k.split(/ \d/)[0]] || null; };
+function setFocus(m) { FOCUS = FOCUS === m ? null : m; applyFocus(); }
+function focusTrace(t) {
+  // per-trace opacity, or per-point opacities when the markets sit on the category axis or in the point text
+  const tm = mOf(t.name);
+  if (tm) return {trace: !FOCUS || tm === FOCUS ? 1 : 0.18, points: null};
+  const cats = t.orientation === 'h' ? t.y : t.x, txt = Array.isArray(t.text) ? t.text : null;
+  if (!Array.isArray(cats)) return {trace: 1, points: null};
+  const ms = cats.map((c, k) => mOf(c) || (txt ? mOf(txt[k]) : null));
+  if (!ms.some(Boolean)) return {trace: 1, points: null};
+  return {trace: 1, points: ms.map(m2 => !FOCUS || !m2 || m2 === FOCUS ? 1 : 0.18)};
+}
+function applyFocusEl(el) {
+  if (!el.data || el._hl) return;
+  const op = [], mop = [];
+  for (const t of el.data) { const f = focusTrace(t); op.push(f.trace); mop.push(f.points || (t.marker && Array.isArray(t.marker.opacity) ? 1 : (t.marker && t.marker.opacity != null ? t.marker.opacity : 1))); }
+  try { Plotly.restyle(el, {opacity: op, 'marker.opacity': mop}); } catch (e) {}
+}
+function applyFocus() {
+  document.querySelectorAll('tr[data-m], #side tr[data-row]').forEach(tr => { const m = tr.dataset.m || tr.dataset.row; tr.classList.toggle('dim', !!FOCUS && m !== FOCUS); tr.classList.toggle('focus', !!FOCUS && m === FOCUS); });
+  document.querySelectorAll('.plot').forEach(applyFocusEl);
+  const b = $('#focusBar'); if (b) { b.style.display = FOCUS ? '' : 'none'; if (FOCUS) b.innerHTML = `Highlighting <b>${esc(D.markets[FOCUS].name)}</b> in every chart and table. <a href="#" id="focusClear">Clear</a>`; }
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#focusClear')) { e.preventDefault(); setFocus(FOCUS); return; }
+  if (e.target.closest('a, input, select, button, label')) return;
+  const tr = e.target.closest('tr[data-m]'); if (tr) setFocus(tr.dataset.m);
+});
 // legend: one click highlights that series and dims the others (click again to clear), double-click hides or shows it
 function applyHl(el) {
   const n = el._hl;
@@ -400,10 +439,11 @@ function plot(id, traces, layout) {
   Plotly.react(el, traces, layout, CFG);
   if (!el._hlBound) {
     el._hlBound = true;
-    el.on('plotly_legendclick', e => { const t = e.data[e.curveNumber]; if (!t) return false; el._hl = el._hl === t.name ? null : t.name; applyHl(el); return false; });
+    el.on('plotly_legendclick', e => { const t = e.data[e.curveNumber]; if (!t) return false; const tm = mOf(t.name); if (tm) { el._hl = null; setFocus(tm); return false; } el._hl = el._hl === t.name ? null : t.name; applyHl(el); return false; });
+    el.on('plotly_click', e => { const p = e.points && e.points[0]; if (!p) return; const m = mOf(p.data.name) || mOf(p.x) || mOf(p.y) || mOf(p.text); if (m) setFocus(m); });
     el.on('plotly_legenddoubleclick', e => { const t = e.data[e.curveNumber]; if (!t) return false; const vis = t.visible === 'legendonly' ? true : 'legendonly'; Plotly.restyle(el, {visible: vis}, [e.curveNumber]); return false; });
   }
-  if (el._hl && el.data.some(t => t.name === el._hl)) applyHl(el); else el._hl = null;
+  if (el._hl && el.data.some(t => t.name === el._hl)) applyHl(el); else { el._hl = null; if (FOCUS) applyFocusEl(el); }
 }
 
 /* ---------- constants ---------- */
@@ -600,6 +640,7 @@ function update() {
   drawMain();
   if (drawn.cmp) tabCmp();
   for (const m of MK) if (drawn[TAB[m]]) drawMarketProfile(m);
+  if (FOCUS) applyFocus();
 }
 function horizon() { if (S.horizon > 0) return S.horizon; const t = isFinite(R.t100) ? R.t100 : 60; return Math.max(10, Math.min(500, Math.ceil(t * 1.3 / 5) * 5)); }
 function tile(k, v, u) { return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="u">${u || ''}</div></div>`; }
@@ -652,7 +693,7 @@ function drawMain() {
   for (const m of MK) {
     const r = R.markets[m], M = D.markets[m], off = !S.on[m];
     const d2c = r.advD2c, tt = r.advTot;
-    h += `<tr${off ? ' class="off"' : ''}><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}" title="${esc(M.name)}">${esc(SHORT[m] || M.name)}</a>${M.provisional ? '<span class="badge warn">provisional</span>' : ''}${off ? '<span class="badge">off</span>' : ''}</td><td class="num">${off ? '–' : fmt(100 * r.share, 1) + ' %'}</td><td class="num">${off ? '–' : fmt(r.holdBase / 1000, 1)}</td><td class="num">${off ? '–' : fmt(r.holdLocal / 1000, 1) + ' ' + M.currency}</td>
+    h += `<tr data-m="${m}"${off ? ' class="off"' : ''}><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}" title="${esc(M.name)}">${esc(SHORT[m] || M.name)}</a>${M.provisional ? '<span class="badge warn">provisional</span>' : ''}${off ? '<span class="badge">off</span>' : ''}</td><td class="num">${off ? '–' : fmt(100 * r.share, 1) + ' %'}</td><td class="num">${off ? '–' : fmt(r.holdBase / 1000, 1)}</td><td class="num">${off ? '–' : fmt(r.holdLocal / 1000, 1) + ' ' + M.currency}</td>
       <td class="num">${fmt(d2c / 1000, 1)}${m === 'USD' ? '*' : ''}</td><td class="num${r.advD2d == null ? ' na' : ''}">${r.advD2d == null ? 'n/a' : fmt(r.advD2d / 1000, 1)}</td><td class="num${tt == null ? ' na' : ''}">${tt == null ? 'n/a' : fmt(tt / 1000, 1)}</td><td class="num">${tt ? fmt(100 * d2c / tt, 0) + ' %' : '–'}</td>
       <td class="num">${off ? '–' : d2c ? fmt(r.holdLocal / d2c, 1) : '–'}</td><td class="num">${off ? '–' : fmtDays(r.t50)}</td><td class="num">${off ? '–' : fmtDays(r.t100)}</td></tr>`;
   }
@@ -670,7 +711,7 @@ function drawMain() {
       for (const g of r.groups) for (const p of g.parts) {
         const A0 = p.A == null ? null : p.A / hc, lab = (g.g === 'all' ? 'all maturities' : g.g) + (p.lab ? `, ${p.lab}` : '');
         if (p.H > 0) { tot.H += p.H / r.fx; if (A0 != null) { tot.A0 += A0 / r.fx; tot.A += p.A / r.fx; tot.cap += p.cap / r.fx; } }
-        t += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m])}</td><td style="text-align:left">${esc(lab)}</td><td class="num">${fmt(p.H / r.fx / 1000, 1)}</td><td class="num">${A0 == null ? '<span class="na">n/a</span>' : fmt(A0 / 1000, 1) + ' ' + M.currency}</td><td class="num">${A0 == null ? '–' : fmt(A0 / r.fx / 1000, 1)}</td>${S.haircut ? `<td class="num">${p.A == null ? '–' : fmt(p.A / r.fx / 1000, 1)}</td>` : ''}<td class="num">${p.cap == null ? '–' : fmt(p.cap / r.fx / 1000, 2)}</td><td class="num">${fmtDays(p.days)}</td></tr>`;
+        t += `<tr data-m="${m}"><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m])}</td><td style="text-align:left">${esc(lab)}</td><td class="num">${fmt(p.H / r.fx / 1000, 1)}</td><td class="num">${A0 == null ? '<span class="na">n/a</span>' : fmt(A0 / 1000, 1) + ' ' + M.currency}</td><td class="num">${A0 == null ? '–' : fmt(A0 / r.fx / 1000, 1)}</td>${S.haircut ? `<td class="num">${p.A == null ? '–' : fmt(p.A / r.fx / 1000, 1)}</td>` : ''}<td class="num">${p.cap == null ? '–' : fmt(p.cap / r.fx / 1000, 2)}</td><td class="num">${fmtDays(p.days)}</td></tr>`;
       }
     }
     t += `<tr class="tot"><td>All included</td><td></td><td class="num">${fmt(tot.H / 1000, 1)}</td><td class="num">–</td><td class="num">${fmt(tot.A0 / 1000, 1)}</td>${S.haircut ? `<td class="num">${fmt(tot.A / 1000, 1)}</td>` : ''}<td class="num">${fmt(tot.cap / 1000, 2)}</td><td class="num">${fmtDays(R.t100)}</td></tr>`;
@@ -681,7 +722,7 @@ function drawMain() {
   $('#hzSub').textContent = `${bc} bn raised by selling every included market in parallel at ${S.part} % of ${segLab}${S.haircut ? ` after a ${S.haircut} % haircut` : ''}, and the share of each holding that represents. Horizons in trading days (5 = one week, 20 = one month).`;
   h = `<table class="tbl"><thead><tr><th>Market</th><th>Holding, ${bc} bn</th>${HZ.map(([d, l]) => `<th>${l}<br><span style="font-weight:400">${d} d</span></th>`).join('')}</tr></thead><tbody>`;
   const cell = (v, H) => H > 0 ? `<td class="num">${fmt(v, 1)}<span class="gl">${fmt(100 * v / H, 0)} %</span></td>` : '<td class="num">–</td>';
-  for (const m of AM) { const r = R.markets[m]; const Hb = r.holdBase / 1000; h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || D.markets[m].name)}</td><td class="num">${fmt(Hb, 1)}</td>${HZ.map(([d]) => cell(r.curve(d) / r.fx / 1000, Hb)).join('')}</tr>`; }
+  for (const m of AM) { const r = R.markets[m]; const Hb = r.holdBase / 1000; h += `<tr data-m="${m}"><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || D.markets[m].name)}</td><td class="num">${fmt(Hb, 1)}</td>${HZ.map(([d]) => cell(r.curve(d) / r.fx / 1000, Hb)).join('')}</tr>`; }
   h += `<tr class="tot"><td>Combined</td><td class="num">${fmt(sz, 1)}</td>${HZ.map(([d]) => cell(R.curve(d) / 1000, sz)).join('')}</tr></tbody></table>`;
   $('#hzTable').innerHTML = h;
   // bucket matrix: markets x maturity buckets, pooled buckets merged into one cell; one figure at a time
@@ -698,7 +739,7 @@ function drawMain() {
   <table class="tbl mx"><thead><tr><th>Market</th>${B.map(b => `<th>${b}</th>`).join('')}<th>Whole holding</th></tr></thead><tbody>`;
   for (const m of AM) {
     const M = D.markets[m], r = R.markets[m];
-    h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || M.name)}</td>`;
+    h += `<tr data-m="${m}"><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m] || M.name)}</td>`;
     for (const x of r.groups) {
       const n = x.nb, cut = x.H <= 0 && S.grm !== 'adv';
       const gl = r.pooled ? (r.noDist ? 'no distribution available' : 'no maturity split') : x.g === 'all' ? 'one pool' : x.g + ' pooled';
@@ -993,14 +1034,14 @@ function tabCmp() {
   let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Market</th><th>Outstanding, ${bc} bn</th><th>D2C, ${bc} bn/day</th><th>Total, ${bc} bn/day</th><th>D2C share of total</th><th>Turnover ratio, % of stock per day</th><th>Days to turn the stock over</th><th>Annual turnover, × stock</th><th>D2C vs a year earlier</th></tr></thead><tbody>`;
   for (const m of ms) {
     const c = C[m], X = MATD[m] || {};
-    h += `<tr class="main"><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}">${esc(c.M.name)}</a></td><td class="num">${fmt(c.stockB, 0)}</td><td class="num">${fmt(c.d2c, 1)}${c.d2cOff != null ? `<span class="gl">off-the-run ${fmt(c.d2cOff, 0)}</span>` : ''}</td><td class="num">${fmt(c.tot, 1)}</td><td class="num">${c.d2cShare == null ? '–' : fmt(100 * c.d2cShare, 0) + ' %'}</td><td class="num">${fmt(c.ratioD2c, 2)}</td><td class="num">${fmt(c.daysStock, 0)}</td><td class="num">${fmt(c.annualTot, 1)}</td><td class="num ${c.change == null ? '' : c.change >= 0 ? 'pos' : 'neg'}">${c.change == null ? '–' : (c.change >= 0 ? '+' : '') + fmt(100 * c.change, 0) + ' %'}</td></tr>
-    <tr><td colspan="9" class="src">Turnover ${esc(c.M.window.label)}, ${esc(c.M.counting)}. Stock ${X.available ? `as of ${X.as_of}, ${esc(X.source)}` : 'not available'}.</td></tr>`;
+    h += `<tr class="main" data-m="${m}"><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}">${esc(c.M.name)}</a></td><td class="num">${fmt(c.stockB, 0)}</td><td class="num">${fmt(c.d2c, 1)}${c.d2cOff != null ? `<span class="gl">off-the-run ${fmt(c.d2cOff, 0)}</span>` : ''}</td><td class="num">${fmt(c.tot, 1)}</td><td class="num">${c.d2cShare == null ? '–' : fmt(100 * c.d2cShare, 0) + ' %'}</td><td class="num">${fmt(c.ratioD2c, 2)}</td><td class="num">${fmt(c.daysStock, 0)}</td><td class="num">${fmt(c.annualTot, 1)}</td><td class="num ${c.change == null ? '' : c.change >= 0 ? 'pos' : 'neg'}">${c.change == null ? '–' : (c.change >= 0 ? '+' : '') + fmt(100 * c.change, 0) + ' %'}</td></tr>
+    <tr data-m="${m}"><td colspan="9" class="src">Turnover ${esc(c.M.window.label)}, ${esc(c.M.counting)}. Stock ${X.available ? `as of ${X.as_of}, ${esc(X.source)}` : 'not available'}.</td></tr>`;
   }
   $('#cmpTable').innerHTML = h + '</tbody></table>';
   // capacity table
   const PR = [1, 3, 5, 10];
   h = `<table class="tbl"><thead><tr><th>Market</th><th>D2C, ${bc} bn/day</th>${PR.map(p => `<th>at ${p} %</th>`).join('')}</tr></thead><tbody>`;
-  for (const m of ms) h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m])}</td><td class="num">${fmt(C[m].d2c, 1)}</td>${PR.map(p => `<td class="num">${fmt(C[m].d2c * p / 100, 1)}</td>`).join('')}</tr>`;
+  for (const m of ms) h += `<tr data-m="${m}"><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m])}</td><td class="num">${fmt(C[m].d2c, 1)}</td>${PR.map(p => `<td class="num">${fmt(C[m].d2c * p / 100, 1)}</td>`).join('')}</tr>`;
   h += `<tr class="tot"><td>All six markets</td><td class="num">${fmt(sumD2c, 1)}</td>${PR.map(p => `<td class="num">${fmt(sumD2c * p / 100, 1)}</td>`).join('')}</tr>`;
   $('#cmpCap').innerHTML = h + '</tbody></table>';
   $('#btnCmpXlsx').addEventListener('click', downloadCmpXlsx);
@@ -1602,7 +1643,7 @@ function showTab(t) {
   if (!TABS.hasOwnProperty(t) || (TABMK[t] && !D.markets[TABMK[t]])) t = 'main';
   document.querySelectorAll('section.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + t));
   document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === t));
-  if (!drawn[t]) { if (TABS[t]) TABS[t](); drawn[t] = true; }
+  if (!drawn[t]) { if (TABS[t]) TABS[t](); drawn[t] = true; if (FOCUS) applyFocus(); }
   document.querySelectorAll('#pane-' + t + ' .plot').forEach(el => { if (el.data) Plotly.Plots.resize(el); });
   window.scrollTo({top: 0});
 }
