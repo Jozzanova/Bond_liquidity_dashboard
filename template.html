@@ -35,7 +35,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sa
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 h1 { font-size: 1.7rem; font-weight: 600; margin: 0 0 .3rem; letter-spacing: -.01em; text-wrap: balance; }
-h2 { font-size: 1.15rem; font-weight: 600; margin: 0 0 .25rem; }
+h2 { font-size: 1.15rem; font-weight: 600; margin: 0 0 .25rem; color: var(--accent); }
 h3 { font-size: .98rem; font-weight: 600; margin: 0 0 .3rem; }
 p { margin: 0 0 .7rem; max-width: 72ch; }
 code, .mono { font-family: var(--mono); font-size: .9em; }
@@ -277,6 +277,14 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <section class="pane" id="pane-jpy"></section>
 <section class="pane" id="pane-cny"></section>
 
+<section class="pane" id="pane-dl">
+  <div class="block">
+    <h1>Downloads</h1>
+    <p class="lede">The structured datasets behind every chart and table on this page, as Excel workbooks. Series datasets open on a <b>Wide</b> sheet (one row per period or market, one column per series, ready for formulas), followed by a <b>Data</b> sheet with the same figures in long form (one observation per row) and an <b>About</b> sheet with the description, source, counting convention and a column dictionary. Local currency millions unless the column name says otherwise; empty cells mean not available. The first entry bundles every dataset into one workbook, in wide form. <a href="data/README.txt" download>data/README.txt</a> repeats the descriptions as a plain-text data dictionary. The files are regenerated on every build, so they always match the page.</p>
+    <div class="card"><div id="dlList"></div></div>
+  </div>
+</section>
+
 <section class="pane" id="pane-update">
   <div class="block">
     <h1>Updating the data</h1>
@@ -312,9 +320,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <section class="pane" id="pane-notes">
   <div class="block">
     <h1>Methods, sources and assumptions</h1>
-    <p class="lede">How the liquidity profile is calculated, what each source measures and where the figures stop being data and start being assumptions. The datasets behind every chart can be downloaded at the bottom of this tab; the freshness of each one is on the Update data tab.</p>
-  </div>
-  <div class="block"><details class="card method"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand)</span></summary><div id="methodNotes" style="margin-top:.5rem"></div></details>
+    <p class="lede">How the liquidity profile is calculated, what each source measures and where the figures stop being data and start being assumptions. The datasets behind every chart are on the Downloads tab; the freshness of each one is on the Update data tab.</p>
   </div>
   <div class="block"><h2>Glossary</h2>
     <div class="card"><dl class="kv">
@@ -332,18 +338,23 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       <dt>Window</dt><dd>The period the averages cover: the latest twelve months, four quarters or calendar year each source allows, stated on every market tab.</dd>
     </dl></div>
   </div>
-  <div class="block"><h2>Turnover segments</h2>
+  <div class="block"><details class="card method"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand)</span></summary><div id="methodNotes" style="margin-top:.5rem"></div></details>
+  </div>
+  <div class="block"><h2>Exchange rates</h2>
+    <div class="card"><div id="fxTable"></div></div>
+  </div>
+  <div class="block"><details class="card method"><summary><h3 style="display:inline">Turnover segments</h3> <span class="note" style="font-size:.85rem">(click to expand: what each source lets us count as each segment)</span></summary>
     <p class="note">The profile sells into one of two pools per market. <b>Dealer-to-customer</b> is the turnover an investor trading with dealers competes for; <b>total</b> adds the interdealer leg and is an upper bound. The table shows what each source lets us count as each segment.</p>
-    <div class="card"><table class="tbl" id="segTable"></table></div>
-  </div>
-  <div class="block"><h2>Sources and counting conventions</h2>
+    <div style="margin-top:.5rem"><table class="tbl" id="segTable"></table></div>
+  </details></div>
+  <div class="block"><details class="card method"><summary><h3 style="display:inline">Sources and counting conventions</h3> <span class="note" style="font-size:.85rem">(click to expand: source, counting, maturity basis and window per market)</span></summary>
     <p class="note">Each source counts turnover its own way (par or market value, one side or both, which reporters), so the dealer-to-dealer and total columns are not comparable across markets. Only the dealer-to-customer pool is used in the default profile.</p>
-    <div class="card"><table class="tbl" id="convTable"></table></div>
-  </div>
-  <div class="block"><h2>Outstanding stock by remaining maturity</h2>
+    <div style="margin-top:.5rem"><table class="tbl" id="convTable"></table></div>
+  </details></div>
+  <div class="block"><details class="card method"><summary><h3 style="display:inline">Outstanding stock by remaining maturity</h3> <span class="note" style="font-size:.85rem">(click to expand: the market-weighted maturity profiles)</span></summary>
     <p class="note">The market-weighted maturity profile offered as the default holding distribution when the maturity option on the Liquidity profile tab is on: nominal amount outstanding of each market's nominal coupon government bonds in the five buckets, by remaining maturity on the as-of date.</p>
-    <div class="card"><div id="matTable"></div></div>
-  </div>
+    <div style="margin-top:.5rem"><div id="matTable"></div></div>
+  </details></div>
   <div class="block"><h2>What is not in the data</h2>
     <div class="card"><ul class="caveats">
       <li>No source reports turnover by both counterparty type and maturity except FINRA TRACE and the DMO maturity-band file. For Bunds and JGBs the counterparty mix of the latest window is applied uniformly to every maturity class.</li>
@@ -355,13 +366,6 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       <li>Headline turnover figures quoted elsewhere are usually larger than the figures here because they count everything the source reports. The JGB tab shows the full reconciliation for the JSDA number: headline, less T-bills, less auction allotments, less the second leg of member-to-member trades, gives the dashboard total; the US tab's figures table does the same for TRACE venues and on-the-run issues.</li>
       <li>The profile is a capacity calculation at a constant participation rate. It is not a price-impact model, and it assumes turnover stays at its window average while the holding is sold; the haircut is the only stress device.</li>
     </ul></div>
-  </div>
-  <div class="block"><h2>Exchange rates</h2>
-    <div class="card"><div id="fxTable"></div></div>
-  </div>
-  <div class="block"><h2>Downloads</h2>
-    <p class="note">The structured datasets behind every chart and table on this page, as Excel workbooks. Series datasets open on a <b>Wide</b> sheet (one row per period or market, one column per series, ready for formulas), followed by a <b>Data</b> sheet with the same figures in long form (one observation per row) and an <b>About</b> sheet with the description, source, counting convention and a column dictionary. Local currency millions unless the column name says otherwise; empty cells mean not available. The first entry bundles every dataset into one workbook, in wide form. <a href="data/README.txt" download>data/README.txt</a> repeats the descriptions as a plain-text data dictionary. The files are regenerated on every build, so they always match the page.</p>
-    <div class="card"><div id="dlList"></div></div>
   </div>
 </section>
 
@@ -1647,6 +1651,11 @@ function tabUpdate() {
   $('#setList').innerHTML = Object.entries(D.settings).map(([k, v]) => `<dt><code>${k}</code></dt><dd>${v === null ? 'not set' : esc(String(v))}</dd>`).join('');
   $('#upManual').innerHTML = `<ol class="steps">${man.map(x => `<li><b>${esc(x.title)}</b> ${badge(stat(x))}<br>${esc(x.how)}<br><span class="note">Latest data point ${esc(x.latest || 'none')}; files last written ${esc(x.files_updated || 'never')}; ${esc(x.cadence)}.</span> <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Open the download page</a></li>`).join('')}</ol>`;
 }
+function tabDownloads() {
+  $('#dlList').innerHTML = (D.downloads || []).map(e => `<details class="dl"><summary><a href="data/${esc(e.file)}" download onclick="event.stopPropagation()">${esc(e.file)}</a><span class="dl-t">${esc(e.title)}</span><span class="dl-m">${e.rows == null ? '' : fmt(e.rows, 0) + ' rows · '}${e.bytes >= 1048576 ? fmt(e.bytes / 1048576, 1) + ' MB' : e.bytes < 1024 ? '&lt;1 kB' : fmt(e.bytes / 1024, 0) + ' kB'}</span></summary>
+    <p>${esc(e.description)}</p>
+    <p class="note"><b>Source:</b> ${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source)}<br><b>Counting / notes:</b> ${esc(e.notes)}${e.columns.length ? `<br><b>Columns:</b> ${e.columns.map(c => `<code>${esc(c)}</code>`).join(', ')}` : ''}</p></details>`).join('');
+}
 function tabNotes() {
   $('#methodNotes').innerHTML = $('#methodBody').innerHTML;
   let h = `<thead><tr><th>Market</th><th>Dealer-to-customer</th><th>D2C incl. on-the-run (US)</th><th>Dealer-to-dealer</th><th>Total</th></tr></thead><tbody>`;
@@ -1655,9 +1664,6 @@ function tabNotes() {
   h = `<thead><tr><th>Market</th><th>Source</th><th>Counting</th><th>Maturity basis</th><th>Groups</th><th>Window</th></tr></thead><tbody>`;
   for (const m of MK) { const M = D.markets[m]; h += `<tr><td>${esc(M.name)}</td><td style="text-align:left;white-space:normal"><a href="${esc(M.source_url)}" target="_blank" rel="noopener">${esc(M.source)}</a>${M.ccdc ? `<br>Whole-market total: <a href="${esc(M.ccdc.source_url)}" target="_blank" rel="noopener">${esc(M.ccdc.source)}</a> (downloaded by hand)` : ''}${M.origin ? `<br><span style="color:var(--muted);font-size:.85em">${esc(M.origin)}</span>` : ''}</td><td style="text-align:left;white-space:normal">${esc(M.counting)}</td><td style="text-align:left;white-space:normal">${esc(M.maturity_basis)}</td><td style="text-align:left;white-space:normal">${M.groups.join(', ')}</td><td>${esc(M.window.label)}</td></tr>`; }
   $('#convTable').innerHTML = h + '</tbody>';
-  $('#dlList').innerHTML = (D.downloads || []).map(e => `<details class="dl"><summary><a href="data/${esc(e.file)}" download onclick="event.stopPropagation()">${esc(e.file)}</a><span class="dl-t">${esc(e.title)}</span><span class="dl-m">${e.rows == null ? '' : fmt(e.rows, 0) + ' rows · '}${e.bytes >= 1048576 ? fmt(e.bytes / 1048576, 1) + ' MB' : e.bytes < 1024 ? '&lt;1 kB' : fmt(e.bytes / 1024, 0) + ' kB'}</span></summary>
-    <p>${esc(e.description)}</p>
-    <p class="note"><b>Source:</b> ${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source)}<br><b>Counting / notes:</b> ${esc(e.notes)}${e.columns.length ? `<br><b>Columns:</b> ${e.columns.map(c => `<code>${esc(c)}</code>`).join(', ')}` : ''}</p></details>`).join('');
   h = `<table class="tbl mat"><thead><tr><th>Market</th><th>As of</th>${B.map(b => `<th>${b}</th>`).join('')}<th>Total</th><th>Issues</th></tr></thead><tbody>`;
   for (const m of MK) {
     const x = MATD[m], c = col(m);
@@ -1669,13 +1675,13 @@ function tabNotes() {
       <tr><td colspan="9" class="src"><b>Not available.</b> ${esc((x && (x.how_to || x.error)) || 'no source')}${x && x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
     }
   }
-  $('#matTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Shares in % of nominal outstanding. Bucket boundaries are on remaining maturity at the as-of date; 10y+ runs to the longest bond. The per-issue lists stay in rawData/maturity; the five sums per market are in the maturity_profile workbook under Downloads.</p>`;
+  $('#matTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Shares in % of nominal outstanding. Bucket boundaries are on remaining maturity at the as-of date; 10y+ runs to the longest bond. The per-issue lists stay in rawData/maturity; the five sums per market are in the maturity_profile workbook on the Downloads tab.</p>`;
   $('#fxTable').innerHTML = `<p class="note">${esc(D.fx.source)}, ${D.fx.date} (<a href="${esc(D.fx.source_url)}" target="_blank" rel="noopener">source</a>). Units of currency per euro. ${D.fx.live ? `Fetched from the ECB when this page was opened${D.fx.built_date !== D.fx.date ? `; the rates stored at build time were of ${D.fx.built_date}` : ''}. The ECB publishes new rates around 16:00 CET on its working days and the page checks every time it is opened.` : 'Rates stored at build time. The page also asks the ECB for the current rates each time it is opened; that request did not succeed this time, so the stored rates are in use.'}</p><table class="tbl"><thead><tr>${Object.keys(D.fx.per_eur).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(D.fx.per_eur).map(v => `<td class="num">${fmt(v, 4)}</td>`).join('')}</tr></tbody></table>`;
 }
 
 /* ---------- tabs and boot ---------- */
-const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, cmp: tabCmp, notes: tabNotes, update: tabUpdate};
-const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data'};
+const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, cmp: tabCmp, notes: tabNotes, update: tabUpdate, dl: tabDownloads};
+const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data', dl: 'Downloads'};
 const TABMK = {usd: 'USD', gbp: 'GBP', de: 'EUR-DE', fr: 'EUR-FR', jpy: 'JPY', cny: 'CNY'};
 function buildTabs() {
   const link = t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`;
