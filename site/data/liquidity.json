@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 16:32",
+ "generated": "2026-11-04 19:26",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -34,20 +34,20 @@
   "fr_reference_note": "approximate 2025 average of SVT-reported daily OAT turnover, gross, probably including OATi/OATei (own estimate from AFT material, early 2026)"
  },
  "fx": {
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "base": "EUR",
   "per_eur": {
    "EUR": 1.0,
-   "USD": 1.1179,
-   "JPY": 176.95,
-   "DKK": 7.4735,
-   "GBP": 0.83358,
-   "SEK": 10.9515,
-   "CHF": 0.9166,
-   "NOK": 10.3185,
-   "AUD": 1.6007,
-   "CAD": 1.5623,
-   "CNY": 7.459
+   "USD": 1.1267,
+   "JPY": 178.3,
+   "DKK": 7.4738,
+   "GBP": 0.8346,
+   "SEK": 10.9718,
+   "CHF": 0.9188,
+   "NOK": 10.397,
+   "AUD": 1.6061,
+   "CAD": 1.5701,
+   "CNY": 7.5177
   },
   "source": "ECB euro foreign exchange reference rates",
   "source_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
@@ -19037,7 +19037,7 @@
    "d2c_override": false
   }
  },
- "last_refresh": "2026-11-04 10:57",
+ "last_refresh": "2026-11-04 19:26",
  "status": [
   {
    "key": "trace_us",
@@ -19082,7 +19082,7 @@
    "source": "Deutsche Finanzagentur, trading volumes (annual, by instrument and counterparty)",
    "source_url": "https://www.deutsche-finanzagentur.de/en/federal-securities/trading/secondary-market/trading-volumes/year",
    "latest": "2025",
-   "files_updated": "2026-11-04 10:57",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 2,
    "folder": "rawData/eur_bunds",
    "cadence": "annual, the full year appears early in the following year",
@@ -19171,12 +19171,12 @@
    "mode": "automatic",
    "source": "ECB euro foreign exchange reference rates",
    "source_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
-   "latest": "2026-11-03",
-   "files_updated": "2026-11-04 10:57",
+   "latest": "2026-11-04",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 1,
    "folder": "rawData/fx",
    "cadence": "daily, about 16:00 CET on ECB working days",
-   "next_expected": "2026-11-04",
+   "next_expected": "2026-11-05",
    "status": "up to date",
    "how": "run the pipeline with --refresh",
    "available": true,
@@ -19190,7 +19190,7 @@
    "source": "US Treasury, Monthly Statement of the Public Debt, table 3 (marketable Treasury securities by CUSIP), Fiscal Data API",
    "source_url": "https://fiscaldata.treasury.gov/datasets/monthly-statement-public-debt/",
    "latest": "2026-09-30",
-   "files_updated": "2026-11-04 12:58",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 1,
    "folder": "rawData/maturity",
    "cadence": "monthly, a few business days after month end",
@@ -19226,7 +19226,7 @@
    "source": "Deutsche Finanzagentur, monthly itemised list of outstanding Federal securities (nominal values)",
    "source_url": "https://www.deutsche-finanzagentur.de/en/federal-securities/types-of-federal-securities/overview-federal-securities",
    "latest": "2026-09-30",
-   "files_updated": "2026-11-04 10:57",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 1,
    "folder": "rawData/maturity",
    "cadence": "monthly",
@@ -19244,7 +19244,7 @@
    "source": "Agence France Tresor, OATs debt outstanding (nominal, by line)",
    "source_url": "https://www.aft.gouv.fr/en/encours-detaille-oat",
    "latest": "2026-11-04",
-   "files_updated": "2026-11-04 10:57",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 1,
    "folder": "rawData/maturity",
    "cadence": "updated by AFT after each auction; the page carries no date",
@@ -19262,7 +19262,7 @@
    "source": "Ministry of Finance Japan, outstanding balance by issue of general bonds (end of fiscal year)",
    "source_url": "https://www.mof.go.jp/jgbs/reference/appendix/index.htm",
    "latest": "2026-03-31",
-   "files_updated": "2026-11-04 10:57",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 1,
    "folder": "rawData/maturity",
    "cadence": "annual, end-March figures published around June",
@@ -19280,7 +19280,7 @@
    "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
    "source_url": "https://asianbondsonline.adb.org/china/data/",
    "latest": "2026-03-31",
-   "files_updated": "2026-11-04 11:50",
+   "files_updated": "2026-11-04 19:26",
    "n_files": 2,
    "folder": "rawData/maturity",
    "cadence": "quarterly from ADB AsianBondsOnline, about six months after quarter end; a ChinaBond export whenever exact figures matter",
@@ -19292,5 +19292,5 @@
    "checked": "2026-11-04"
   }
  ],
- "built": "2026-11-04 18:35"
+ "built": "2026-11-04 19:26"
 }

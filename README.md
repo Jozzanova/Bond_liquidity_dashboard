@@ -35,6 +35,9 @@ python -X utf8 pipeline/run_all.py --refresh   # download new TRACE months, JSDA
 python -X utf8 pipeline/run_all.py             # parse what is in rawData/ without touching the network
 python -X utf8 build.py                        # write site/index.html
 npx wrangler deploy                            # publish
+
+python -X utf8 update.py   (or double-click update.bat)   # all of the above in one go: opens the manual download pages,
+                                                        # files recognised downloads from ~/Downloads into rawData, refreshes, builds, deploys
 ```
 
 ### UK gilts need a manual download
