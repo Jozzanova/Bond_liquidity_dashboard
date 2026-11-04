@@ -531,7 +531,7 @@ function buildSide() {
   <div class="segs">${Object.entries(SEGS).map(([k, v]) => `<label><input type="radio" name="seg" value="${k}"${S.seg === k ? ' checked' : ''}><span>${v.label}<small>${v.small}</small></span></label>`).join('')}</div>
   <div class="row" style="margin-top:.5rem"><label for="inOtr">US on-the-run share of holding, %</label><input type="number" id="inOtr" min="0" max="100" step="0.5" value="${S.otr}"></div>
   <div class="hint">Share of the US holding sold against on-the-run turnover, the rest against off-the-run. ${(() => { const o = MATD.USD && MATD.USD.on_the_run; return o ? `Current issues are ${fmt(o.share_pct, 1)} % of notes and bonds outstanding (<a href="#main" data-otr="${o.share_pct}">use ${fmt(o.share_pct, 1)} %</a> for a market-tracking holding); ` : ''; })()}0.5 % fits mostly seasoned bonds, 0 % is the most conservative.</div>
-    <details class="sec" data-sec="mat"${secOpen('mat', S.matOn) ? ' open' : ''}><summary><h3>Maturity of the holding</h3><span class="badge${S.matOn ? ' ok' : ''}" id="secMatBadge">${S.matOn ? 'on' : 'off'}</span></summary>
+    <details class="sec" data-sec="mat"${secOpen('mat', S.matOn) ? ' open' : ''}><summary><h3>Maturity distribution</h3><span class="badge${S.matOn ? ' ok' : ''}" id="secMatBadge">${S.matOn ? 'on' : 'off'}</span></summary>
   <label class="chk"><input type="checkbox" id="inMatOn"${S.matOn ? ' checked' : ''}> Apply a maturity distribution</label>
   <div class="hint">Off: each market is one pool sold against all its turnover. On: the holding is spread over maturity buckets, each sold against its own group's turnover.</div>
   <div id="matBlock" class="${S.matOn ? '' : 'dis'}">
