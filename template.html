@@ -979,7 +979,7 @@ function tabCmp() {
     </div></div>
   <div class="block"><h2>By maturity and over time</h2>
     <div class="grid2">
-      <div class="card"><h3>Turnover ratio by remaining maturity</h3><div class="sub">D2C turnover per trading day as % of the stock in the same maturity range. US Treasuries and gilts have five groups; Bunds and JGBs three (0-5, 5-10, 10y+, by original maturity, shown across the buckets they cover). OATs and CGBs have one pool and are left out.</div><div class="plot tall" id="cmp-bucket"></div></div>
+      <div class="card" style="position:relative"><h3 id="cmpBucketTitle">Turnover ratio by remaining maturity</h3><div class="chartctl" id="cmpBucketCtl"><button type="button" data-bm="ratio">ratio</button><button type="button" data-bm="turnover">turnover</button><button type="button" data-bm="stock">stock</button></div><div class="sub" id="cmpBucketSub"></div><div class="plot tall" id="cmp-bucket"></div></div>
       <div class="card"><h3>D2C turnover over time</h3><div class="sub" id="cmpTrendSub"></div><div class="plot tall" id="cmp-trend"></div></div>
     </div></div>
   <div class="block"><h2>Daily capacity at a given participation rate</h2>
@@ -1026,9 +1026,8 @@ function tabCmp() {
     {x: names, y: ms.map(m => C[m].ratioTot), name: 'Total (as reported)', type: 'bar', marker: {color: 'rgba(0,0,0,0)', line: {color: css('--tot'), width: 1.5}}, hovertemplate: '%{y:.2f} %<extra>Total</extra>'},
   ], base({barmode: 'group', bargap: 0.3, yaxis: Object.assign(base().yaxis, {title: {text: '% of outstanding stock per day'}})}));
   // by maturity
-  const bm = ms.filter(m => C[m].groups.length > 1 && C[m].groups.some(g => g.ratio != null));
-  plot('cmp-bucket', bm.map(m => { const c = C[m]; const g = B.map((b, i) => c.groups.find(x => x.idx.includes(i))); return {x: B, y: g.map(x => x ? x.ratio : null), customdata: g.map(x => x ? x.g : ''), name: D.markets[m].name, type: 'bar', marker: {color: col(m)}, hovertemplate: '%{y:.2f} % per day<extra>' + esc(SHORT[m]) + ' %{customdata}</extra>'}; }),
-    base({barmode: 'group', bargap: 0.25, hovermode: 'closest', yaxis: Object.assign(base().yaxis, {title: {text: '% of the bucket\'s stock per day'}}), xaxis: Object.assign(base().xaxis, {title: {text: 'remaining maturity', font: {size: 11, color: css('--axis')}}})}));
+  drawBucket(C, ms, bc);
+  $('#cmpBucketCtl').addEventListener('click', e => { const b = e.target.closest('[data-bm]'); if (!b) return; try { localStorage.setItem('bondliq.bm', b.dataset.bm); } catch (x) {} drawBucket(C, ms, bc); });
   // trend
   const tr = trendSeries();
   const trNames = tr.map(t => SHORT[t.m]);
@@ -1037,6 +1036,32 @@ function tabCmp() {
     base({yaxis: Object.assign(base().yaxis, {title: {text: 'index, 2024 average = 100'}, hoverformat: '.0f'}), xaxis: Object.assign(base().xaxis, {type: 'date', range: ['2016-01-01', tr.reduce((d, t) => t.x[t.x.length - 1] > d ? t.x[t.x.length - 1] : d, '2016-01-01')]})}));
 }
 
+// the by-maturity chart on the comparison tab: turnover ratio, turnover per day or outstanding stock per bucket
+function drawBucket(C, ms, bc) {
+  let metric = 'ratio'; try { const v = localStorage.getItem('bondliq.bm'); if (['ratio', 'turnover', 'stock'].includes(v)) metric = v; } catch (e) {}
+  document.querySelectorAll('#cmpBucketCtl [data-bm]').forEach(b => b.classList.toggle('on', b.dataset.bm === metric));
+  const fxB = m => fxLocalPerBase(D.markets[m].currency);
+  const stockBucket = m => { const X = MATD[m] || {}; const mul = X.unit && /trn/.test(X.unit) ? 1000 : 1; return X.available && X.amounts_bn && X.amounts_bn.every(a => a != null) ? X.amounts_bn.map(a => a * mul / fxB(m)) : null; };
+  const withGroups = ms.filter(m => C[m].groups.length > 1 && C[m].groups.some(g => g.ratio != null));
+  let traces, title, sub, ytitle;
+  if (metric === 'stock') {
+    const mk = ms.filter(m => stockBucket(m));
+    traces = mk.map(m => ({x: B, y: stockBucket(m), name: D.markets[m].name, type: 'bar', marker: {color: col(m)}, hovertemplate: '%{y:,.0f} ' + bc + ' bn<extra>' + esc(SHORT[m]) + '</extra>'}));
+    title = 'Outstanding stock by remaining maturity'; ytitle = bc + ' bn';
+    sub = `Nominal bonds outstanding in each bucket, ${bc} bn at ECB rates, for all six markets (CGBs: ADB shares times the ADB sovereign total). Dates per market on the Methods &amp; sources tab.`;
+  } else if (metric === 'turnover') {
+    traces = withGroups.map(m => { const c = C[m], st = stockBucket(m); const g = B.map((b, i) => c.groups.find(x => x.idx.includes(i)));
+      return {x: B, y: g.map((x, i) => x && x.ratio != null && st ? x.ratio / 100 * st[i] : null), customdata: g.map(x => x ? x.g : ''), name: D.markets[m].name, type: 'bar', marker: {color: col(m)}, hovertemplate: '%{y:,.1f} ' + bc + ' bn per day<extra>' + esc(SHORT[m]) + ' %{customdata}</extra>'}; });
+    title = 'D2C turnover by remaining maturity'; ytitle = bc + ' bn per day';
+    sub = `Dealer-to-customer turnover per trading day in ${bc} bn. Where a turnover group spans several buckets (Bunds and JGBs: 0-5, 5-10, 10y+ by original maturity) the group total is spread over its buckets in proportion to the stock in each. OATs and CGBs have one pool and are left out.`;
+  } else {
+    traces = withGroups.map(m => { const c = C[m]; const g = B.map((b, i) => c.groups.find(x => x.idx.includes(i))); return {x: B, y: g.map(x => x ? x.ratio : null), customdata: g.map(x => x ? x.g : ''), name: D.markets[m].name, type: 'bar', marker: {color: col(m)}, hovertemplate: '%{y:.2f} % per day<extra>' + esc(SHORT[m]) + ' %{customdata}</extra>'}; });
+    title = 'Turnover ratio by remaining maturity'; ytitle = 'turnover per day, % of the bucket stock';
+    sub = 'D2C turnover per trading day as % of the stock in the same maturity range. US Treasuries and gilts have five groups; Bunds and JGBs three (0-5, 5-10, 10y+, by original maturity, shown across the buckets they cover). OATs and CGBs have one pool and are left out.';
+  }
+  $('#cmpBucketTitle').textContent = title; $('#cmpBucketSub').innerHTML = sub;
+  plot('cmp-bucket', traces, base({barmode: 'group', bargap: 0.25, hovermode: 'closest', yaxis: Object.assign(base().yaxis, {title: {text: ytitle}}), xaxis: Object.assign(base().xaxis, {title: {text: 'remaining maturity', font: {size: 11, color: css('--axis')}}})}));
+}
 function downloadCmpXlsx() {
   const bc = S.base, C = cmpData(), ms = MK.filter(m => C[m]), now = new Date();
   const c = (v, s) => ({v, s});
