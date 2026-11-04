@@ -171,7 +171,7 @@ def build(refresh=False) -> dict:
         "segments": {
             "d2c_base": {"key": "d2c_base", "label": "Customer-facing (non-broker) legs", "note": "gross x (1 - broker share), single-counted as reported; no on/off-the-run split so d2c_base = d2c_all; subset of auction-group banks; uniform counterparty mix across instruments assumed"},
             "d2c_all": {"key": "d2c_all", "label": "Customer-facing (non-broker) legs", "note": "same as d2c_base"},
-            "d2d": {"key": "d2d", "label": "Broker legs, halved", "note": "gross x broker share x 0.5 (both banks report the same interdealer trade)"},
+            "d2d": {"key": "d2d", "label": "Broker legs, halved", "note": "gross x broker share x 0.5 (assumed to be reported by both banks of the interdealer trade, so halved)"},
             "total": {"key": "total", "label": "Customer + 0.5 x broker legs", "note": "single-counted total of the reporting banks' turnover"},
         },
         "window_adv": window_adv,

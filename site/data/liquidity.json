@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 12:59",
+ "generated": "2026-11-04 14:18",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -17277,7 +17277,7 @@
     "d2d": {
      "key": "d2d",
      "label": "Broker legs, halved",
-     "note": "gross x broker share x 0.5 (both banks report the same interdealer trade)"
+     "note": "gross x broker share x 0.5 (assumed to be reported by both banks of the interdealer trade, so halved)"
     },
     "total": {
      "key": "total",
@@ -19282,5 +19282,5 @@
    "checked": "2026-11-04"
   }
  ],
- "built": "2026-11-04 14:11"
+ "built": "2026-11-04 14:18"
 }
