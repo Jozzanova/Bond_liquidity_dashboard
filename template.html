@@ -585,6 +585,12 @@ function solveTime(items, frac) {
 }
 
 /* ---------- side panel ---------- */
+// the Advanced badge names what differs from the defaults
+function advBadge() {
+  const b = $('#secAdvBadge'); if (!b) return;
+  const d = []; if (S.seg !== DEF.seg) d.push(SEGS[S.seg].label.toLowerCase()); if (S.otr !== DEF.otr) d.push(`on-the-run ${S.otr} %`); if (S.matOn) d.push('maturity split on');
+  b.textContent = d.length ? d.join(', ') : 'defaults'; b.classList.toggle('warn', d.length > 0);
+}
 function secOpen(k, active) { try { const v = localStorage.getItem('bondliq.sec.' + k); if (v === '1' || v === '0') return v === '1'; } catch (e) {} return !!active; }
 function buildSide() {
   const side = $('#side');
@@ -601,7 +607,7 @@ function buildSide() {
   <div class="row"><label for="inHair">Turnover haircut, % (stress)</label><input type="number" id="inHair" min="0" max="95" step="5" value="${S.haircut}"><input type="range" id="inHairR" min="0" max="95" step="5" value="${S.haircut}"></div>
   <div class="row"><label for="inPreset">Preset</label><select id="inPreset">${PRESETS.map(([n, p, h]) => `<option value="${p},${h}"${S.part === p && S.haircut === h ? ' selected' : ''}>${n}: ${p} % / ${h} % haircut</option>`).join('')}<option value="custom"${PRESETS.some(([n, p, h]) => S.part === p && S.haircut === h) ? '' : ' selected'}>Custom</option></select></div>
   <div class="hint">Presets are illustrative, not calibrated. The haircut stands for the share of reported volume a seller could actually use.</div>
-  <details class="sec" data-sec="adv"${secOpen('adv', S.seg !== DEF.seg || S.otr !== DEF.otr) ? ' open' : ''}><summary><h3>Advanced</h3><span class="badge${S.seg !== DEF.seg || S.otr !== DEF.otr || S.matOn ? ' warn' : ''}" id="secAdvBadge">${S.seg !== DEF.seg || S.otr !== DEF.otr || S.matOn ? 'changed' : 'default'}</span></summary>
+  <details class="sec" data-sec="adv"${secOpen('adv', S.seg !== DEF.seg || S.otr !== DEF.otr) ? ' open' : ''}><summary><h3>Advanced</h3><span class="badge" id="secAdvBadge"></span></summary>
   <div class="segs">${Object.entries(SEGS).map(([k, v]) => `<label><input type="radio" name="seg" value="${k}"${S.seg === k ? ' checked' : ''}><span>${v.label}<small>${v.small}</small></span></label>`).join('')}</div>
   <div class="row" style="margin-top:.5rem"><label for="inOtr">US on-the-run share of holding, %</label><input type="number" id="inOtr" min="0" max="100" step="0.5" value="${S.otr}"></div>
   <div class="hint">Share of the US holding sold against on-the-run turnover, the rest against off-the-run. ${(() => { const o = MATD.USD && MATD.USD.on_the_run; return o ? `Current issues are ${fmt(o.share_pct, 1)} % of notes and bonds outstanding (<a href="#main" data-otr="${o.share_pct}">use ${fmt(o.share_pct, 1)} %</a> for a market-tracking holding); ` : ''; })()}0.5 % fits mostly seasoned bonds, 0 % is the most conservative.</div>
@@ -629,6 +635,7 @@ function buildSide() {
   <div class="btns" style="margin-top:.9rem"><button class="btn" id="btnAllOn" type="button">All markets on</button><button class="btn" id="btnReset" type="button">Reset everything</button></div>`;
   side.innerHTML = h;
   const on = (sel, ev, fn) => side.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn));
+  advBadge();
   on('details.sec', 'toggle', e => { try { localStorage.setItem('bondliq.sec.' + e.target.dataset.sec, e.target.open ? '1' : '0'); } catch (x) {} });
   on('input[data-on]', 'change', e => { S.on[e.target.dataset.on] = e.target.checked; update(); });
   on('#btnAllOn', 'click', () => { for (const m of MK) S.on[m] = true; side.querySelectorAll('input[data-on]').forEach(i => { i.checked = true; }); update(); });
@@ -639,12 +646,12 @@ function buildSide() {
   on('#inPartR', 'input', e => { S.part = +e.target.value; $('#inPart').value = S.part; update(); });
   on('#inHair', 'input', e => { S.haircut = Math.min(95, Math.max(0, +e.target.value || 0)); $('#inHairR').value = S.haircut; presetMark(); update(); });
   on('#inHairR', 'input', e => { S.haircut = +e.target.value; $('#inHair').value = S.haircut; update(); });
-  on('input[name=seg]', 'change', e => { S.seg = e.target.value; update(); });
-  on('#inOtr', 'input', e => { S.otr = Math.min(100, Math.max(0, +e.target.value || 0)); update(); });
+  on('input[name=seg]', 'change', e => { S.seg = e.target.value; advBadge(); update(); });
+  on('#inOtr', 'input', e => { S.otr = Math.min(100, Math.max(0, +e.target.value || 0)); advBadge(); update(); });
   on('#inPreset', 'change', e => { if (e.target.value === 'custom') return; const [p, h] = e.target.value.split(',').map(Number); S.part = p; S.haircut = h; $('#inPart').value = p; $('#inPartR').value = p; $('#inHair').value = h; $('#inHairR').value = h; update(); });
-  on('[data-otr]', 'click', e => { e.preventDefault(); S.otr = +e.currentTarget.dataset.otr; $('#inOtr').value = S.otr; update(); });
+  on('[data-otr]', 'click', e => { e.preventDefault(); S.otr = +e.currentTarget.dataset.otr; $('#inOtr').value = S.otr; advBadge(); update(); });
   on('#inMax', 'input', e => { S.matMax = Math.min(30, Math.max(1, +e.target.value || 1)); update(); });
-  on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); const b = $('#secMatBadge'); b.textContent = S.matOn ? 'on' : 'off'; b.classList.toggle('ok', S.matOn); update(); });
+  on('#inMatOn', 'change', e => { S.matOn = e.target.checked; $('#matBlock').classList.toggle('dis', !S.matOn); const b = $('#secMatBadge'); b.textContent = S.matOn ? 'on' : 'off'; b.classList.toggle('ok', S.matOn); advBadge(); update(); });
   on('input[name=matMode]', 'change', e => { S.matMode = e.target.value; if (S.matMode === 'custom' && MK.every(m => S.mat[m].every((v, i) => v === DEF.mat[m][i]))) { /* start the custom rows from the stock shares */ } save(); buildSide(); update(); });
   on('#btnMkt', 'click', () => { for (const m of MK) S.mat[m] = DEF.mat[m].slice(); side.querySelectorAll('input[data-mat]').forEach(i => { const v = S.mat[i.dataset.mat][+i.dataset.i]; i.value = v == null ? '' : v; }); update(); });
   on('input[data-alloc]', 'input', e => { S.alloc[e.target.dataset.alloc] = Math.max(0, +e.target.value || 0); update(); });
