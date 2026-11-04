@@ -1,7 +1,7 @@
 """CCDC (ChinaBond) monthly statistics: interbank cash-bond settlement of
 Chinese government bonds, whole market.
 
-Source: https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/ (Data > Statistics >
+Source: https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/ (Data > Statistics >
 Monthly Bulletin of Statistics). Pick year and month, click the table title,
 choose Excel. Two tables are used:
   7. CIBM Bond Settlement (By Bond Type)      -> "CIBM Bond Settlement (By Bond Type)_YYYYMM.xls"
@@ -90,7 +90,7 @@ def build(data) -> dict | None:
     first, last = dt.date.fromisoformat(recent[0]["month"]), dt.date.fromisoformat(recent[-1]["month"])
     return {
         "source": "CCDC (China Central Depository & Clearing), Monthly Bulletin of Statistics, tables 7 and 8 (CIBM bond settlement by bond type / by investor type)",
-        "source_url": "https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/",
+        "source_url": "https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/",
         "counting": "cash-bond settlement in the interbank market by settlement date, face value, RMB; by bond type each trade counts once; by investor type each side counts, so an investor type's figure is its own gross purchases plus sales",
         "coverage": "bonds registered at CCDC (CGBs, local government, policy bank, government-backed agency, commercial bank, enterprise bonds, ABS); interbank market only, no exchange or counter trading; the Bond Connect and CIBM Direct trades of foreign investors are included",
         "trading_days_note": "Trading days are weekdays less State Council holidays plus the adjusted weekend working days, which the interbank market observes; checked against the days implied by the Bond Connect reports",

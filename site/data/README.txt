@@ -1,5 +1,5 @@
 Government bond liquidity dashboard: data files
-Pipeline run 2026-11-04 19:32
+Pipeline run 2026-11-04 19:33
 
 Each dataset is an Excel workbook with a Wide sheet where the data form series (one row per period, one column per series), a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.
 
@@ -103,7 +103,7 @@ Columns: month, trading_days_implied, volume_rmb_bn, adt_rmb_bn, cgb_share_state
 == cny_ccdc_monthly.xlsx ==
 Chinese government bonds: CCDC interbank cash-bond settlement by month
 Cash-bond settlement in the interbank market, RMB mn: CGBs (cgb), all CCDC-registered bonds (all), policy bank bonds (pbb), local government bonds (lgb), and foreign investors' own-side settlement of all CCDC bonds (foreign). *_adv_mn are per trading day on the Chinese interbank calendar. double_count_ok confirms that the investor-type table sums to twice the bond-type table.
-Source: CCDC (China Central Depository & Clearing), Monthly Bulletin of Statistics, tables 7 and 8 (CIBM bond settlement by bond type / by investor type) (https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/)
+Source: CCDC (China Central Depository & Clearing), Monthly Bulletin of Statistics, tables 7 and 8 (CIBM bond settlement by bond type / by investor type) (https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/)
 Counting / notes: cash-bond settlement in the interbank market by settlement date, face value, RMB; by bond type each trade counts once; by investor type each side counts, so an investor type's figure is its own gross purchases plus sales. bonds registered at CCDC (CGBs, local government, policy bank, government-backed agency, commercial bank, enterprise bonds, ABS); interbank market only, no exchange or counter trading; the Bond Connect and CIBM Direct trades of foreign investors are included
 Columns: month, trading_days, cgb_mn, all_mn, pbb_mn, lgb_mn, foreign_mn, inv_total_mn, cgb_adv_mn, all_adv_mn, cgb_share, foreign_adv_mn, foreign_share, double_count_ok
 

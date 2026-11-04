@@ -41,8 +41,8 @@ PAGES = {
                      "download 'GEMM turnover by maturity band' (xlsx), 'All GEMMs turnover' (xls) and the latest 'Annual turnover report' (xls)"),
     "dmo_gilts_in_issue": ("UK gilts: Gilts in issue", "https://www.dmo.gov.uk/data/gilt-market/gilts-in-issue/",
                            "export the 'Gilts in issue' list to Excel"),
-    "ccdc": ("CGBs: CCDC monthly settlement statistics", "https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/",
-             "switch the page to English first (the Chinese export is not readable by the pipeline), then for each new month open table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; an empty (0-byte) download means the site did not send the file, try again"),
+    "ccdc": ("CGBs: CCDC monthly settlement statistics", "https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/",
+             "this is the English-language bulletin (its tables carry English labels, which the pipeline reads); for each new month open table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; an empty (0-byte) download means the site did not send the file, try again"),
 }
 MON = {m: i for i, m in enumerate(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
 

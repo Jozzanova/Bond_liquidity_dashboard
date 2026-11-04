@@ -99,10 +99,10 @@ def build(markets: dict, fx: dict, maturity: dict, today: dt.date | None = None,
             _month_plus(cny["window"]["to"], 2, 8), RAW / "cny_bond_connect", "run the pipeline with --refresh; new flash-report pages are fetched from chinabondconnect.com")
         cc = cny.get("ccdc")
         add("ccdc", "CGBs: CCDC monthly settlement statistics (whole market)", "manual",
-            cc["source"] if cc else "CCDC Monthly Bulletin of Statistics", cc["source_url"] if cc else "https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/",
+            cc["source"] if cc else "CCDC Monthly Bulletin of Statistics", cc["source_url"] if cc else "https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/",
             cc["window"]["label"] if cc else None, _files(RAW / "ccdc_cgb", ["*.xls*"]), "monthly, around the 10th of the following month",
             _month_plus(cc["months"][-1], 2, 12) if cc else None, RAW / "ccdc_cgb",
-            "chinabond.com.cn > Data > Statistics > Monthly Bulletin of Statistics, with the page switched to English (the Chinese-language export has different labels and is not read). For each new month click table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; update.bat files them as 'CIBM Bond Settlement (By Bond Type)_YYYYMM.xls' and '(By Investor Type)_YYYYMM.xls' in rawData/ccdc_cgb (or save them under those names by hand). A 0-byte download means the site did not send the file.",
+            "English ChinaBond site > Data & Research > Statistics > Monthly Bulletin of Statistics (the Chinese-language site exports tables with Chinese labels, which the pipeline does not read). For each new month click table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; update.bat files them as 'CIBM Bond Settlement (By Bond Type)_YYYYMM.xls' and '(By Investor Type)_YYYYMM.xls' in rawData/ccdc_cgb (or save them under those names by hand). A 0-byte download means the site did not send the file.",
             available=bool(cc), note="the download endpoint rejects scripted requests")
     add("fx", "Exchange rates: ECB reference rates", "automatic", fx["source"], fx["source_url"], fx["date"], _files(RAW / "fx", ["eurofxref-daily.xml"]),
         "daily, about 16:00 CET on ECB working days", dt.date.fromisoformat(fx["date"]) + dt.timedelta(days=1), RAW / "fx", "run the pipeline with --refresh")

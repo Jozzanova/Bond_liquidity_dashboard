@@ -60,7 +60,7 @@ provisional.
 
 The CCDC (ChinaBond) Monthly Bulletin of Statistics serves its Excel tables through a POST endpoint
 that the pipeline does not call. Download by hand from
-https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/ (Data > Statistics > Monthly Bulletin): pick
+https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/ (English site: Data & Research > Statistics > Monthly Bulletin of Statistics): pick
 year and month, click the table title, choose Excel. Save into `rawData/ccdc_cgb/` with the names the
 site gives, one pair per month:
 

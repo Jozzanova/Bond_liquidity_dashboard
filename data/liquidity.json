@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 19:32",
+ "generated": "2026-11-04 19:33",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -18721,7 +18721,7 @@
    "market_cgb_from_ccdc": true,
    "ccdc": {
     "source": "CCDC (China Central Depository & Clearing), Monthly Bulletin of Statistics, tables 7 and 8 (CIBM bond settlement by bond type / by investor type)",
-    "source_url": "https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/",
+    "source_url": "https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/",
     "counting": "cash-bond settlement in the interbank market by settlement date, face value, RMB; by bond type each trade counts once; by investor type each side counts, so an investor type's figure is its own gross purchases plus sales",
     "coverage": "bonds registered at CCDC (CGBs, local government, policy bank, government-backed agency, commercial bank, enterprise bonds, ABS); interbank market only, no exchange or counter trading; the Bond Connect and CIBM Direct trades of foreign investors are included",
     "trading_days_note": "Trading days are weekdays less State Council holidays plus the adjusted weekend working days, which the interbank market observes; checked against the days implied by the Bond Connect reports",
@@ -19152,7 +19152,7 @@
    "title": "CGBs: CCDC monthly settlement statistics (whole market)",
    "mode": "manual",
    "source": "CCDC (China Central Depository & Clearing), Monthly Bulletin of Statistics, tables 7 and 8 (CIBM bond settlement by bond type / by investor type)",
-   "source_url": "https://www.chinabond.com.cn/zzsj/zzsj_tjsj/tjsj_tjyb/",
+   "source_url": "https://www.chinabond.com.cn/chinaBond_en/A147249680/A147253508/A147253972/",
    "latest": "Oct 2025 to Sep 2026",
    "files_updated": "2026-11-03 16:35",
    "n_files": 26,
@@ -19160,7 +19160,7 @@
    "cadence": "monthly, around the 10th of the following month",
    "next_expected": "2026-11-12",
    "status": "up to date",
-   "how": "chinabond.com.cn > Data > Statistics > Monthly Bulletin of Statistics, with the page switched to English (the Chinese-language export has different labels and is not read). For each new month click table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; update.bat files them as 'CIBM Bond Settlement (By Bond Type)_YYYYMM.xls' and '(By Investor Type)_YYYYMM.xls' in rawData/ccdc_cgb (or save them under those names by hand). A 0-byte download means the site did not send the file.",
+   "how": "English ChinaBond site > Data & Research > Statistics > Monthly Bulletin of Statistics (the Chinese-language site exports tables with Chinese labels, which the pipeline does not read). For each new month click table 7 'CIBM Bond Settlement (By Bond Type)' and table 8 '(By Investor Type)' and choose Excel; update.bat files them as 'CIBM Bond Settlement (By Bond Type)_YYYYMM.xls' and '(By Investor Type)_YYYYMM.xls' in rawData/ccdc_cgb (or save them under those names by hand). A 0-byte download means the site did not send the file.",
    "available": true,
    "note": "the download endpoint rejects scripted requests",
    "checked": null
