@@ -376,7 +376,12 @@ function plot(id, traces, layout) {
       el._ctl.addEventListener('click', e => { const b = e.target.closest('[data-cs]'); if (!b) return; try { localStorage.setItem('bondliq.cs.' + id, b.dataset.cs); } catch (x) {} plot(id, el._src.traces, el._src.layout); });
     }
     el._ctl.querySelectorAll('[data-cs]').forEach(b => b.classList.toggle('on', b.dataset.cs === kind));
+    const summable = native === 'line' || layout.barmode === 'stack';   // overlay bars compare measures and have no meaningful sum
     if (kind !== native) ({traces, layout} = restyleKind(traces, layout, kind));
+    if (kind === 'line' && summable && traces.length > 1) {
+      const parts = traces.filter(t => !(t.line && t.line.dash));
+      traces = traces.concat([Object.assign(totalTrace(parts), {name: 'Total', line: {color: css('--tot'), width: 2.5}, showlegend: true, hovertemplate: '%{y:,.2f}<extra>Total</extra>'})]);
+    }
   }
   if (layout.barmode === 'stack' && traces.length > 1 && traces.every(t => t.type === 'bar' && t.x === traces[0].x)) traces = traces.concat([totalTrace(traces)]);
   const x0 = traces[0] && traces[0].x && traces[0].x[0];
