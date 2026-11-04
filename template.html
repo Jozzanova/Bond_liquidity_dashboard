@@ -41,9 +41,9 @@ p { margin: 0 0 .7rem; max-width: 72ch; }
 code, .mono { font-family: var(--mono); font-size: .9em; }
 nav { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
 nav .in { display: flex; align-items: center; gap: .6rem; max-width: 1500px; margin: 0 auto; padding: .45rem max(16px, env(safe-area-inset-right, 0px)) .45rem max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
-nav .brand { font-weight: 600; margin-right: .4rem; white-space: nowrap; font-size: .95rem; }
-nav .tabs { display: flex; gap: .28rem; flex-wrap: wrap; flex: 1; }
-nav .tabs a { padding: .36rem .7rem; border-radius: 999px; color: var(--fg); font-weight: 500; font-size: .9rem; white-space: nowrap; border: 1px solid var(--line); background: var(--card2); }
+nav .brand { font-weight: 600; margin-right: .3rem; white-space: nowrap; font-size: .92rem; }
+nav .tabs { display: flex; gap: .22rem; flex-wrap: wrap; flex: 1; }
+nav .tabs a { padding: .32rem .58rem; border-radius: 999px; color: var(--fg); font-weight: 500; font-size: .86rem; white-space: nowrap; border: 1px solid var(--line); background: var(--card2); }
 nav .tabs a:hover { background: var(--accent-soft); border-color: var(--accent); text-decoration: none; color: var(--fg); }
 nav .tabs a.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 nav .tabs a.on .sw { outline: 1.5px solid #fff; }
@@ -216,6 +216,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
   </div>
 </section>
 
+<section class="pane" id="pane-cmp"></section>
 <section class="pane" id="pane-usd"></section>
 <section class="pane" id="pane-gbp"></section>
 <section class="pane" id="pane-de"></section>
@@ -506,6 +507,7 @@ function update() {
   const cov = matCov();
   document.querySelectorAll('#side input[data-mat], #side input[data-tpl]').forEach(el => { const c = cov[+(el.dataset.i ?? el.dataset.tpl)]; el.classList.toggle('cut', c === 0); el.classList.toggle('part', c > 0 && c < 1); });
   drawMain();
+  if (drawn.cmp) tabCmp();
   for (const m of MK) if (drawn[TAB[m]]) drawMarketProfile(m);
 }
 function horizon() { if (S.horizon > 0) return S.horizon; const t = isFinite(R.t100) ? R.t100 : 60; return Math.max(10, Math.min(500, Math.ceil(t * 1.3 / 5) * 5)); }
@@ -781,6 +783,144 @@ function downloadXlsx() {
 
   const blob = XL.workbook(sheets);
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bond_liquidity_profile_${now.toISOString().slice(0, 10)}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---------- markets compared (independent of the holding) ---------- */
+function tdYear(m) {
+  const M = D.markets[m];
+  if (M.months && M.trading_days) return M.trading_days.slice(-12).reduce((a, b) => a + b, 0);
+  if (M.quarters && M.trading_days) return M.trading_days.slice(-4).reduce((a, b) => a + b, 0);
+  if (M.ccdc && M.ccdc.monthly) { const t = M.ccdc.monthly.slice(-12).reduce((a, x) => a + (x.trading_days || 0), 0); if (t) return t; }
+  return typeof M.trading_days === 'number' ? M.trading_days : 250;
+}
+function seriesSum(o, keys) { const ks = (keys || Object.keys(o)).filter(k => o[k]); const n = o[ks[0]].length; return Array.from({length: n}, (_, i) => ks.reduce((s, k) => s + (o[k][i] || 0), 0)); }
+function yoy(m) {
+  const M = D.markets[m], mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const r = (s, n) => s.length >= 2 * n ? mean(s.slice(-n)) / mean(s.slice(-2 * n, -n)) - 1 : null;
+  if (m === 'USD' && M.monthly_adv) return r(seriesSum(M.monthly_adv.d2c_all), 12);
+  if (m === 'JPY' && M.monthly_adv) return r(seriesSum(M.monthly_adv.d2c, Object.keys(M.class_map)), 12);
+  if (m === 'GBP' && M.quarterly_adv) return r(seriesSum(M.quarterly_adv.d2c), 4);
+  if ((m === 'EUR-DE' || m === 'EUR-FR') && D.markets['EUR-DE'] && D.markets['EUR-DE'].annual) { const a = D.markets['EUR-DE'].annual; return a.length >= 2 ? a[a.length - 1].d2c_adv_mn / a[a.length - 2].d2c_adv_mn - 1 : null; }
+  return null;
+}
+function cmpData() {
+  const toB = (m, mn) => mn == null ? null : mn / fxLocalPerBase(D.markets[m].currency) / 1000;   // local mn per day -> base bn per day
+  const sumG = o => o ? Object.values(o).reduce((s, v) => s + (v || 0), 0) : null;
+  const hasAny = o => !!o && Object.values(o).some(v => v != null);
+  const out = {};
+  for (const m of MK) {
+    const M = D.markets[m], X = MATD[m] || {};
+    const mul = X.unit && /trn/.test(X.unit) ? 1000 : 1;
+    const stockLocal = X.available && X.total_bn != null ? X.total_bn * mul : null;
+    const stockB = stockLocal == null ? null : stockLocal / fxLocalPerBase(M.currency);
+    const d2c = toB(m, sumG(M.window_adv.d2c_all)), d2cOff = m === 'USD' ? toB(m, sumG(M.window_adv.d2c_base)) : null;
+    const d2d = hasAny(M.window_adv.d2d) ? toB(m, sumG(M.window_adv.d2d)) : null;
+    const tot = hasAny(M.window_adv.total) ? toB(m, sumG(M.window_adv.total)) : null;
+    const td = tdYear(m);
+    const amounts = X.available && X.amounts_bn && X.amounts_bn.every(a => a != null) ? X.amounts_bn.map(a => a * mul) : null;
+    const groups = M.groups.map(g => {
+      const idx = B.map((b, i) => i).filter(i => M.group_map[B[i]] === g);
+      const stockG = amounts ? idx.reduce((s, i) => s + amounts[i], 0) : null;
+      const tG = M.window_adv.d2c_all[g];
+      return {g, idx, turnover: tG == null ? null : tG / 1000, stock: stockG, ratio: tG != null && stockG ? 100 * tG / 1000 / stockG : null};
+    });
+    out[m] = {M, stockB, d2c, d2cOff, d2d, tot, td, groups, change: yoy(m),
+      ratioD2c: stockB && d2c != null ? 100 * d2c / stockB : null, ratioTot: stockB && tot != null ? 100 * tot / stockB : null,
+      daysStock: stockB && d2c ? stockB / d2c : null, annualTot: stockB && tot != null ? tot * td / stockB : null, d2cShare: tot ? d2c / tot : null};
+  }
+  return out;
+}
+function trendSeries() {
+  const out = [];
+  const roll = (xs, ys, n) => { const x = [], y = []; for (let i = n - 1; i < ys.length; i++) { x.push(xs[i]); y.push(ys.slice(i - n + 1, i + 1).reduce((a, b) => a + b, 0) / n); } return {x, y}; };
+  const base24 = (xs, ys) => { const v = ys.filter((_, i) => String(xs[i]).startsWith('2024')); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const add = (m, xs, ys, n, label) => { const b = base24(xs, ys); if (!b) return; const r = roll(xs, ys, n); out.push({m, x: r.x, y: r.y.map(v => 100 * v / b), label}); };
+  const U = D.markets.USD; if (U && U.monthly_adv) add('USD', U.months, seriesSum(U.monthly_adv.d2c_all), 12, '12-month average');
+  const J = D.markets.JPY; if (J && J.monthly_adv) add('JPY', J.months, seriesSum(J.monthly_adv.d2c, Object.keys(J.class_map)), 12, '12-month average');
+  const G = D.markets.GBP; if (G && G.quarterly_adv) add('GBP', G.quarters.map(q => q.slice(0, 4) + '-' + ['03', '06', '09', '12'][+q[5] - 1] + '-01'), seriesSum(G.quarterly_adv.d2c), 4, '4-quarter average');
+  const E = D.markets['EUR-DE']; if (E && E.annual && E.annual.length) { const b = (E.annual.find(a => a.year === 2024) || {}).d2c_adv_mn; if (b) out.push({m: 'EUR-DE', x: E.annual.map(a => a.year + '-07-01'), y: E.annual.map(a => 100 * a.d2c_adv_mn / b), label: 'calendar year'}); }
+  return out;
+}
+function tabCmp() {
+  const bc = S.base, C = cmpData(), ms = MK.filter(m => C[m]);
+  const sumD2c = ms.reduce((s, m) => s + (C[m].d2c || 0), 0);
+  const withR = ms.filter(m => C[m].ratioD2c != null).sort((a, b) => C[b].ratioD2c - C[a].ratioD2c);
+  const top = ms.slice().sort((a, b) => (C[b].d2c || 0) - (C[a].d2c || 0))[0];
+  const lo = withR[withR.length - 1];
+  $('#pane-cmp').innerHTML = `
+  <div class="block">
+    <h1>Markets compared</h1>
+    <p class="lede">The six markets side by side, independent of any holding: turnover per trading day, the stock of bonds behind it, how liquidity differs along the curve and how it has moved. Amounts in ${bc} bn at ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}; the base currency follows the Liquidity profile side panel.</p>
+    <div class="tiles">
+      ${tile('D2C turnover, six markets', `${fmt(sumD2c, 0)} <span style="font-size:.8em">${bc} bn/day</span>`, 'dealer-to-customer, window averages')}
+      ${tile('Largest market', esc(SHORT[top]), `${fmt(100 * C[top].d2c / sumD2c, 0)} % of that turnover`)}
+      ${withR.length ? tile('Highest turnover ratio', esc(SHORT[withR[0]]), `${fmt(C[withR[0]].ratioD2c, 2)} % of the stock per day`) : ''}
+      ${withR.length > 1 ? tile('Lowest turnover ratio', esc(SHORT[lo]), `${fmt(C[lo].ratioD2c, 2)} % of the stock per day`) : ''}
+    </div>
+  </div>
+  <div class="block"><h2>Scorecard</h2>
+    <p class="note">Dealer-to-customer (D2C) is the pool a customer order competes for and is the comparable column; total turnover follows each source's own counting. Turnover ratio is D2C per trading day divided by the outstanding stock of the same bonds; days to turn the stock over is its inverse; annual turnover uses total volume and the market's trading days.</p>
+    <div class="card"><div id="cmpTable"></div></div></div>
+  <div class="block"><h2>Turnover and stock</h2>
+    <div class="grid2">
+      <div class="card"><h3>Daily D2C turnover against outstanding stock</h3><div class="sub">Both axes log, ${bc} bn. The dotted lines mark constant daily turnover ratios.</div><div class="plot tall" id="cmp-scatter"></div></div>
+      <div class="card"><h3>Daily turnover ratio</h3><div class="sub">Turnover per trading day as % of the outstanding stock. CGB total is whole-market settlement while CGB D2C is foreign-investor turnover only.</div><div class="plot tall" id="cmp-ratio"></div></div>
+    </div></div>
+  <div class="block"><h2>Along the curve and over time</h2>
+    <div class="grid2">
+      <div class="card"><h3>Turnover ratio by remaining maturity</h3><div class="sub">D2C turnover per trading day as % of the stock in the same maturity range. US Treasuries and gilts have five groups; Bunds and JGBs three (0-5, 5-10, 10y+, by original maturity, shown across the buckets they cover). OATs and CGBs have one pool and are left out.</div><div class="plot tall" id="cmp-bucket"></div></div>
+      <div class="card"><h3>D2C turnover over time</h3><div class="sub">Rolling average in local currency, indexed to the 2024 average = 100: monthly for US Treasuries and JGBs, quarterly for gilts, calendar years for Bunds. OATs follow Bunds; the CGB series is too short. Shown from 2016; the gilt series runs from 2001 (drag to zoom out).</div><div class="plot tall" id="cmp-trend"></div></div>
+    </div></div>
+  <div class="block"><h2>What one seller can take out per day</h2>
+    <p class="note">D2C turnover times a participation rate, ${bc} bn per trading day. The participation rate is the share of a day's customer volume one seller can be without moving the price; the Liquidity profile tab applies one such rate to a holding.</p>
+    <div class="card"><div id="cmpCap"></div></div></div>
+  <div class="block"><h2>Reading the comparison</h2><div class="card"><ul class="caveats">
+    <li>D2C for US Treasuries is all issues here, on-the-run included, because the other markets include their benchmarks too; the profile sells seasoned holdings into the off-the-run pool, shown in small print.</li>
+    <li>Outstanding stock is the nominal coupon universe behind each turnover figure: US notes and bonds; conventional gilts; Bunds, Bobls and Schätze; OATs; JGBs; for CGBs the ADB sovereign total, bills included. The as-of dates differ and are in the scorecard.</li>
+    <li>Total turnover is not comparable across markets: par versus market value, single versus double counting, and reporting populations differ (see Methods &amp; sources). The CGB total is whole-market interbank settlement, not foreign-investor turnover.</li>
+    <li>Windows differ: twelve months for US Treasuries, JGBs and CGBs, four quarters for gilts, calendar 2025 for Bunds and OATs. The change column compares each window with the one before it.</li>
+  </ul></div></div>`;
+  // scorecard
+  let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Market</th><th>Outstanding, ${bc} bn</th><th>D2C, ${bc} bn/day</th><th>Total, ${bc} bn/day</th><th>D2C share of total</th><th>Turnover ratio, % of stock per day</th><th>Days to turn the stock over</th><th>Annual turnover, × stock</th><th>D2C vs a year earlier</th></tr></thead><tbody>`;
+  for (const m of ms) {
+    const c = C[m], X = MATD[m] || {};
+    h += `<tr class="main"><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}">${esc(c.M.name)}</a></td><td class="num">${fmt(c.stockB, 0)}</td><td class="num">${fmt(c.d2c, 1)}${c.d2cOff != null ? `<span class="gl">off-the-run ${fmt(c.d2cOff, 0)}</span>` : ''}</td><td class="num">${fmt(c.tot, 1)}</td><td class="num">${c.d2cShare == null ? '–' : fmt(100 * c.d2cShare, 0) + ' %'}</td><td class="num">${fmt(c.ratioD2c, 2)}</td><td class="num">${fmt(c.daysStock, 0)}</td><td class="num">${fmt(c.annualTot, 1)}</td><td class="num">${c.change == null ? '–' : (c.change >= 0 ? '+' : '') + fmt(100 * c.change, 0) + ' %'}</td></tr>
+    <tr><td colspan="9" class="src">Turnover ${esc(c.M.window.label)}, ${esc(c.M.counting)}. Stock ${X.available ? `as of ${X.as_of}, ${esc(X.source)}` : 'not available'}.</td></tr>`;
+  }
+  $('#cmpTable').innerHTML = h + '</tbody></table>';
+  // capacity table
+  const PR = [1, 3, 5, 10];
+  h = `<table class="tbl"><thead><tr><th>Market</th><th>D2C, ${bc} bn/day</th>${PR.map(p => `<th>at ${p} %</th>`).join('')}</tr></thead><tbody>`;
+  for (const m of ms) h += `<tr><td><span class="sw" style="background:${col(m)}"></span>${esc(SHORT[m])}</td><td class="num">${fmt(C[m].d2c, 1)}</td>${PR.map(p => `<td class="num">${fmt(C[m].d2c * p / 100, 1)}</td>`).join('')}</tr>`;
+  h += `<tr class="tot"><td>All six markets</td><td class="num">${fmt(sumD2c, 1)}</td>${PR.map(p => `<td class="num">${fmt(sumD2c * p / 100, 1)}</td>`).join('')}</tr>`;
+  $('#cmpCap').innerHTML = h + '</tbody></table>';
+  // scatter: stock vs turnover
+  const pts = ms.filter(m => C[m].stockB && C[m].d2c);
+  const xs = pts.map(m => C[m].stockB), ys = pts.map(m => C[m].d2c);
+  if (pts.length) {
+    const xmin = Math.min(...xs) / 3, xmax = Math.max(...xs) * 3, ymin = Math.min(...ys) / 3, ymax = Math.max(...ys) * 3;
+    const RR = [0.03, 0.1, 0.3, 1, 3];
+    const ref = RR.map(r => ({x: [xmin, xmax], y: [xmin * r / 100, xmax * r / 100], mode: 'lines', line: {color: css('--axis'), dash: 'dot', width: 1}, hoverinfo: 'skip', showlegend: false}));
+    const ann = RR.filter(r => xmax * r / 100 > ymin && xmax * r / 100 < ymax).map(r => ({x: Math.log10(xmax), y: Math.log10(xmax * r / 100), text: r + ' %/day', showarrow: false, xanchor: 'right', yanchor: 'bottom', font: {size: 10, color: css('--axis')}}));
+    plot('cmp-scatter', ref.concat([{x: xs, y: ys, mode: 'markers+text', text: pts.map(m => SHORT[m]), textposition: 'top center', textfont: {size: 11, color: css('--fg')}, marker: {size: 13, color: pts.map(m => col(m))}, customdata: pts.map(m => [D.markets[m].name, C[m].ratioD2c]), hovertemplate: '%{customdata[0]}: stock %{x:,.0f} bn, D2C %{y:,.1f} bn per day, %{customdata[1]:.2f} % per day<extra></extra>', showlegend: false}]),
+      base({hovermode: 'closest', showlegend: false, annotations: ann, margin: {l: 64, r: 14, t: 20, b: 44},
+        xaxis: Object.assign(base().xaxis, {type: 'log', dtick: 1, tickformat: ',.0f', title: {text: `outstanding stock, ${bc} bn (log)`, font: {size: 11, color: css('--axis')}}, range: [Math.log10(xmin), Math.log10(xmax)]}),
+        yaxis: Object.assign(base().yaxis, {type: 'log', dtick: 1, tickformat: ',.0f', title: {text: `D2C turnover, ${bc} bn per day (log)`}, range: [Math.log10(ymin), Math.log10(ymax)]})}));
+  }
+  // turnover ratio bars
+  const names = ms.map(m => SHORT[m]);
+  plot('cmp-ratio', [
+    {x: names, y: ms.map(m => C[m].ratioD2c), name: 'Dealer-to-customer', type: 'bar', marker: {color: css('--d2c')}, hovertemplate: '%{y:.2f} %<extra>D2C</extra>'},
+    {x: names, y: ms.map(m => C[m].ratioTot), name: 'Total (as reported)', type: 'bar', marker: {color: 'rgba(0,0,0,0)', line: {color: css('--tot'), width: 1.5}}, hovertemplate: '%{y:.2f} %<extra>Total</extra>'},
+  ], base({barmode: 'group', bargap: 0.3, yaxis: Object.assign(base().yaxis, {title: {text: '% of outstanding stock per day'}})}));
+  // by maturity
+  const bm = ms.filter(m => C[m].groups.length > 1 && C[m].groups.some(g => g.ratio != null));
+  plot('cmp-bucket', bm.map(m => { const c = C[m]; const g = B.map((b, i) => c.groups.find(x => x.idx.includes(i))); return {x: B, y: g.map(x => x ? x.ratio : null), customdata: g.map(x => x ? x.g : ''), name: D.markets[m].name, type: 'bar', marker: {color: col(m)}, hovertemplate: '%{y:.2f} % per day<extra>' + esc(SHORT[m]) + ' %{customdata}</extra>'}; }),
+    base({barmode: 'group', bargap: 0.25, hovermode: 'closest', yaxis: Object.assign(base().yaxis, {title: {text: '% of the bucket\'s stock per day'}}), xaxis: Object.assign(base().xaxis, {title: {text: 'remaining maturity', font: {size: 11, color: css('--axis')}}})}));
+  // trend
+  const tr = trendSeries();
+  plot('cmp-trend', tr.map(t => ({x: t.x, y: t.y, name: D.markets[t.m].name, mode: t.x.length < 4 ? 'lines+markers' : 'lines', line: {color: col(t.m), width: 2}, marker: {color: col(t.m), size: 8}, hovertemplate: '%{y:.0f}<extra>' + esc(D.markets[t.m].name) + ', ' + t.label + '</extra>'})),
+    base({yaxis: Object.assign(base().yaxis, {title: {text: 'index, 2024 average = 100'}, hoverformat: '.0f'}), xaxis: Object.assign(base().xaxis, {type: 'date', range: ['2016-01-01', tr.reduce((d, t) => t.x[t.x.length - 1] > d ? t.x[t.x.length - 1] : d, '2016-01-01')]})}));
 }
 
 /* ---------- market tabs ---------- */
@@ -1182,8 +1322,8 @@ function tabNotes() {
 }
 
 /* ---------- tabs and boot ---------- */
-const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, notes: tabNotes, update: tabUpdate};
-const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', notes: 'Methods & sources', update: 'Update data'};
+const TABS = {main: null, cmp: tabCmp, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, notes: tabNotes, update: tabUpdate};
+const TABLABEL = {main: 'Liquidity profile', cmp: 'Markets compared', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', notes: 'Methods & sources', update: 'Update data'};
 const TABMK = {usd: 'USD', gbp: 'GBP', de: 'EUR-DE', fr: 'EUR-FR', jpy: 'JPY', cny: 'CNY'};
 function buildTabs() {
   $('#tabs').innerHTML = Object.keys(TABS).filter(t => !TABMK[t] || D.markets[TABMK[t]]).map(t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`).join('');

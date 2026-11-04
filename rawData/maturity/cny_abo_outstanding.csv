@@ -1,0 +1,21 @@
+METADATA:
+Indicator: Local Currency Debt Securities Outstanding (amount)
+Definition: This indicator shows the absolute amount of outstanding local currency (LCY) debt securities, categorized as either sovereign, other government, central bank, or corporate. Sovereign debt securities include Treasury bills and Treasury bonds; other government debt securities comprise issuances by some public institutions with government guarantees, including local governments and some government-owned entities. Corporate debt securities include issuances of private sector companies and other public sector institutions.
+Available Economies: BN,KH,CN,HK,ID,JP,KR,LA,MY,PH,SG,TH,VN,VN*
+Available Years: 1995-2026
+Frequency: quarterly/annual updates
+Latest Data: 2026-09-30
+
+DISCLAIMER: The ADB provides no warranty or undertaking of any kind in respect to the information and materials found on, or linked to, AsianBondsOnline. The ADB accepts no responsibility for the accuracy of the material posted or linked to the publication, or the information contained therein, or for any consequences arising from its use and does not invite or accept reliance being placed on any materials or information so provided. Views expressed in articles marked with AsianBondsOnline are those of the authors, and not ADB. This disclaimer does not derogate from, and is in addition to, the general terms and conditions regarding the use of the AsianBondsOnline Web Site, which also apply.
+
+Economy,Date,"Sovereign(LCY billions)","Other Government(LCY billions)","Central Bank(LCY billions)","Corporate(LCY billions)","Total(LCY billions)","Sovereign(USD billions)","Other Government(USD billions)","Central Bank(USD billions)","Corporate(USD billions)","Total(USD billions)"
+CN,2024-03-31,30176.33,63941.65,15.00,47912.08,142045.06,4178.16,8853.24,2.08,6633.82,19667.29
+CN,2024-06-30,31281.55,65515.40,15.00,48321.58,145133.53,4304.43,9015.09,2.06,6649.18,19970.76
+CN,2024-09-30,33099.03,67729.98,14.75,48839.02,149682.78,4715.84,9649.93,2.10,6958.41,21326.28
+CN,2024-12-31,34211.89,71192.23,12.09,49709.08,155125.29,4687.01,9753.30,1.66,6810.12,21252.08
+CN,2025-03-31,35678.74,73829.06,0.00,50231.00,159738.80,4916.53,10173.64,0.00,6921.83,22011.99
+CN,2025-06-30,37580.45,76194.90,0.00,51509.30,165284.65,5245.88,10636.10,0.00,7190.22,23072.20
+CN,2025-09-30,39607.40,78651.92,0.00,52678.41,170937.73,5560.96,11042.90,0.00,7396.16,24000.02
+CN,2025-12-31,40781.62,80037.41,0.00,53894.71,174713.74,5835.95,11453.55,0.00,7712.47,25001.97
+CN,2026-03-31,41906.99,82380.67,0.00,54936.30,179223.96,6078.41,11948.92,0.00,7968.25,25995.58
+CN,2026-06-30,43476.03,83256.05,0.00,56787.95,183520.03,6405.78,12266.99,0.00,8367.17,27039.93

@@ -1,5 +1,5 @@
 Government bond liquidity dashboard: data files
-Pipeline run 2026-11-04 10:57
+Pipeline run 2026-11-04 11:50
 
 Each dataset is an Excel workbook with a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.
 

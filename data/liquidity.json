@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 10:57",
+ "generated": "2026-11-04 11:50",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -284,13 +284,13 @@
     "available": true,
     "as_of": "2026-03-31",
     "n_issues": null,
-    "total_bn": null,
+    "total_bn": 41906.99,
     "amounts_bn": [
-     null,
-     null,
-     null,
-     null,
-     null
+     11792.626986,
+     8959.714462,
+     4899.7652708,
+     7349.6479062,
+     8905.235375
     ],
     "shares": [
      0.2814,
@@ -309,8 +309,8 @@
     "mode": "automatic",
     "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
     "source_url": "https://asianbondsonline.adb.org/china/data/",
-    "unit": "shares only",
-    "universe": "Treasury instruments with more than one year to maturity, shares of the total in ADB buckets >1-3, >3-5, >5-10 and >10 years (bills and bonds inside their last year are not covered, so 0-3y is understated); the >5-10 bucket is split 40% / 60% between 5-7y and 7-10y by assumption, not data. A ChinaBond per-issue export saved as rawData/maturity/cny_cgb.xls replaces this with exact figures",
+    "unit": "RMB bn",
+    "universe": "Treasury instruments with more than one year to maturity, shares of the total in ADB buckets >1-3, >3-5, >5-10 and >10 years (bills and bonds inside their last year are not covered, so 0-3y is understated); the >5-10 bucket is split 40% / 60% between 5-7y and 7-10y by assumption, not data. A ChinaBond per-issue export saved as rawData/maturity/cny_cgb.xls replaces this with exact figures; amounts are the ADB sovereign total of RMB 41,907 bn at 2026-03-31 (Treasury bills included) times the shares",
     "fetched": "2026-11-04",
     "file": "cny_abo_maturity_profile.csv",
     "how_to": "ChinaBond (English site) > Advanced Bond Info Searching: tick Bond Type > Government Bonds > Book-Entry Treasury Bonds, leave the issue date empty, submit, then use the download button (needs a free ChinaBond login) and save the file 'ChinaBond-Bond information query results.xls' as rawData/maturity/cny_cgb.xls. The parser keeps the bonds whose maturity date lies after the file date and reads 'Total Planned Amount (RMB 100 million)'. A CSV with columns maturity_date,amount works too.",
@@ -19210,8 +19210,8 @@
    "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
    "source_url": "https://asianbondsonline.adb.org/china/data/",
    "latest": "2026-03-31",
-   "files_updated": "2026-11-04 10:57",
-   "n_files": 1,
+   "files_updated": "2026-11-04 11:50",
+   "n_files": 2,
    "folder": "rawData/maturity",
    "cadence": "quarterly from ADB AsianBondsOnline, about six months after quarter end; a ChinaBond export whenever exact figures matter",
    "next_expected": "2026-10-15",

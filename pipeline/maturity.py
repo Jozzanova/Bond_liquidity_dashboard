@@ -285,6 +285,8 @@ ABO_PAGE = "https://asianbondsonline.adb.org/china/data/"
 ABO_CSV = "https://asianbondsonline.adb.org/downloads/standard_download_csv.php?code=Govt_Sec_Mat_Local_Ccy&economies=CN&years={years}"
 CNY_5_10_SPLIT = 0.4   # share of the ADB 5-10y bucket assigned to 5-7y; the rest goes to 7-10y (assumption, see _cn_abo)
 ABO_FILE = "cny_abo_maturity_profile.csv"
+ABO_OUT_CSV = "https://asianbondsonline.adb.org/downloads/standard_download_csv.php?code=Bonds_Outstanding&economies=CN&years={years}"
+ABO_OUT_FILE = "cny_abo_outstanding.csv"
 
 
 def _cn_abo(refresh: bool) -> dict:
@@ -308,14 +310,33 @@ def _cn_abo(refresh: bool) -> dict:
     as_of, (s13, s35, s510, s10) = sorted(rows)[-1]
     raw = [s13, s35, s510 * CNY_5_10_SPLIT, s510 * (1 - CNY_5_10_SPLIT), s10]
     tot = sum(raw)
-    return {"available": True, "as_of": as_of, "n_issues": None, "total_bn": None, "amounts_bn": [None] * 5,
-            "shares": [v / tot for v in raw], "buckets": COMMON_BUCKETS, "mode": "automatic",
+    shares = [v / tot for v in raw]
+    # amount outstanding: the ADB "sovereign" total (Treasury bills and bonds, RMB bn) at the profile date
+    total_bn, out_note = None, ""
+    try:
+        fo = FOLDER / ABO_OUT_FILE
+        _get(ABO_OUT_CSV.format(years=f"{y - 2},{y - 1},{y}"), fo, refresh)
+        by_date = {}
+        with fo.open(encoding="utf-8-sig", newline="") as fh:
+            for p in csv.reader(fh):
+                if len(p) >= 3 and p[0] == "CN" and re.match(r"\d{4}-\d{2}-\d{2}$", p[1]):
+                    by_date[p[1]] = float(p[2])
+        cand = [d for d in by_date if d <= as_of]
+        if cand:
+            d0 = max(cand)
+            total_bn = by_date[d0]
+            out_note = f"; amounts are the ADB sovereign total of RMB {total_bn:,.0f} bn at {d0} (Treasury bills included) times the shares"
+    except Exception as e:   # shares are still useful without the total
+        print(f"maturity: CNY outstanding total not available: {e}")
+    return {"available": True, "as_of": as_of, "n_issues": None, "total_bn": total_bn,
+            "amounts_bn": [s * total_bn for s in shares] if total_bn else [None] * 5,
+            "shares": shares, "buckets": COMMON_BUCKETS, "mode": "automatic",
             "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
-            "source_url": ABO_PAGE, "unit": "shares only",
+            "source_url": ABO_PAGE, "unit": "RMB bn" if total_bn else "shares only",
             "universe": (f"Treasury instruments with more than one year to maturity, shares of the total in ADB buckets >1-3, >3-5, >5-10 and >10 years "
                          f"(bills and bonds inside their last year are not covered, so 0-3y is understated); the >5-10 bucket is split "
                          f"{CNY_5_10_SPLIT:.0%} / {1 - CNY_5_10_SPLIT:.0%} between 5-7y and 7-10y by assumption, not data. "
-                         f"A ChinaBond per-issue export saved as rawData/maturity/cny_cgb.xls replaces this with exact figures"),
+                         f"A ChinaBond per-issue export saved as rawData/maturity/cny_cgb.xls replaces this with exact figures{out_note}"),
             "fetched": _fetched(f), "file": f.name, "how_to": CN_HOWTO}
 
 
