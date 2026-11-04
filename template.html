@@ -1335,7 +1335,7 @@ function tabJPY() {
   $('#pane-jpy').innerHTML = marketHead(m) + `
   <div class="block"><h2>Turnover over time</h2><p class="note">JSDA members' outright OTC transactions in JGBs (repos excluded), face value, JPY bn per trading day. Members report their own legs: trades with customers appear once, member-to-member trades ("Bond Dealers") twice and are halved. "Others", which includes members' auction allotments, is ${M.include_others ? 'included in' : 'excluded from'} customer volume. Zero-coupon bonds and T-bills are excluded from the groups.</p>
   <div class="grid2"><div class="card"><h3>By counterparty</h3><div class="sub">Interest-bearing JGBs (medium, long, super-long)</div><div class="plot" id="jp-ts"></div><div id="jp-ts-years"></div></div>
-  <div class="card"><h3>By original maturity class, customer volume</h3><div class="plot" id="jp-cls"></div></div></div></div>
+  <div class="card"><h3>By original maturity class, customer volume</h3><div class="plot" id="jp-cls"></div><div id="jp-cls-years"></div></div></div></div>
   <div class="block"><h2>Window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">medium (2/4/5y) → 0-5y; long (6/10y) → 5-10y; super-long → 10y+; ${esc(M.window.label)}</div><div class="plot" id="jp-grp"></div></div>
   <div class="card"><h3>Who trades JGBs</h3><div class="sub">Average monthly outright volume by investor category, JPY trn, ${esc(M.window.label)}</div><div class="plot" id="jp-inv"></div></div></div></div>
@@ -1359,6 +1359,7 @@ function tabJPY() {
     {x, y: ma.d2c.super_long.map(v => v / 1000), name: 'Super-long (>10y)', mode: 'lines', line: {width: 2}},
     {x, y: ma.d2c.tbills.map(v => v / 1000), name: 'T-bills (excluded)', mode: 'lines', line: {width: 1, dash: 'dot', color: css('--muted')}},
   ], base({yaxis: Object.assign(base().yaxis, {title: {text: 'JPY bn per day'}})}));
+  $('#jp-cls-years').innerHTML = yearTable(x, M.trading_days, [['Medium (2/4/5y)', ma.d2c.medium], ['Long (6/10y)', ma.d2c.long], ['Super-long (>10y)', ma.d2c.super_long], ['T-bills (excluded)', ma.d2c.tbills]], 'Customer volume by original maturity class, face value; volume in the year divided by its trading days; T-bills shown for reference, not in the profile; * partial year.', 'Average daily customer turnover by calendar year, JPY bn per trading day');
   groupBars(m, 'jp-grp');
   const inv = M.investors_window_bn_per_month, ik = Object.keys(inv).sort((a, b) => inv[b].jgb_total - inv[a].jgb_total).slice(0, 10);
   plot('jp-inv', [{y: ik, x: ik.map(k => inv[k].jgb_total / 1000), type: 'bar', orientation: 'h', marker: {color: ik.map(k => k === 'Bond Dealers' ? css('--d2d') : k === 'Others' ? css('--d2con') : css('--d2c'))}, hovertemplate: '%{y}: %{x:.1f} trn per month<extra></extra>'}],
