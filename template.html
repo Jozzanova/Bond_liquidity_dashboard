@@ -81,6 +81,10 @@ section.pane > .block:first-child { margin-top: 0; }
 .tbl td.num { font-family: var(--mono); font-size: .86rem; }
 .tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
 .tbl td.na { color: var(--muted); }
+.tbl.small { font-size: .78rem; }
+.tbl.small th { font-size: .7rem; }
+.tbl.small td.num { font-size: .78rem; }
+.tbl.small th, .tbl.small td { padding: .22rem .35rem; }
 .tbl .sw { display: inline-block; width: .65em; height: .65em; border-radius: 2px; margin-right: .4em; vertical-align: -.02em; }
 .badge { display: inline-block; font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; margin-left: .4rem; vertical-align: middle; }
 .badge.warn { background: var(--warn-soft); color: var(--warn); }
@@ -1030,6 +1034,17 @@ function downloadCmpXlsx() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bond_market_comparison_${now.toISOString().slice(0, 10)}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
+// calendar-year averages of monthly ADV series (trading-day weighted); cols = [[label, series in mn/day], ...]
+function yearTable(M, cols, note) {
+  const years = [...new Set(M.months.map(d => d.slice(0, 4)))];
+  let h = `<table class="tbl small" style="margin-top:.6rem"><thead><tr><th>Year</th><th>Months</th>${cols.map(([l]) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`;
+  for (const y of years) {
+    const idx = M.months.map((d, i) => d.startsWith(y) ? i : -1).filter(i => i >= 0), w = idx.reduce((a, i) => a + M.trading_days[i], 0);
+    h += `<tr><td>${y}${idx.length < 12 ? '*' : ''}</td><td class="num">${idx.length}</td>${cols.map(([, v]) => `<td class="num">${fmt(idx.reduce((a, i) => a + (v[i] || 0) * M.trading_days[i], 0) / w / 1000, 0)}</td>`).join('')}</tr>`;
+  }
+  return h + `</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">${note}</p>`;
+}
+
 /* ---------- market tabs ---------- */
 function srcLine(m) {
   const M = D.markets[m];
@@ -1158,7 +1173,7 @@ function tabUSD() {
   const m = 'USD', M = D.markets[m];
   $('#pane-usd').innerHTML = marketHead(m) + `
   <div class="block"><h2>Turnover over time</h2><p class="note">Nominal coupon Treasuries, par value, USD bn per trading day (SIFMA calendar). FINRA reports each trade once; ATS and interdealer trades are the dealer-to-dealer leg.</p>
-  <div class="grid2"><div class="card"><h3>By venue</h3><div class="sub">Stacked: dealer-to-customer (off-the-run and on-the-run) and ATS/interdealer</div><div class="plot" id="us-ts"></div></div>
+  <div class="grid2"><div class="card"><h3>By venue</h3><div class="sub">Stacked: dealer-to-customer (off-the-run and on-the-run) and ATS/interdealer</div><div class="plot" id="us-ts"></div><div id="us-ts-years"></div></div>
   <div class="card"><h3>By security type, all venues</h3><div class="sub">Bills, nominal coupons, TIPS and FRNs</div><div class="plot" id="us-type"></div><div id="us-type-years"></div></div></div></div>
   <div class="block"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Common buckets</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="us-grp"></div></div>
@@ -1178,18 +1193,9 @@ function tabUSD() {
     {x, y: sum('d2c_on'), name: 'D2C on-the-run', type: 'bar', marker: {color: css('--d2con')}},
     {x, y: sum('d2d_all'), name: 'ATS and interdealer', type: 'bar', marker: {color: css('--d2d')}},
   ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
+  $('#us-ts-years').innerHTML = yearTable(M, [['D2C off-the-run', sumArr(B.map(b => ma.d2c_off[b]))], ['D2C on-the-run', sumArr(B.map(b => ma.d2c_on[b]))], ['ATS and interdealer', sumArr(B.map(b => ma.d2d_all[b]))], ['Total', sumArr(B.map(b => ma.total_all[b]))]], 'Nominal coupons, USD bn per trading day, calendar-year averages weighted by trading days; * partial year.');
   const bt = M.by_type_adv;
-  // calendar-year averages, trading-day weighted, for reconciliation with published figures (SIFMA quotes the same TRACE data)
-  {
-    const years = [...new Set(M.months.map(d => d.slice(0, 4)))];
-    const types = ['All', 'Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]);
-    let h = `<table class="tbl" style="margin-top:.6rem"><thead><tr><th>Calendar year</th><th>Months</th>${types.map(t => `<th>${t === 'All' ? 'All Treasuries' : esc(t)}</th>`).join('')}</tr></thead><tbody>`;
-    for (const y of years) {
-      const idx = M.months.map((d, i) => d.startsWith(y) ? i : -1).filter(i => i >= 0), w = idx.reduce((a, i) => a + M.trading_days[i], 0);
-      h += `<tr><td>${y}${idx.length < 12 ? '*' : ''}</td><td class="num">${idx.length}</td>${types.map(t => `<td class="num">${fmt(idx.reduce((a, i) => a + bt[t].total[i] * M.trading_days[i], 0) / w / 1000, 0)}</td>`).join('')}</tr>`;
-    }
-    $('#us-type-years').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.4rem">USD bn per trading day, all venues, calendar-year averages weighted by trading days; * partial year. SIFMA's published Treasury average daily volume uses the same FINRA TRACE data, so its annual figure (1,056 bn for 2025) should match the "All Treasuries" column within revisions.</p>`;
-  }
+  $('#us-type-years').innerHTML = yearTable(M, ['All', 'Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map(t => [t === 'All' ? 'All Treasuries' : t, bt[t].total]), 'All Treasuries, all venues, USD bn per trading day, calendar-year averages weighted by trading days; * partial year.');
   plot('us-type', ['Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map((t, i) => ({x, y: bt[t].total.map(v => v / 1000), name: t, mode: 'lines', line: {width: 2}})),
     base({yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
   groupBars(m, 'us-grp');
