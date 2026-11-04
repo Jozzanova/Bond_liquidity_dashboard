@@ -132,8 +132,8 @@ ul.caveats li { margin-bottom: .25rem; }
 .mainwrap { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 @media (max-width: 1000px) { .mainwrap { grid-template-columns: minmax(0, 1fr); align-items: stretch; } }
 .content { min-width: 0; }
-.side { position: sticky; top: calc(var(--navh, 64px) + var(--headh, 0px) + 12px); max-height: calc(100vh - var(--navh, 64px) - var(--headh, 0px) - 28px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
-@media (max-width: 1000px) { .side { position: static; max-height: none; } }
+.side { position: fixed; top: var(--sidetop, 120px); left: var(--sidex, 16px); width: 400px; max-height: calc(100vh - var(--sidetop, 120px) - 16px); overflow-y: auto; z-index: 10; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
+@media (max-width: 1000px) { .side { position: static; width: auto; max-height: none; } }
 @media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { width: 100%; margin: 0; } }
 .side h3 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 1.1rem 0 .45rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line); }
 .side details.sec summary h3 { border-bottom: none; padding-bottom: 0; margin: 0; }
@@ -1706,7 +1706,8 @@ function showTab(t) {
 }
 function current() { return (location.hash || '#main').slice(1).split('?')[0]; }
 // Sticky page head: the nav height feeds --navh (the tab rows wrap on narrow screens), the active
-// pane's head feeds --headh so the side panel sits below both; .stuck adds a divider once it pins.
+// pane's head feeds --headh; .stuck adds a divider once it pins. The side panel on the profile tab is fixed
+// to the viewport (independent of the page scroll): --sidetop follows the head's bottom edge, --sidex the grid's left edge.
 const navEl = document.querySelector('nav');
 function headEl() { const p = document.querySelector('section.pane.on'); return p && p.querySelector('.pagehead'); }
 function layoutHead() {
@@ -1714,12 +1715,18 @@ function layoutHead() {
   document.documentElement.style.setProperty('--navh', navh + 'px');
   const h = headEl();
   if (!h) { document.documentElement.style.setProperty('--headh', '0px'); return; }
-  const stuck = window.scrollY > 0 && h.getBoundingClientRect().top <= navh + 0.5;
+  const r = h.getBoundingClientRect(), stuck = window.scrollY > 0 && r.top <= navh + 0.5;
   h.classList.toggle('stuck', stuck);
   document.documentElement.style.setProperty('--headh', h.offsetHeight + 'px');
+  const mw = document.querySelector('section.pane.on .mainwrap');
+  if (mw) {
+    document.documentElement.style.setProperty('--sidetop', Math.round(r.bottom + 10) + 'px');
+    document.documentElement.style.setProperty('--sidex', Math.round(mw.getBoundingClientRect().left) + 'px');
+  }
 }
 window.addEventListener('scroll', () => requestAnimationFrame(layoutHead), {passive: true});
 new ResizeObserver(() => layoutHead()).observe(navEl);
+window.addEventListener('resize', () => requestAnimationFrame(layoutHead));
 // market tabs have two views: Overview (turnover over time, the market in the profile) and Data and sources
 function subPref(t) { try { const v = localStorage.getItem('bondliq.sub.' + t); if (v === 'data' || v === 'market') return v; } catch (e) {} return 'market'; }
 function setSubView(t, v) {
