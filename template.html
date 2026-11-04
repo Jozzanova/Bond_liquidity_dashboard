@@ -155,6 +155,9 @@ label.chk input { accent-color: var(--accent); margin: 0; }
 .itbl input[type=checkbox] { width: auto; margin: 0; accent-color: var(--accent); vertical-align: middle; cursor: pointer; }
 .itbl tr.off td:not(:first-child), .tbl tr.off td { opacity: .45; }
 details.mw { margin-top: .4rem; }
+.chartctl { position: absolute; top: .7rem; right: .9rem; display: flex; gap: .2rem; z-index: 2; }
+.chartctl button { font: inherit; font-size: .7rem; line-height: 1.3; padding: .05rem .45rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card2); color: var(--muted); cursor: pointer; }
+.chartctl button.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 details.sec summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: .5rem; }
 details.sec summary::-webkit-details-marker { display: none; }
 details.sec summary h3 { margin: 0; }
@@ -345,8 +348,30 @@ function applyHl(el) {
   const n = el._hl;
   Plotly.restyle(el, {opacity: el.data.map(t => n == null || t.name === n ? 1 : 0.18)});
 }
+// bars-or-lines selector for time-series charts (remembered per chart in this browser)
+const CS_NO = new Set(['cvChart', 'fr-cmp', 'cmp-trend', 'cn-sh', 'cmp-scatter']);
+function csPref(id) { try { const v = localStorage.getItem('bondliq.cs.' + id); if (v === 'bar' || v === 'line') return v; } catch (e) {} return null; }
+function restyleKind(traces, layout, kind) {
+  const strip = (t, keys) => { const o = Object.assign({}, t); for (const k of keys) delete o[k]; return o; };
+  if (kind === 'line') return {traces: traces.map(t => t.type === 'bar' ? Object.assign(strip(t, ['marker', 'base', 'offsetgroup']), {type: 'scatter', mode: 'lines', line: Object.assign({width: 2}, t.marker && t.marker.color ? {color: t.marker.color} : {})}) : t), layout: Object.assign({}, layout, {barmode: 'group'})};
+  return {traces: traces.map(t => (t.type === 'bar' || (t.line && t.line.dash)) ? t : Object.assign(strip(t, ['mode', 'line']), {type: 'bar', marker: t.line && t.line.color ? {color: t.line.color} : {}})), layout: Object.assign({}, layout, {barmode: layout.barmode || 'stack'})};
+}
 function plot(id, traces, layout) {
   const el = document.getElementById(id); if (!el) return;
+  const n = traces[0] && traces[0].x ? traces[0].x.length : 0;
+  const allBar = traces.every(t => t.type === 'bar' && t.orientation !== 'h'), allLine = traces.every(t => t.type !== 'bar' && t.mode && t.mode.includes('lines'));
+  if (n > 8 && (allBar || allLine) && !CS_NO.has(id) && !id.startsWith('pf-')) {
+    el._src = {traces: traces.slice(), layout};
+    const native = allBar ? 'bar' : 'line', kind = csPref(id) || native;
+    if (!el._ctl) {
+      el._ctl = document.createElement('div'); el._ctl.className = 'chartctl';
+      el._ctl.innerHTML = '<button type="button" data-cs="bar" title="stacked bars">bars</button><button type="button" data-cs="line" title="lines">lines</button>';
+      el.parentElement.style.position = 'relative'; el.insertAdjacentElement('beforebegin', el._ctl);
+      el._ctl.addEventListener('click', e => { const b = e.target.closest('[data-cs]'); if (!b) return; try { localStorage.setItem('bondliq.cs.' + id, b.dataset.cs); } catch (x) {} plot(id, el._src.traces, el._src.layout); });
+    }
+    el._ctl.querySelectorAll('[data-cs]').forEach(b => b.classList.toggle('on', b.dataset.cs === kind));
+    if (kind !== native) ({traces, layout} = restyleKind(traces, layout, kind));
+  }
   if (layout.barmode === 'stack' && traces.length > 1 && traces.every(t => t.type === 'bar' && t.x === traces[0].x)) traces = traces.concat([totalTrace(traces)]);
   const x0 = traces[0] && traces[0].x && traces[0].x[0];
   if (typeof x0 === 'string' && /^\d{4}-\d{2}-01$/.test(x0)) layout.xaxis = Object.assign({}, layout.xaxis || {}, {type: 'date', hoverformat: '%b %Y'});
@@ -1223,7 +1248,7 @@ function tabGBP() {
   $('#pane-gbp').innerHTML = marketHead(m) + `
   <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
   <div class="${full ? 'grid3' : 'grid2'}"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3>${full ? '<div class="sub">Conventional gilts, quarterly, GBP bn per day</div>' : ''}<div class="plot" id="gb-ts"></div><div id="gb-ts-years"></div></div>
-  ${full ? `<div class="card"><h3>By gilt type</h3><div class="sub">Conventional, index-linked and strips, customer and professional combined, quarterly, GBP bn per day</div><div class="plot" id="gb-type"></div><div id="gb-type-years"></div></div>` : ''}
+  ${full ? `<div class="card"><h3>By gilt type</h3><div class="sub">Conventional and index-linked, customer and professional combined, quarterly, GBP bn per day</div><div class="plot" id="gb-type"></div><div id="gb-type-years"></div></div>` : ''}
   <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week (totals, not daily averages; all gilts, the weekly file has no split by type, see the quarterly chart by gilt type). The sharp dip every year-end is the Christmas and New Year weeks: two or three bank holidays and thin holiday trading in a weekly total; the smaller dips are the Easter and May bank-holiday weeks.' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div><div id="gb-wk-years"></div></div></div></div>
   <div class="block"><h2>By remaining maturity, window average</h2>
   <div class="grid2"><div class="card"><h3>Liquidity groups</h3><div class="sub">${esc(M.window.label)}</div><div class="plot" id="gb-grp"></div></div>
@@ -1248,9 +1273,8 @@ function tabGBP() {
       plot('gb-type', [
         {x, y: conv.map(v => v / 1000), name: 'Conventional', type: 'bar', marker: {color: css('--d2c')}},
         {x, y: il.map(v => v == null ? null : v / 1000), name: 'Index-linked', type: 'bar', marker: {color: css('--d2con')}},
-        {x, y: st.map(v => v == null ? null : v / 1000), name: 'Strips', type: 'bar', marker: {color: css('--d2d')}},
       ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}}), xaxis: Object.assign(base().xaxis, tk)}));
-      $('#gb-type-years').innerHTML = yearTable(x, M.trading_days, [['Conventional', conv], ['Index-linked', il.map(v => v || 0)], ['Strips', st.map(v => v || 0)], ['All gilts', x.map((_, i) => conv[i] + (il[i] || 0) + (st[i] || 0))]], 'Customer and professional combined, market value; volume in the year divided by its trading days; last ten years; * partial year.', 'Average daily turnover by calendar year, GBP bn per trading day', 10);
+      $('#gb-type-years').innerHTML = yearTable(x, M.trading_days, [['Conventional', conv], ['Index-linked', il.map(v => v || 0)], ['All gilts', x.map((_, i) => conv[i] + (il[i] || 0) + (st[i] || 0))]], 'Customer and professional combined, market value; volume in the year divided by its trading days; last ten years; * partial year. Strips are in the all-gilts column where reported: the DMO stopped listing them separately after 2014, when they were below 0.05 bn a day.', 'Average daily turnover by calendar year, GBP bn per trading day', 10);
     }
     if (M.annual && M.annual.length) {
       const an = M.annual.slice(-10);
