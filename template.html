@@ -42,7 +42,7 @@ code, .mono { font-family: var(--mono); font-size: .9em; }
 nav { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
 nav .in { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; max-width: 1500px; margin: 0 auto; padding: .45rem max(16px, env(safe-area-inset-right, 0px)) .45rem max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
 nav .brandrow { flex: 0 0 100%; display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .1rem; }
-nav .brand { font-weight: 700; font-size: 1.35rem; letter-spacing: -.015em; color: var(--accent); line-height: 1.2; }
+nav .brand { font-weight: 700; font-size: 1.8rem; letter-spacing: -.015em; color: var(--accent); line-height: 1.2; }
 nav .tabs { display: flex; gap: .22rem; flex-wrap: wrap; flex: 1; }
 nav .tabs.markets { flex: 0 0 100%; align-items: center; }
 nav .tabs.markets .mlab { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: .35rem; }
@@ -135,7 +135,7 @@ ul.caveats li { margin-bottom: .25rem; }
 .content { min-width: 0; grid-column: 2; }
 .side { position: fixed; top: var(--sidetop, 120px); left: var(--sidex, 16px); width: 400px; max-height: calc(100vh - var(--sidetop, 120px) - 16px); overflow-y: auto; z-index: 10; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
 @media (max-width: 1000px) { .side { position: static; width: auto; max-height: none; } .content { grid-column: auto; } }
-@media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { font-size: 1.15rem; } }
+@media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { font-size: 1.35rem; } }
 .side h3 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 1.1rem 0 .45rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line); }
 .side details.sec summary h3 { border-bottom: none; padding-bottom: 0; margin: 0; }
 .side details.sec details.sec { margin-top: .7rem; }
