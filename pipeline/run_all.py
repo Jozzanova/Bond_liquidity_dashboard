@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import cny_bond_connect, cny_ccdc, dmo_gilts, eur_bunds, fx_rates, jpy_jsda, maturity, status, trace_us  # noqa: E402
-from common import (CNY_BONDCONNECT_SHARE, CNY_CHANNEL, CNY_MARKET_CGB_ADV_BN, CNY_MARKET_CGB_NOTE, CNY_WINDOW, COMMON_BUCKETS, FR_REFERENCE_NOTE, FR_REFERENCE_TOTAL_MN,  # noqa: E402
+from common import (CNY_5_10_SPLIT, CNY_BONDCONNECT_SHARE, CNY_CHANNEL, CNY_D2C_ADV_BN_OVERRIDE, CNY_D2C_OVERRIDE_NOTE, CNY_MARKET_CGB_ADV_BN, CNY_MARKET_CGB_NOTE, CNY_WINDOW, COMMON_BUCKETS, FR_REFERENCE_NOTE, FR_REFERENCE_TOTAL_MN,  # noqa: E402
                     DATA, DMO_WINDOW, EUR_FR_SCALE, EUR_TRADING_DAYS, JPY_INCLUDE_OTHERS, JPY_WINDOW,
                     RAW, TRACE_WINDOW, dump_json)
 
@@ -47,6 +47,7 @@ out = {
         "cny_window_months": CNY_WINDOW, "eur_trading_days": EUR_TRADING_DAYS, "eur_fr_scale": EUR_FR_SCALE,
         "jpy_include_others": JPY_INCLUDE_OTHERS, "cny_channel": CNY_CHANNEL,
         "cny_bondconnect_share": CNY_BONDCONNECT_SHARE, "cny_market_cgb_adv_bn": CNY_MARKET_CGB_ADV_BN, "cny_market_cgb_note": CNY_MARKET_CGB_NOTE,
+        "cny_d2c_adv_bn_override": CNY_D2C_ADV_BN_OVERRIDE, "cny_d2c_override_note": CNY_D2C_OVERRIDE_NOTE, "cny_5_10_split": CNY_5_10_SPLIT,
         "fr_reference_total_mn": FR_REFERENCE_TOTAL_MN, "fr_reference_note": FR_REFERENCE_NOTE,
     },
     "fx": fx_rates.load(),

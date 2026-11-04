@@ -14,7 +14,8 @@ import datetime as dt
 import lxml.html
 import requests
 
-from common import (CNY_BONDCONNECT_SHARE, CNY_CHANNEL, CNY_MARKET_CGB_ADV_BN, CNY_MARKET_CGB_NOTE, CNY_WINDOW, COMMON_BUCKETS, RAW, clean_num)
+from common import (CNY_BONDCONNECT_SHARE, CNY_CHANNEL, CNY_D2C_ADV_BN_OVERRIDE, CNY_D2C_OVERRIDE_NOTE, CNY_MARKET_CGB_ADV_BN, CNY_MARKET_CGB_NOTE, CNY_WINDOW,
+                    COMMON_BUCKETS, RAW, clean_num)
 
 INDEX = "https://www.chinabondconnect.com/en/Resource/Flash-Report.html"
 FOLDER = RAW / "cny_bond_connect"
@@ -90,6 +91,9 @@ def build(rows, origin, ccdc=None) -> dict:
     bc_cgb_mn = cgb_adt * 1000
     foreign_mn = bc_cgb_mn / CNY_BONDCONNECT_SHARE
     d2c_mn = bc_cgb_mn if CNY_CHANNEL == "bond_connect" else foreign_mn
+    d2c_override = CNY_D2C_ADV_BN_OVERRIDE is not None
+    if d2c_override:
+        d2c_mn = CNY_D2C_ADV_BN_OVERRIDE * 1000
     if ccdc:
         total_mn = ccdc["window_avg"]["cgb_adv_mn"]
         market_bn, market_note = total_mn / 1000, f"CCDC monthly statistics, interbank cash settlement of CGBs, {ccdc['window']['label']}, face value, each trade counted once, divided by interbank trading days"
@@ -113,15 +117,16 @@ def build(rows, origin, ccdc=None) -> dict:
         "adt_bn": clean_num(adt), "cgb_adt_bn": clean_num(cgb_adt), "market_cgb_adv_bn": clean_num(market_bn), "market_cgb_note": market_note,
         "market_cgb_from_ccdc": bool(ccdc), "ccdc": ccdc,
         "segments": {
-            "d2c_base": {"key": "d2c_base", "label": "Foreign-investor CGB turnover" + (" (all channels, estimated)" if CNY_CHANNEL == "all_foreign" else " (Bond Connect only)"),
-                         "note": (f"Bond Connect Northbound ADT x CGB share / {CNY_BONDCONNECT_SHARE} = all-foreign CGB turnover estimate incl. CIBM Direct (HKMA share)" if CNY_CHANNEL == "all_foreign" else "Bond Connect Northbound ADT x CGB share") + "; no on/off-the-run split so d2c_base = d2c_all; single group, no maturity data"},
+            "d2c_base": {"key": "d2c_base", "label": "CGB dealer-to-customer turnover, entered by hand" if d2c_override else "Foreign-investor CGB turnover" + (" (all channels, estimated)" if CNY_CHANNEL == "all_foreign" else " (Bond Connect only)"),
+                         "note": (f"CNY_D2C_ADV_BN_OVERRIDE = {CNY_D2C_ADV_BN_OVERRIDE} bn per day ({CNY_D2C_OVERRIDE_NOTE or 'no source note given'}); replaces the Bond Connect based estimate of {foreign_mn / 1000:,.1f} bn" if d2c_override else
+                                  (f"Bond Connect Northbound ADT x CGB share / {CNY_BONDCONNECT_SHARE} = all-foreign CGB turnover estimate incl. CIBM Direct (HKMA share)" if CNY_CHANNEL == "all_foreign" else "Bond Connect Northbound ADT x CGB share")) + "; no on/off-the-run split so d2c_base = d2c_all; single group, no maturity data"},
             "d2c_all": {"key": "d2c_all", "label": "Foreign-investor CGB turnover", "note": "same as d2c_base"},
             "d2d": {"key": "d2d", "label": "Not observable", "note": "interbank dealer-to-dealer CGB turnover is not published by counterparty type in the sources used"},
             "total": {"key": "total", "label": "Whole-market CGB cash turnover (onshore interbank)", "note": total_note},
         },
         "window_adv": {"d2c_base": {"all": clean_num(d2c_mn)}, "d2c_all": {"all": clean_num(d2c_mn)},
                        "d2d": {"all": None}, "total": {"all": clean_num(total_mn)}},
-        "bond_connect_cgb_adv_mn": clean_num(bc_cgb_mn), "all_foreign_cgb_adv_mn": clean_num(foreign_mn),
+        "bond_connect_cgb_adv_mn": clean_num(bc_cgb_mn), "all_foreign_cgb_adv_mn": clean_num(foreign_mn), "d2c_override": d2c_override,
     }
 
 

@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04 11:50",
+ "generated": "2026-11-04 12:59",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -27,6 +27,9 @@
   "cny_bondconnect_share": 0.64,
   "cny_market_cgb_adv_bn": 415,
   "cny_market_cgb_note": "daily average July 2025 to June 2026, read from charts in monthly market reports, user's own estimate from early 2026; the PBoC monthly release itself gives no CGB split",
+  "cny_d2c_adv_bn_override": null,
+  "cny_d2c_override_note": "",
+  "cny_5_10_split": 0.4,
   "fr_reference_total_mn": 24000,
   "fr_reference_note": "approximate 2025 average of SVT-reported daily OAT turnover, gross, probably including OATi/OATei (own estimate from AFT material, early 2026)"
  },
@@ -92,6 +95,62 @@
     "fetched": "2026-11-04",
     "check": "sum of issues 21,832 bn vs reported total unmatured notes + bonds 21,832 bn",
     "check_ok": true,
+    "on_the_run": {
+     "share_pct": 2.04,
+     "amount_bn": 444.54630319999995,
+     "issues": [
+      {
+       "tenor_years": 2,
+       "issued": "2026-09-30",
+       "maturity": "2028-09-30",
+       "outstanding_bn": 79.4,
+       "security": "91282CRP8"
+      },
+      {
+       "tenor_years": 3,
+       "issued": "2026-09-15",
+       "maturity": "2029-09-15",
+       "outstanding_bn": 58.0,
+       "security": "91282CRL7"
+      },
+      {
+       "tenor_years": 5,
+       "issued": "2026-09-30",
+       "maturity": "2031-09-30",
+       "outstanding_bn": 80.5,
+       "security": "91282CRN3"
+      },
+      {
+       "tenor_years": 7,
+       "issued": "2026-09-30",
+       "maturity": "2033-09-30",
+       "outstanding_bn": 50.6,
+       "security": "91282CRM5"
+      },
+      {
+       "tenor_years": 10,
+       "issued": "2026-08-17",
+       "maturity": "2036-08-15",
+       "outstanding_bn": 91.6,
+       "security": "91282CRF0"
+      },
+      {
+       "tenor_years": 20,
+       "issued": "2026-08-31",
+       "maturity": "2046-08-15",
+       "outstanding_bn": 31.1,
+       "security": "912810UX4"
+      },
+      {
+       "tenor_years": 30,
+       "issued": "2026-08-17",
+       "maturity": "2056-08-15",
+       "outstanding_bn": 53.3,
+       "security": "912810UW6"
+      }
+     ],
+     "note": "most recently issued note or bond of each benchmark tenor (2, 3, 5, 7, 10, 20, 30 years) on the as-of date, reopenings included, as a share of all nominal notes and bonds outstanding"
+    },
     "shares_pct": [
      40.3,
      17.9,
@@ -18964,7 +19023,8 @@
     }
    },
    "bond_connect_cgb_adv_mn": 11990.0,
-   "all_foreign_cgb_adv_mn": 18734.375
+   "all_foreign_cgb_adv_mn": 18734.375,
+   "d2c_override": false
   }
  },
  "last_refresh": "2026-11-04 10:57",
@@ -19120,7 +19180,7 @@
    "source": "US Treasury, Monthly Statement of the Public Debt, table 3 (marketable Treasury securities by CUSIP), Fiscal Data API",
    "source_url": "https://fiscaldata.treasury.gov/datasets/monthly-statement-public-debt/",
    "latest": "2026-09-30",
-   "files_updated": "2026-11-04 10:57",
+   "files_updated": "2026-11-04 12:58",
    "n_files": 1,
    "folder": "rawData/maturity",
    "cadence": "monthly, a few business days after month end",

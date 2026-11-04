@@ -39,7 +39,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from common import COMMON_BUCKETS, RAW
+from common import CNY_5_10_SPLIT, COMMON_BUCKETS, RAW
 
 FOLDER = RAW / "maturity"
 EDGES = [(0, 3), (3, 5), (5, 7), (7, 10), (10, 500)]
@@ -121,7 +121,7 @@ def _us(refresh: bool) -> dict:
         rows, page = [], 1
         while True:
             r = requests.get(US_API, params={"filter": f"record_date:eq:{latest}", "page[size]": 10000, "page[number]": page,
-                                             "fields": "record_date,security_class1_desc,security_class2_desc,maturity_date,outstanding_amt"}, headers=HDR, timeout=120).json()
+                                             "fields": "record_date,security_class1_desc,security_class2_desc,issue_date,maturity_date,outstanding_amt"}, headers=HDR, timeout=120).json()
             rows += r["data"]
             if page >= r["meta"]["total-pages"]:
                 break
@@ -130,7 +130,7 @@ def _us(refresh: bool) -> dict:
         print(f"maturity: MSPD {latest}, {len(rows)} rows")
     d = json.loads(f.read_text(encoding="utf-8"))
     ref = dt.date.fromisoformat(d["record_date"])
-    items, totals = [], {}
+    items, totals, issues = [], {}, []
     for x in d["rows"]:
         c1, c2 = x["security_class1_desc"], x["security_class2_desc"]
         if c2 in ("Total Unmatured Treasury Notes", "Total Unmatured Treasury Bonds"):
@@ -144,6 +144,12 @@ def _us(refresh: bool) -> dict:
             continue   # continuation lines of reopened issues carry no outstanding amount
         if a > 0:
             items.append((md, a))
+            try:
+                issues.append((dt.date.fromisoformat(x.get("issue_date") or ""), md, a, c2))
+            except ValueError:
+                pass
+    # on-the-run share: for each benchmark tenor the most recently issued security (its amount includes reopenings)
+    otr = _us_on_the_run(issues)
     out = _pack("USD", items, ref, 1000.0,
                 source="US Treasury, Monthly Statement of the Public Debt, table 3 (marketable Treasury securities by CUSIP), Fiscal Data API",
                 source_url="https://fiscaldata.treasury.gov/datasets/monthly-statement-public-debt/",
@@ -151,7 +157,25 @@ def _us(refresh: bool) -> dict:
     chk = sum(totals.values())
     out["check"] = f"sum of issues {out['total_bn']:,.0f} bn vs reported total unmatured notes + bonds {chk / 1000:,.0f} bn" if totals else "no total rows found"
     out["check_ok"] = bool(totals) and abs(out["total_bn"] * 1000 / chk - 1) < 0.005
+    if otr:
+        out["on_the_run"] = {"share_pct": round(100 * otr["amount"] / (out["total_bn"] * 1000), 2), "amount_bn": otr["amount"] / 1000,
+                             "issues": otr["issues"], "note": "most recently issued note or bond of each benchmark tenor (2, 3, 5, 7, 10, 20, 30 years) on the as-of date, reopenings included, as a share of all nominal notes and bonds outstanding"}
     return out
+
+
+def _us_on_the_run(issues):
+    """issues: (issue date, maturity date, outstanding amount, description). Picks the latest issue per tenor."""
+    best = {}
+    for idt, md, a, desc in issues:
+        tenor = round((md - idt).days / 365.25)
+        if tenor not in (2, 3, 5, 7, 10, 20, 30):
+            continue
+        if tenor not in best or idt > best[tenor][0]:
+            best[tenor] = (idt, md, a, desc)
+    if len(best) < 5:
+        return None
+    return {"amount": sum(v[2] for v in best.values()),
+            "issues": [{"tenor_years": t, "issued": v[0].isoformat(), "maturity": v[1].isoformat(), "outstanding_bn": round(v[2] / 1000, 1), "security": v[3]} for t, v in sorted(best.items())]}
 
 
 # ---------------------------------------------------------------- EUR-DE
@@ -283,7 +307,6 @@ CN_HOWTO = ("ChinaBond (English site) > Advanced Bond Info Searching: tick Bond 
 
 ABO_PAGE = "https://asianbondsonline.adb.org/china/data/"
 ABO_CSV = "https://asianbondsonline.adb.org/downloads/standard_download_csv.php?code=Govt_Sec_Mat_Local_Ccy&economies=CN&years={years}"
-CNY_5_10_SPLIT = 0.4   # share of the ADB 5-10y bucket assigned to 5-7y; the rest goes to 7-10y (assumption, see _cn_abo)
 ABO_FILE = "cny_abo_maturity_profile.csv"
 ABO_OUT_CSV = "https://asianbondsonline.adb.org/downloads/standard_download_csv.php?code=Bonds_Outstanding&economies=CN&years={years}"
 ABO_OUT_FILE = "cny_abo_outstanding.csv"
@@ -341,7 +364,7 @@ def _cn_abo(refresh: bool) -> dict:
 
 
 def _cn(refresh: bool = False) -> dict:
-    files = [p for p in sorted(FOLDER.glob("cny_*.xls*")) + sorted(FOLDER.glob("cny_*.csv")) if p.name != ABO_FILE] if FOLDER.exists() else []
+    files = [p for p in sorted(FOLDER.glob("cny_*.xls*")) + sorted(FOLDER.glob("cny_*.csv")) if not p.name.startswith("cny_abo_")] if FOLDER.exists() else []
     if not files:
         return _cn_abo(refresh)
     f = files[-1]

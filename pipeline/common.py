@@ -52,6 +52,10 @@ JPY_INCLUDE_OTHERS = False
 # CCDC figure and used for the total segment only if no CCDC files are present.
 CNY_CHANNEL = "all_foreign"
 CNY_BONDCONNECT_SHARE = 0.64
+CNY_D2C_ADV_BN_OVERRIDE = None   # CNY bn per day. Set to replace the Bond Connect based estimate of foreign-investor CGB turnover
+                                 # (dealer-to-customer pool) with a better figure, e.g. a CFETS/ChinaBond series by counterparty from a terminal
+CNY_D2C_OVERRIDE_NOTE = ""       # where the override comes from (shown on the page)
+CNY_5_10_SPLIT = 0.4             # share of the ADB 5-10y maturity bucket assigned to 5-7y, the rest to 7-10y (assumption; only used without a ChinaBond file)
 CNY_MARKET_CGB_ADV_BN = 415
 CNY_MARKET_CGB_NOTE = "daily average July 2025 to June 2026, read from charts in monthly market reports, user's own estimate from early 2026; the PBoC monthly release itself gives no CGB split"
 
