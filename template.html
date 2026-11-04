@@ -81,6 +81,8 @@ section.pane > .block:first-child { margin-top: 0; }
 .tbl td.num { font-family: var(--mono); font-size: .86rem; }
 .tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
 .tbl td.na { color: var(--muted); }
+.tbl td.pos { color: var(--ok); }
+.tbl td.neg { color: var(--gbp); }
 .tbl.small { font-size: .78rem; }
 .tbl.small th { font-size: .7rem; }
 .tbl.small td.num { font-size: .78rem; }
@@ -677,7 +679,7 @@ function drawMain() {
     const dd = v => v == null ? '–' : !isFinite(v) ? '∞' : fmtDays(v);
     const rows = [['Half sold, days', R.t50, RB.t50, 'd'], ['90 % sold, days', R.t90, RB.t90, 'd'], ['Fully sold, days', R.t100, RB.t100, 'd'],
       [`Cash in 1 day, ${bc} bn`, R.curve(1) / 1000, RB.curve(1) / 1000, 'c'], [`Cash in 5 days, ${bc} bn`, R.curve(5) / 1000, RB.curve(5) / 1000, 'c'], [`Cash in 20 days, ${bc} bn`, R.curve(20) / 1000, RB.curve(20) / 1000, 'c']];
-    $('#scTable').innerHTML = `<table class="tbl"><thead><tr><th style="text-align:left">Measure</th><th>Current</th><th>Scenario B</th><th>Difference</th></tr></thead><tbody>${rows.map(([k, a, bv, t]) => `<tr><td>${k}</td><td class="num">${t === 'd' ? dd(a) : fmt(a, 1)}</td><td class="num">${t === 'd' ? dd(bv) : fmt(bv, 1)}</td><td class="num">${isFinite(a) && isFinite(bv) ? (t === 'd' ? (bv - a >= 0 ? '+' : '') + fmtDays(Math.abs(bv - a)).replace(/^/, bv - a < 0 ? '-' : '') : (bv - a >= 0 ? '+' : '') + fmt(bv - a, 1) + ` (${fmt(100 * (bv - a) / (a || 1), 0)} %)`) : '–'}</td></tr>`).join('')}</tbody></table>`;
+    $('#scTable').innerHTML = `<table class="tbl"><thead><tr><th style="text-align:left">Measure</th><th>Current</th><th>Scenario B</th><th>Difference</th></tr></thead><tbody>${rows.map(([k, a, bv, t]) => `<tr><td>${k}</td><td class="num">${t === 'd' ? dd(a) : fmt(a, 1)}</td><td class="num">${t === 'd' ? dd(bv) : fmt(bv, 1)}</td><td class="num ${isFinite(a) && isFinite(bv) && bv !== a ? ((t === 'd' ? bv < a : bv > a) ? 'pos' : 'neg') : ''}">${isFinite(a) && isFinite(bv) ? (t === 'd' ? (bv - a >= 0 ? '+' : '') + fmtDays(Math.abs(bv - a)).replace(/^/, bv - a < 0 ? '-' : '') : (bv - a >= 0 ? '+' : '') + fmt(bv - a, 1) + ` (${fmt(100 * (bv - a) / (a || 1), 0)} %)`) : '–'}</td></tr>`).join('')}</tbody></table>`;
   }
   // bucket matrix: markets x maturity buckets, pooled buckets merged into one cell; one figure at a time
   const GRM = {
@@ -988,7 +990,7 @@ function tabCmp() {
   let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Market</th><th>Outstanding, ${bc} bn</th><th>D2C, ${bc} bn/day</th><th>Total, ${bc} bn/day</th><th>D2C share of total</th><th>Turnover ratio, % of stock per day</th><th>Days to turn the stock over</th><th>Annual turnover, × stock</th><th>D2C vs a year earlier</th></tr></thead><tbody>`;
   for (const m of ms) {
     const c = C[m], X = MATD[m] || {};
-    h += `<tr class="main"><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}">${esc(c.M.name)}</a></td><td class="num">${fmt(c.stockB, 0)}</td><td class="num">${fmt(c.d2c, 1)}${c.d2cOff != null ? `<span class="gl">off-the-run ${fmt(c.d2cOff, 0)}</span>` : ''}</td><td class="num">${fmt(c.tot, 1)}</td><td class="num">${c.d2cShare == null ? '–' : fmt(100 * c.d2cShare, 0) + ' %'}</td><td class="num">${fmt(c.ratioD2c, 2)}</td><td class="num">${fmt(c.daysStock, 0)}</td><td class="num">${fmt(c.annualTot, 1)}</td><td class="num">${c.change == null ? '–' : (c.change >= 0 ? '+' : '') + fmt(100 * c.change, 0) + ' %'}</td></tr>
+    h += `<tr class="main"><td><span class="sw" style="background:${col(m)}"></span><a href="#${TAB[m]}">${esc(c.M.name)}</a></td><td class="num">${fmt(c.stockB, 0)}</td><td class="num">${fmt(c.d2c, 1)}${c.d2cOff != null ? `<span class="gl">off-the-run ${fmt(c.d2cOff, 0)}</span>` : ''}</td><td class="num">${fmt(c.tot, 1)}</td><td class="num">${c.d2cShare == null ? '–' : fmt(100 * c.d2cShare, 0) + ' %'}</td><td class="num">${fmt(c.ratioD2c, 2)}</td><td class="num">${fmt(c.daysStock, 0)}</td><td class="num">${fmt(c.annualTot, 1)}</td><td class="num ${c.change == null ? '' : c.change >= 0 ? 'pos' : 'neg'}">${c.change == null ? '–' : (c.change >= 0 ? '+' : '') + fmt(100 * c.change, 0) + ' %'}</td></tr>
     <tr><td colspan="9" class="src">Turnover ${esc(c.M.window.label)}, ${esc(c.M.counting)}. Stock ${X.available ? `as of ${X.as_of}, ${esc(X.source)}` : 'not available'}.</td></tr>`;
   }
   $('#cmpTable').innerHTML = h + '</tbody></table>';
