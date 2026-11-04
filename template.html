@@ -379,8 +379,8 @@ function plot(id, traces, layout) {
     const summable = native === 'line' || layout.barmode === 'stack';   // overlay bars compare measures and have no meaningful sum
     if (kind !== native) ({traces, layout} = restyleKind(traces, layout, kind));
     if (kind === 'line' && summable && traces.length > 1) {
-      const parts = traces.filter(t => !(t.line && t.line.dash));
-      traces = traces.concat([Object.assign(totalTrace(parts), {name: 'Total', line: {color: css('--tot'), width: 2.5}, showlegend: true, hovertemplate: '%{y:,.2f}<extra>Total</extra>'})]);
+      const parts = traces.filter(t => !(t.line && t.line.dash) && t.name !== 'Total');
+      traces = traces.concat([Object.assign(totalTrace(parts), {name: 'Total', line: {color: css('--tot'), width: 1.5, dash: 'dot'}, showlegend: true, hovertemplate: '%{y:,.2f}<extra>Total</extra>'})]);
     }
   }
   if (layout.barmode === 'stack' && traces.length > 1 && traces.every(t => t.type === 'bar' && t.x === traces[0].x)) traces = traces.concat([totalTrace(traces)]);
