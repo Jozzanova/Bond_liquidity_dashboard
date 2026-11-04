@@ -611,7 +611,7 @@ function buildSide() {
   <div class="row"><label for="inHair">Turnover haircut, % (stress)</label><input type="number" id="inHair" min="0" max="95" step="5" value="${S.haircut}"><input type="range" id="inHairR" min="0" max="95" step="5" value="${S.haircut}"></div>
   <div class="row"><label for="inPreset">Preset</label><select id="inPreset">${PRESETS.map(([n, p, h]) => `<option value="${p},${h}"${S.part === p && S.haircut === h ? ' selected' : ''}>${n}: ${p} % / ${h} % haircut</option>`).join('')}<option value="custom"${PRESETS.some(([n, p, h]) => S.part === p && S.haircut === h) ? '' : ' selected'}>Custom</option></select></div>
   <div class="hint">Presets are illustrative, not calibrated. The haircut stands for the share of reported volume a seller could actually use.</div>
-  <div class="row" style="margin-top:.6rem"><label>Turnover segment</label></div>
+  <h3>Turnover segment</h3>
   <div class="segs">${Object.entries(SEGS).map(([k, v]) => `<label><input type="radio" name="seg" value="${k}"${S.seg === k ? ' checked' : ''}><span>${v.label}<small>${v.small}</small></span></label>`).join('')}</div>
   <div class="row" style="margin-top:.5rem"><label for="inOtr">US on-the-run share of holding, %</label><input type="number" id="inOtr" min="0" max="100" step="0.5" value="${S.otr}"></div>
   <div class="hint">Share of the US holding sold against on-the-run turnover, the rest against off-the-run. ${(() => { const o = MATD.USD && MATD.USD.on_the_run; return o ? `Current issues are ${fmt(o.share_pct, 1)} % of notes and bonds outstanding (<a href="#main" data-otr="${o.share_pct}">use ${fmt(o.share_pct, 1)} %</a> for a market-tracking holding); ` : ''; })()}0.5 % fits mostly seasoned bonds, 0 % is the most conservative.</div>
