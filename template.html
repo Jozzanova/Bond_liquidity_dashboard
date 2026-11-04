@@ -612,7 +612,7 @@ function drawMain() {
   const traces = AM.map(m => ({x: ts, y: ts.map(t => R.markets[m].holdLocal > 0 ? 100 * R.markets[m].curve(t) / R.markets[m].holdLocal : null), name: D.markets[m].name, mode: 'lines', line: {color: col(m), width: 1.8}, hovertemplate: '%{y:.0f} %<extra>' + esc(D.markets[m].name) + '</extra>'}));
   traces.push({x: ts, y: ts.map(t => 100 * R.curve(t) / R.sizeMn), name: 'Combined', mode: 'lines', line: {color: css('--tot'), width: 3}, hovertemplate: '%{y:.0f} %<extra>Combined</extra>'});
   $('#cvSub').textContent = `Share of each market's holding sold by day t at ${S.part} % of ${segLab}${S.haircut ? `, turnover cut by ${S.haircut} %` : ''}; combined line in ${bc}`;
-  plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
+  plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, hoverformat: '.1f'})}));
   // ADV by market in base currency bn/day
   const toB = (m, v) => v == null ? null : v / R.markets[m].fx / 1000;
   const names = MK.map(m => SHORT[m]);
@@ -1220,7 +1220,7 @@ function drawMarketProfile(m) {
   tr.push({x: ts, y: ts.map(t => r.holdLocal > 0 ? 100 * r.curve(t) / r.holdLocal : null), name: 'Whole holding', mode: 'lines', line: {color: col(m), width: 3}, hovertemplate: '%{y:.0f} %<extra>holding</extra>'});
   if (own) tr.push({x: ts, y: ts.map(t => g.holdLocal > 0 ? 100 * g.curve(t) / g.holdLocal : null), name: 'Liquidity profile tab assumptions', mode: 'lines', line: {color: css('--axis'), width: 1.5, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Liquidity profile tab assumptions</extra>'});
   $('#pfs-' + TAB[m]).textContent = `At ${P.part} % of ${segLab}${P.haircut ? `, turnover cut by ${P.haircut} %` : ''}, ${r.pooled ? (r.noDist ? 'no maturity distribution available (one pool)' : 'no maturity split (one pool)') : `maturity limit ${P.matMax} years`}${own ? '; dashed line: the Liquidity profile tab\'s assumptions' : ''}`;
-  plot('pf-' + TAB[m], tr, base({yaxis: Object.assign(base().yaxis, {title: {text: '% sold'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
+  plot('pf-' + TAB[m], tr, base({yaxis: Object.assign(base().yaxis, {title: {text: '% sold'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, hoverformat: '.1f'})}));
   let h = `<table class="tbl"><thead><tr><th>Group</th><th>Holding, ${M.currency} bn</th><th>Turnover, bn/day</th><th>Pace, bn/day</th><th>Holding / turnover</th><th>Days to sell</th></tr></thead><tbody>`;
   for (const x of r.groups) h += `<tr><td>${x.g === 'all' ? 'All maturities' : x.g}</td><td class="num">${fmt(x.H / 1000, 2)}</td><td class="num${x.A == null ? ' na' : ''}">${x.A == null ? 'n/a' : fmt(x.A / 1000, 2)}</td><td class="num">${x.cap == null ? '–' : fmt(x.cap / 1000, 2)}</td><td class="num">${fmtDays(x.daysAdv)}</td><td class="num">${fmtDays(x.days)}</td></tr>`;
   h += `<tr class="tot"><td>Holding</td><td class="num">${fmt(r.holdLocal / 1000, 2)}</td><td></td><td></td><td></td><td class="num">${fmtDays(r.t100)}</td></tr></tbody></table>
@@ -1592,6 +1592,11 @@ window.addEventListener('hashchange', () => showTab(current()));
 function drawFoot() { $('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}${D.fx.live ? ' (live)' : ''}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Methods & sources tab; nothing on this page is investment advice.`; }
 drawFoot();
 liveFx();
+// charts are drawn for one pixel density; moving the window to another screen leaves labels and hover layers misplaced until they are redrawn
+function redrawCharts() { document.querySelectorAll('.plot').forEach(el => { if (el.data) { try { Plotly.redraw(el); } catch (e) {} } }); }
+function watchPixelRatio() { try { matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change', () => { redrawCharts(); watchPixelRatio(); }, {once: true}); } catch (e) {} }
+watchPixelRatio();
+let rsTimer = null; window.addEventListener('resize', () => { clearTimeout(rsTimer); rsTimer = setTimeout(redrawCharts, 300); });
 </script>
 </body>
 </html>
