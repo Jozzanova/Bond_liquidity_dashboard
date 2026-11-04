@@ -190,7 +190,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
 <section class="pane" id="pane-main">
   <div class="block">
     <h1>Liquidity profile of a multi-currency government bond holding</h1>
-    <p class="lede">How long it would take to sell a government bond portfolio of a given size and currency mix at a chosen share of each market's daily turnover, and how much cash that raises by horizon. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers and can carry its own selling assumptions.</p>
+    <p class="lede">How long it would take to sell a government bond portfolio of a given size and currency mix at a chosen share of each market's daily turnover, and how much cash that raises by horizon. Enter the holding on the left; every chart and table recomputes. Each market tab shows the turnover data behind its numbers and can carry its own selling assumptions. In any chart, click a legend entry to highlight that series and dim the rest; double-click it to hide or show it.</p>
   </div>
   <div class="mainwrap">
     <aside class="side" id="side"></aside>
@@ -324,10 +324,21 @@ function totalTrace(traces) {
   const x = traces[0].x, y = x.map((_, i) => { let s = 0, any = false; for (const t of traces) { const v = t.y[i]; if (v != null && isFinite(v)) { s += v; any = true; } } return any ? s : null; });
   return {x, y, name: 'Total', mode: 'lines', line: {color: css('--tot'), width: 0}, showlegend: false, hovertemplate: '%{y:,.2f}<extra>Total</extra>'};
 }
+// legend: one click highlights that series and dims the others (click again to clear), double-click hides or shows it
+function applyHl(el) {
+  const n = el._hl;
+  Plotly.restyle(el, {opacity: el.data.map(t => n == null || t.name === n ? 1 : 0.18)});
+}
 function plot(id, traces, layout) {
   const el = document.getElementById(id); if (!el) return;
   if (layout.barmode === 'stack' && traces.length > 1 && traces.every(t => t.type === 'bar' && t.x === traces[0].x)) traces = traces.concat([totalTrace(traces)]);
   Plotly.react(el, traces, layout, CFG);
+  if (!el._hlBound) {
+    el._hlBound = true;
+    el.on('plotly_legendclick', e => { const t = e.data[e.curveNumber]; if (!t) return false; el._hl = el._hl === t.name ? null : t.name; applyHl(el); return false; });
+    el.on('plotly_legenddoubleclick', e => { const t = e.data[e.curveNumber]; if (!t) return false; const vis = t.visible === 'legendonly' ? true : 'legendonly'; Plotly.restyle(el, {visible: vis}, [e.curveNumber]); return false; });
+  }
+  if (el._hl && el.data.some(t => t.name === el._hl)) applyHl(el); else el._hl = null;
 }
 
 /* ---------- constants ---------- */
