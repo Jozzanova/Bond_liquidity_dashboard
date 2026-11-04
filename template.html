@@ -1086,9 +1086,12 @@ function yearTable(periods, tdays, cols, note, title, lastN) {
     const idx = P.map((p, i) => p.startsWith(y) ? i : -1).filter(i => i >= 0), w = idx.reduce((a, i) => a + (tdays[i] || 0), 0);
     return {y, n: idx.length, partial: !annual && idx.length < (quarterly ? 4 : 12), v: cols.map(([, s]) => w ? idx.reduce((a, i) => a + (s[i] || 0) * (tdays[i] || 0), 0) / w / 1000 : null)};
   });
+  // trailing average over the last 36 months, 12 quarters or 3 years on file (fewer if the series is shorter)
+  const want = annual ? 3 : quarterly ? 12 : 36, n = Math.min(want, P.length), last = P.slice(-n).map((_, k) => P.length - n + k), wl = last.reduce((a, i) => a + (tdays[i] || 0), 0);
+  const trailing = {y: `Last ${n} ${annual ? 'year' : quarterly ? 'quarter' : 'month'}${n === 1 ? '' : 's'}`, n, partial: false, tot: true, v: cols.map(([, s]) => wl ? last.reduce((a, i) => a + (s[i] || 0) * (tdays[i] || 0), 0) / wl / 1000 : null)};
   const dec = Math.max(...rows.flatMap(r => r.v.map(v => v || 0))) < 100 ? 1 : 0;
   let h = `<div class="sub" style="margin-top:.7rem;font-weight:600;color:var(--fg)">${esc(title)}</div><table class="tbl small" style="margin-top:.3rem"><thead><tr><th>Year</th>${annual ? '' : `<th>${quarterly ? 'Quarters' : 'Months'}</th>`}${cols.map(([l]) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`;
-  for (const r of rows) h += `<tr><td>${r.y}${r.partial ? '*' : ''}</td>${annual ? '' : `<td class="num">${r.n}</td>`}${r.v.map(v => `<td class="num">${fmt(v, dec)}</td>`).join('')}</tr>`;
+  for (const r of rows.concat([trailing])) h += `<tr${r.tot ? ' class="tot"' : ''}><td>${r.y}${r.partial ? '*' : ''}</td>${annual ? '' : `<td class="num">${r.n}</td>`}${r.v.map(v => `<td class="num">${fmt(v, dec)}</td>`).join('')}</tr>`;
   return h + `</tbody></table><p class="note" style="margin-top:.3rem;font-size:.76rem">${note}</p>`;
 }
 
