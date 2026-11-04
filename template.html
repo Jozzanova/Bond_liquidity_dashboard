@@ -133,8 +133,15 @@ ul.caveats li { margin-bottom: .25rem; }
 .mainwrap { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 @media (max-width: 1000px) { .mainwrap { grid-template-columns: minmax(0, 1fr); align-items: stretch; } }
 .content { min-width: 0; grid-column: 2; }
+.mainwrap.notes { grid-template-columns: 280px minmax(0, 1fr); }
+.side.menu { width: 280px; padding: .5rem; }
+.menu button { display: block; width: 100%; text-align: left; font: inherit; font-size: .92rem; padding: .5rem .75rem; border: 0; border-radius: 8px; background: none; color: var(--fg); cursor: pointer; }
+.menu button:hover { background: var(--accent-soft); }
+.menu button.on { background: var(--accent); color: #fff; font-weight: 600; }
+.nsec { display: none; }
+.nsec.on { display: block; margin-top: 0; }
 .side { position: fixed; top: var(--sidetop, 120px); left: var(--sidex, 16px); width: 400px; max-height: calc(100vh - var(--sidetop, 120px) - 16px); overflow-y: auto; z-index: 10; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; box-shadow: var(--shadow); }
-@media (max-width: 1000px) { .side { position: static; width: auto; max-height: none; } .content { grid-column: auto; } }
+@media (max-width: 1000px) { .side { position: static; width: auto; max-height: none; } .content { grid-column: auto; } .side.menu { display: flex; flex-wrap: wrap; gap: .25rem; } .menu button { width: auto; } }
 @media (max-width: 700px) { nav .in { flex-wrap: wrap; row-gap: .3rem; } nav .brand { font-size: 1.35rem; } }
 .side h3 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 1.1rem 0 .45rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line); }
 .side details.sec summary h3 { border-bottom: none; padding-bottom: 0; margin: 0; }
@@ -325,9 +332,11 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <h1>Methods, sources and assumptions</h1>
     <p class="lede">How the liquidity profile is calculated, what each source measures and where the figures stop being data and start being assumptions. The datasets behind every chart are on the Downloads tab; the freshness of each one is on the Update data tab.</p>
   </div>
-  <div class="block"><h2>Glossary</h2>
-    <div class="card"><dl class="kv">
-      <dt>Average daily turnover</dt><dd>Volume traded in a period divided by the trading days in it. Each source counts volume its own way (par or market value, one or both sides); the Sources table below says how.</dd>
+  <div class="mainwrap notes">
+    <aside class="side menu" id="notesMenu"><button type="button" data-nsec="glossary">Glossary</button><button type="button" data-nsec="method">How the profile is computed</button><button type="button" data-nsec="segments">Turnover segments</button><button type="button" data-nsec="sources">Sources and counting conventions</button><button type="button" data-nsec="maturity">Outstanding stock by remaining maturity</button><button type="button" data-nsec="fx">Exchange rates</button><button type="button" data-nsec="caveats">What is not in the data</button></aside>
+    <div class="content">
+      <div class="block nsec" data-nsec="glossary"><h2>Glossary</h2><div class="card"><dl class="kv">
+      <dt>Average daily turnover</dt><dd>Volume traded in a period divided by the trading days in it. Each source counts volume its own way (par or market value, one or both sides); the Sources and counting conventions section says how.</dd>
       <dt>Dealer-to-customer (D2C)</dt><dd>Trades between dealers and their customers: the pool an investor selling through dealers competes for. The profile sells into it by default.</dd>
       <dt>Dealer-to-dealer (D2D)</dt><dd>Trades between dealers, including those through interdealer brokers and platforms. The dealers' own recycling of risk; included only in the "total" segment.</dd>
       <dt>On-the-run / off-the-run</dt><dd>US Treasuries: the most recently auctioned issue of each tenor is on-the-run, every older issue off-the-run. On-the-run issues carry most of the volume; a seasoned holding sells into the off-the-run pool.</dd>
@@ -339,27 +348,13 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       <dt>Days to sell</dt><dd>Holding divided by the selling pace (participation rate times turnover). Half, 90 % and fully sold are the days at which the cumulative sale reaches those shares.</dd>
       <dt>Turnover ratio</dt><dd>Daily turnover divided by the outstanding stock; its inverse is the days of trading it would take to turn the whole stock over once.</dd>
       <dt>Window</dt><dd>The period the averages cover: the latest twelve months, four quarters or calendar year each source allows, stated on every market tab.</dd>
-    </dl></div>
-  </div>
-  <div class="block"><details class="card method"><summary><h3 style="display:inline">How the profile is computed</h3> <span class="note" style="font-size:.85rem">(click to expand)</span></summary><div id="methodNotes" style="margin-top:.5rem"></div></details>
-  </div>
-  <div class="block"><h2>Exchange rates</h2>
-    <div class="card"><div id="fxTable"></div></div>
-  </div>
-  <div class="block"><details class="card method"><summary><h3 style="display:inline">Turnover segments</h3> <span class="note" style="font-size:.85rem">(click to expand: what each source lets us count as each segment)</span></summary>
-    <p class="note">The profile sells into one of two pools per market. <b>Dealer-to-customer</b> is the turnover an investor trading with dealers competes for; <b>total</b> adds the interdealer leg and is an upper bound. The table shows what each source lets us count as each segment.</p>
-    <div style="margin-top:.5rem"><table class="tbl" id="segTable"></table></div>
-  </details></div>
-  <div class="block"><details class="card method"><summary><h3 style="display:inline">Sources and counting conventions</h3> <span class="note" style="font-size:.85rem">(click to expand: source, counting, maturity basis and window per market)</span></summary>
-    <p class="note">Each source counts turnover its own way (par or market value, one side or both, which reporters), so the dealer-to-dealer and total columns are not comparable across markets. Only the dealer-to-customer pool is used in the default profile.</p>
-    <div style="margin-top:.5rem"><table class="tbl" id="convTable"></table></div>
-  </details></div>
-  <div class="block"><details class="card method"><summary><h3 style="display:inline">Outstanding stock by remaining maturity</h3> <span class="note" style="font-size:.85rem">(click to expand: the market-weighted maturity profiles)</span></summary>
-    <p class="note">The market-weighted maturity profile offered as the default holding distribution when the maturity option on the Liquidity profile tab is on: nominal amount outstanding of each market's nominal coupon government bonds in the five buckets, by remaining maturity on the as-of date.</p>
-    <div style="margin-top:.5rem"><div id="matTable"></div></div>
-  </details></div>
-  <div class="block"><h2>What is not in the data</h2>
-    <div class="card"><ul class="caveats">
+    </dl></div></div>
+      <div class="block nsec" data-nsec="method"><h2>How the profile is computed</h2><div class="card"><div id="methodNotes"></div></div></div>
+      <div class="block nsec" data-nsec="segments"><h2>Turnover segments</h2><div class="card"><p class="note">The profile sells into one of two pools per market. <b>Dealer-to-customer</b> is the turnover an investor trading with dealers competes for; <b>total</b> adds the interdealer leg and is an upper bound. The table shows what each source lets us count as each segment.</p><div style="margin-top:.5rem"><table class="tbl" id="segTable"></table></div></div></div>
+      <div class="block nsec" data-nsec="sources"><h2>Sources and counting conventions</h2><div class="card"><p class="note">Each source counts turnover its own way (par or market value, one side or both, which reporters), so the dealer-to-dealer and total columns are not comparable across markets. Only the dealer-to-customer pool is used in the default profile.</p><div style="margin-top:.5rem"><table class="tbl" id="convTable"></table></div></div></div>
+      <div class="block nsec" data-nsec="maturity"><h2>Outstanding stock by remaining maturity</h2><div class="card"><p class="note">The market-weighted maturity profile offered as the default holding distribution when the maturity option on the Liquidity profile tab is on: nominal amount outstanding of each market's nominal coupon government bonds in the five buckets, by remaining maturity on the as-of date.</p><div style="margin-top:.5rem"><div id="matTable"></div></div></div></div>
+      <div class="block nsec" data-nsec="fx"><h2>Exchange rates</h2><div class="card"><div id="fxTable"></div></div></div>
+      <div class="block nsec" data-nsec="caveats"><h2>What is not in the data</h2><div class="card"><ul class="caveats">
       <li>No source reports turnover by both counterparty type and maturity except FINRA TRACE and the DMO maturity-band file. For Bunds and JGBs the counterparty mix of the latest window is applied uniformly to every maturity class.</li>
       <li>Bunds and JGBs are classified by original maturity, so a 10-year Bund with three years left sits in the 5-10y group. The common buckets are on remaining maturity; the mapping is therefore approximate for those two markets.</li>
       <li>France has no published turnover by maturity or counterparty: the OAT level is the Bund level times a scale factor. China's maturity profile is taken from ADB AsianBondsOnline shares (no sub-1-year bucket, 5-10y split by assumption) unless a ChinaBond per-issue export is supplied; China has no observable interdealer split, and the whole-market CGB figure is CCDC settlement data, all counterparties.</li>
@@ -368,7 +363,8 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       <li>Averages are over the latest window of each source (12 months for TRACE, JSDA and Bond Connect; four quarters for the DMO; one calendar year for the Finanzagentur), so the windows do not coincide exactly.</li>
       <li>Headline turnover figures quoted elsewhere are usually larger than the figures here because they count everything the source reports. The JGB tab shows the full reconciliation for the JSDA number: headline, less T-bills, less auction allotments, less the second leg of member-to-member trades, gives the dashboard total; the US tab's figures table does the same for TRACE venues and on-the-run issues.</li>
       <li>The profile is a capacity calculation at a constant participation rate. It is not a price-impact model, and it assumes turnover stays at its window average while the holding is sold; the haircut is the only stress device.</li>
-    </ul></div>
+    </ul></div></div>
+    </div>
   </div>
 </section>
 
@@ -1653,7 +1649,18 @@ function tabDownloads() {
     <p>${esc(e.description)}</p>
     <p class="note"><b>Source:</b> ${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source)}<br><b>Counting / notes:</b> ${esc(e.notes)}${e.columns.length ? `<br><b>Columns:</b> ${e.columns.map(c => `<code>${esc(c)}</code>`).join(', ')}` : ''}</p></details>`).join('');
 }
+function notesPref() { try { const v = localStorage.getItem('bondliq.notes'); if (v && $(`#pane-notes .nsec[data-nsec="${v}"]`)) return v; } catch (e) {} return 'glossary'; }
+function setNotes(k) {
+  document.querySelectorAll('#pane-notes .nsec').forEach(el => el.classList.toggle('on', el.dataset.nsec === k));
+  document.querySelectorAll('#notesMenu [data-nsec]').forEach(b => b.classList.toggle('on', b.dataset.nsec === k));
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#notesMenu [data-nsec]'); if (!b) return;
+  try { localStorage.setItem('bondliq.notes', b.dataset.nsec); } catch (x) {}
+  setNotes(b.dataset.nsec); window.scrollTo({top: 0});
+});
 function tabNotes() {
+  setNotes(notesPref());
   $('#methodNotes').innerHTML = $('#methodBody').innerHTML;
   let h = `<thead><tr><th>Market</th><th>Dealer-to-customer</th><th>D2C incl. on-the-run (US)</th><th>Dealer-to-dealer</th><th>Total</th></tr></thead><tbody>`;
   for (const m of MK) { const s = D.markets[m].segments; const plain = t => esc(t).replace(/d2c_base = d2c_all/g, 'no on-the-run split').replace(/same as d2c_base/g, 'same as dealer-to-customer').replace(/d2c_all/g, 'D2C all issues').replace(/d2c_base/g, 'D2C'); h += `<tr><td>${esc(D.markets[m].name)}</td>${['d2c_base', 'd2c_all', 'd2d', 'total'].map(k => `<td style="text-align:left;white-space:normal;font-size:.85rem"><b>${esc(s[k].label)}</b><br>${plain(s[k].note)}</td>`).join('')}</tr>`; }
