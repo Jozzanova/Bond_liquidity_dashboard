@@ -1,5 +1,5 @@
 Government bond liquidity dashboard: data files
-Pipeline run 2026-11-03 22:07
+Pipeline run 2026-11-04 10:42
 
 Each dataset is an Excel workbook with a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.
 
@@ -117,7 +117,7 @@ Columns: currency, units_per_eur, date
 == maturity_profile.xlsx ==
 Outstanding stock by remaining maturity (market-weighted maturity profile)
 Nominal amount outstanding of each market's nominal coupon government bonds in the five common remaining-maturity buckets, and its share of the total. These shares are the default holding distribution when the maturity option on the Profile tab is switched on.
-Source: US Treasury MSPD (Fiscal Data API), Deutsche Finanzagentur itemised list, Agence France Tresor OAT outstanding page, Ministry of Finance Japan outstanding by issue; DMO and ChinaBond files by hand
+Source: US Treasury MSPD (Fiscal Data API), Deutsche Finanzagentur itemised list, Agence France Tresor OAT outstanding page, Ministry of Finance Japan outstanding by issue, ADB AsianBondsOnline for China (shares only, unless a ChinaBond per-issue file is supplied); DMO file by hand
 Counting / notes: universe per market in the universe column; remaining maturity measured on the as-of date; markets without a source have empty rows and a note in the last column
 Columns: market, market_name, as_of, bucket, share, amount_bn, unit, source, universe
 

@@ -1,0 +1,20 @@
+METADATA:
+Indicator: Local Currency Sovereign Debt Securities Outstanding Maturity Profile 
+Definition: This indicator classifies outstanding sovereign debt securities by remaining time to maturity. Sovereign debt securities include Treasury instruments with remaining tenors longer than 1 year. The maturity profile is presented as a share of total outstanding sovereign debt securities in maturity buckets of >1&ndash;3, >3&ndash;5, >5&ndash;10, and >10 years.
+Available Economies: CN,HK,ID,JP,KR,MY,PH,SG,TH,VN
+Available Years: 1997-2026
+Frequency: quarterly updates
+Latest Data: 2026-09-30
+
+DISCLAIMER: The ADB provides no warranty or undertaking of any kind in respect to the information and materials found on, or linked to, AsianBondsOnline. The ADB accepts no responsibility for the accuracy of the material posted or linked to the publication, or the information contained therein, or for any consequences arising from its use and does not invite or accept reliance being placed on any materials or information so provided. Views expressed in articles marked with AsianBondsOnline are those of the authors, and not ADB. This disclaimer does not derogate from, and is in addition to, the general terms and conditions regarding the use of the AsianBondsOnline Web Site, which also apply.
+
+Economy,Date,"1-3 years(% of Total)","3-5 years(% of Total)","5-10 years(% of Total)",">10 years(% of Total)"
+CN,2024-03-31,32.07,21.00,29.52,17.41
+CN,2024-06-30,31.59,21.48,29.34,17.59
+CN,2024-09-30,31.46,19.37,30.58,18.59
+CN,2024-12-31,28.72,19.94,31.27,20.07
+CN,2025-03-31,27.24,21.34,31.80,19.61
+CN,2025-06-30,27.53,23.64,28.67,20.16
+CN,2025-09-30,28.90,21.22,28.74,21.15
+CN,2025-12-31,28.14,21.69,28.45,21.72
+CN,2026-03-31,28.14,21.38,29.23,21.25

@@ -281,11 +281,48 @@ CN_HOWTO = ("ChinaBond (English site) > Advanced Bond Info Searching: tick Bond 
             "date lies after the file date and reads 'Total Planned Amount (RMB 100 million)'. A CSV with columns maturity_date,amount works too.")
 
 
-def _cn() -> dict:
-    files = sorted(FOLDER.glob("cny_*.xls*")) + sorted(FOLDER.glob("cny_*.csv")) if FOLDER.exists() else []
+ABO_PAGE = "https://asianbondsonline.adb.org/china/data/"
+ABO_CSV = "https://asianbondsonline.adb.org/downloads/standard_download_csv.php?code=Govt_Sec_Mat_Local_Ccy&economies=CN&years={years}"
+CNY_5_10_SPLIT = 0.4   # share of the ADB 5-10y bucket assigned to 5-7y; the rest goes to 7-10y (assumption, see _cn_abo)
+ABO_FILE = "cny_abo_maturity_profile.csv"
+
+
+def _cn_abo(refresh: bool) -> dict:
+    """Fallback without a ChinaBond login: the ADB AsianBondsOnline quarterly maturity profile of China's local-currency
+    sovereign debt securities (Treasury instruments with more than one year left), as shares of the total in the buckets
+    >1-3, >3-5, >5-10 and >10 years. Mapped to the common buckets: 0-3y <- 1-3y (bills and the last year to maturity
+    are outside the ADB universe), 3-5y as is, 5-10y split CNY_5_10_SPLIT / (1 - CNY_5_10_SPLIT) between 5-7y and 7-10y
+    (CGB benchmark issuance is heavier in 10-year than in 7-year bonds, so more of the bucket sits in 7-10y), 10y+ <- >10y.
+    Shares only: the ADB file carries no amounts."""
+    y = dt.date.today().year
+    f = FOLDER / ABO_FILE
+    _get(ABO_CSV.format(years=f"{y - 2},{y - 1},{y}"), f, refresh)
+    rows = []
+    with f.open(encoding="utf-8-sig", newline="") as fh:
+        for line in fh:
+            p = [c.strip().strip('"') for c in line.strip().split(",")]
+            if len(p) >= 6 and p[0] == "CN" and re.match(r"\d{4}-\d{2}-\d{2}$", p[1]):
+                rows.append((p[1], [float(v) for v in p[2:6]]))
+    if not rows:
+        raise ValueError(f"maturity: no CN rows in {f.name}")
+    as_of, (s13, s35, s510, s10) = sorted(rows)[-1]
+    raw = [s13, s35, s510 * CNY_5_10_SPLIT, s510 * (1 - CNY_5_10_SPLIT), s10]
+    tot = sum(raw)
+    return {"available": True, "as_of": as_of, "n_issues": None, "total_bn": None, "amounts_bn": [None] * 5,
+            "shares": [v / tot for v in raw], "buckets": COMMON_BUCKETS, "mode": "automatic",
+            "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
+            "source_url": ABO_PAGE, "unit": "shares only",
+            "universe": (f"Treasury instruments with more than one year to maturity, shares of the total in ADB buckets >1-3, >3-5, >5-10 and >10 years "
+                         f"(bills and bonds inside their last year are not covered, so 0-3y is understated); the >5-10 bucket is split "
+                         f"{CNY_5_10_SPLIT:.0%} / {1 - CNY_5_10_SPLIT:.0%} between 5-7y and 7-10y by assumption, not data. "
+                         f"A ChinaBond per-issue export saved as rawData/maturity/cny_cgb.xls replaces this with exact figures"),
+            "fetched": _fetched(f), "file": f.name, "how_to": CN_HOWTO}
+
+
+def _cn(refresh: bool = False) -> dict:
+    files = [p for p in sorted(FOLDER.glob("cny_*.xls*")) + sorted(FOLDER.glob("cny_*.csv")) if p.name != ABO_FILE] if FOLDER.exists() else []
     if not files:
-        return {"available": False, "source": "ChinaBond Advanced Bond Info Searching (book-entry Treasury bonds), downloaded by hand",
-                "source_url": CN_URL, "how_to": CN_HOWTO}
+        return _cn_abo(refresh)
     f = files[-1]
     ref = dt.date.fromisoformat(_fetched(f))
     if f.suffix.lower() == ".csv":
@@ -333,7 +370,7 @@ def _cn() -> dict:
 # ---------------------------------------------------------------- build
 def build(refresh: bool = False) -> dict:
     out = {}
-    for code, fn in [("USD", lambda: _us(refresh)), ("GBP", _gb), ("EUR-DE", lambda: _de(refresh)), ("EUR-FR", lambda: _fr(refresh)), ("JPY", lambda: _jp(refresh)), ("CNY", _cn)]:
+    for code, fn in [("USD", lambda: _us(refresh)), ("GBP", _gb), ("EUR-DE", lambda: _de(refresh)), ("EUR-FR", lambda: _fr(refresh)), ("JPY", lambda: _jp(refresh)), ("CNY", lambda: _cn(refresh))]:
         ov = FOLDER / f"{code}_issues.csv"
         try:
             if ov.exists():
@@ -357,6 +394,6 @@ if __name__ == "__main__":
     d = build("--refresh" in sys.argv)
     for k, m in d["markets"].items():
         if m.get("available"):
-            print(f"{k:7s} as of {m['as_of']}  {m['n_issues']:4d} issues  total {m['total_bn']:>10,.1f} {m['unit']:8s}", m["shares_pct"], m.get("check", ""))
+            print(f"{k:7s} as of {m['as_of']}  {m['n_issues'] or 0:4d} issues  total {m['total_bn'] or 0:>10,.1f} {m['unit']:8s}", m["shares_pct"], m.get("check", ""))
         else:
             print(f"{k:7s} not available: {m.get('error') or m.get('how_to')}")

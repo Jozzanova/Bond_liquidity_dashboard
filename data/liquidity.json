@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-03 22:07",
+ "generated": "2026-11-04 10:42",
  "buckets": [
   "0-3y",
   "3-5y",
@@ -281,10 +281,46 @@
     ]
    },
    "CNY": {
-    "available": false,
-    "source": "ChinaBond Advanced Bond Info Searching (book-entry Treasury bonds), downloaded by hand",
-    "source_url": "https://www.chinabond.com.cn/chinaBond_en/dtcx/zqzlfhcx/",
-    "how_to": "ChinaBond (English site) > Advanced Bond Info Searching: tick Bond Type > Government Bonds > Book-Entry Treasury Bonds, leave the issue date empty, submit, then use the download button (needs a free ChinaBond login) and save the file 'ChinaBond-Bond information query results.xls' as rawData/maturity/cny_cgb.xls. The parser keeps the bonds whose maturity date lies after the file date and reads 'Total Planned Amount (RMB 100 million)'. A CSV with columns maturity_date,amount works too."
+    "available": true,
+    "as_of": "2026-03-31",
+    "n_issues": null,
+    "total_bn": null,
+    "amounts_bn": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "shares": [
+     0.2814,
+     0.2138,
+     0.11692,
+     0.17538,
+     0.2125
+    ],
+    "buckets": [
+     "0-3y",
+     "3-5y",
+     "5-7y",
+     "7-10y",
+     "10y+"
+    ],
+    "mode": "automatic",
+    "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
+    "source_url": "https://asianbondsonline.adb.org/china/data/",
+    "unit": "shares only",
+    "universe": "Treasury instruments with more than one year to maturity, shares of the total in ADB buckets >1-3, >3-5, >5-10 and >10 years (bills and bonds inside their last year are not covered, so 0-3y is understated); the >5-10 bucket is split 40% / 60% between 5-7y and 7-10y by assumption, not data. A ChinaBond per-issue export saved as rawData/maturity/cny_cgb.xls replaces this with exact figures",
+    "fetched": "2026-11-04",
+    "file": "cny_abo_maturity_profile.csv",
+    "how_to": "ChinaBond (English site) > Advanced Bond Info Searching: tick Bond Type > Government Bonds > Book-Entry Treasury Bonds, leave the issue date empty, submit, then use the download button (needs a free ChinaBond login) and save the file 'ChinaBond-Bond information query results.xls' as rawData/maturity/cny_cgb.xls. The parser keeps the bonds whose maturity date lies after the file date and reads 'Total Planned Amount (RMB 100 million)'. A CSV with columns maturity_date,amount works too.",
+    "shares_pct": [
+     28.1,
+     21.4,
+     11.7,
+     17.5,
+     21.2
+    ]
    }
   }
  },
@@ -18408,7 +18444,7 @@
    "folder": "rawData/trace_us",
    "cadence": "monthly, on the second business day after month end",
    "next_expected": "2026-11-04",
-   "status": "up to date",
+   "status": "new data likely",
    "how": "run the pipeline with --refresh; the module downloads any missing month from cdn.finra.org",
    "available": true,
    "note": ""
@@ -18620,19 +18656,19 @@
   {
    "key": "maturity_CNY",
    "title": "Chinese government bonds: outstanding stock by maturity",
-   "mode": "manual",
-   "source": "ChinaBond Advanced Bond Info Searching (book-entry Treasury bonds), downloaded by hand",
-   "source_url": "https://www.chinabond.com.cn/chinaBond_en/dtcx/zqzlfhcx/",
-   "latest": null,
-   "files_updated": null,
-   "n_files": 0,
+   "mode": "automatic",
+   "source": "ADB AsianBondsOnline, local currency sovereign debt securities outstanding maturity profile (quarterly)",
+   "source_url": "https://asianbondsonline.adb.org/china/data/",
+   "latest": "2026-03-31",
+   "files_updated": "2026-11-04 10:42",
+   "n_files": 1,
    "folder": "rawData/maturity",
-   "cadence": "when the holding profile matters",
-   "next_expected": null,
-   "status": "file needed",
-   "how": "ChinaBond (English site) > Advanced Bond Info Searching: tick Bond Type > Government Bonds > Book-Entry Treasury Bonds, leave the issue date empty, submit, then use the download button (needs a free ChinaBond login) and save the file 'ChinaBond-Bond information query results.xls' as rawData/maturity/cny_cgb.xls. The parser keeps the bonds whose maturity date lies after the file date and reads 'Total Planned Amount (RMB 100 million)'. A CSV with columns maturity_date,amount works too.",
-   "available": false,
-   "note": "no file yet"
+   "cadence": "quarterly from ADB AsianBondsOnline, about six months after quarter end; a ChinaBond export whenever exact figures matter",
+   "next_expected": "2026-10-15",
+   "status": "new data likely",
+   "how": "run the pipeline with --refresh (ADB AsianBondsOnline CSV, shares only). For exact figures: ChinaBond (English site) > Advanced Bond Info Searching: tick Bond Type > Government Bonds > Book-Entry Treasury Bonds, leave the issue date empty, submit, then use the download button (needs a free ChinaBond login) and save the file 'ChinaBond-Bond information query results.xls' as rawData/maturity/cny_cgb.xls. The parser keeps the bonds whose maturity date lies after the file date and reads 'Total Planned Amount (RMB 100 million)'. A CSV with columns maturity_date,amount works too.",
+   "available": true,
+   "note": ""
   }
  ]
 }

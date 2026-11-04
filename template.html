@@ -277,7 +277,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <div class="card"><ul class="caveats">
       <li>No source reports turnover by both counterparty type and maturity except FINRA TRACE and the DMO maturity-band file. For Bunds and JGBs the counterparty mix of the latest window is applied uniformly to every maturity class.</li>
       <li>Bunds and JGBs are classified by original maturity, so a 10-year Bund with three years left sits in the 5-10y group. The common buckets are on remaining maturity; the mapping is therefore approximate for those two markets.</li>
-      <li>France has no published turnover by maturity or counterparty: the OAT level is the Bund level times a scale factor. China has no maturity data and no observable interdealer split; the whole-market CGB figure is CCDC settlement data, all counterparties.</li>
+      <li>France has no published turnover by maturity or counterparty: the OAT level is the Bund level times a scale factor. China's maturity profile is taken from ADB AsianBondsOnline shares (no sub-1-year bucket, 5-10y split by assumption) unless a ChinaBond per-issue export is supplied; China has no observable interdealer split, and the whole-market CGB figure is CCDC settlement data, all counterparties.</li>
       <li>Turnover is measured differently across sources: par value (TRACE, JSDA), market value (DMO) or nominal gross (Finanzagentur). Reporting populations also differ (all FINRA members; the DMO's gilt-edged market makers; a subset of Bund auction-group banks; all JSDA members; Bond Connect only).</li>
       <li>Trading-day calendars are maintained by hand for the US (SIFMA), UK, Japan and China; the euro area uses a flat 255 days.</li>
       <li>Averages are over the latest window of each source (12 months for TRACE, JSDA and Bond Connect; four quarters for the DMO; one calendar year for the Finanzagentur), so the windows do not coincide exactly.</li>
@@ -1167,7 +1167,7 @@ function tabNotes() {
   for (const m of MK) {
     const x = MATD[m], c = col(m);
     if (x && x.available) {
-      h += `<tr class="main"><td><span class="sw" style="background:${c}"></span>${esc(D.markets[m].name)}</td><td class="num">${x.as_of}</td>${x.shares_pct.map(v => `<td class="num">${fmt(v, 1)}</td>`).join('')}<td class="num">${fmt(x.total_bn, 0)} <span class="u">${esc(x.unit)}</span></td><td class="num">${x.n_issues}</td></tr>
+      h += `<tr class="main"><td><span class="sw" style="background:${c}"></span>${esc(D.markets[m].name)}</td><td class="num">${x.as_of}</td>${x.shares_pct.map(v => `<td class="num">${fmt(v, 1)}</td>`).join('')}<td class="num">${fmt(x.total_bn, 0)} <span class="u">${esc(x.unit)}</span></td><td class="num">${x.n_issues ?? '–'}</td></tr>
       <tr><td colspan="9" class="src">${esc(x.universe)}. ${esc(x.source)}${x.fetched ? `, fetched ${x.fetched}` : ''}. <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>${x.check ? `. ${x.check_ok ? '<span class="ok">Check ok:</span>' : '<span class="bad">Check failed:</span>'} ${esc(x.check)}` : ''}</td></tr>`;
     } else {
       h += `<tr class="main off"><td><span class="sw" style="background:${c}"></span>${esc(D.markets[m].name)}</td><td class="num">–</td>${B.map(() => '<td class="num">–</td>').join('')}<td><span class="badge warn">needs a file</span></td><td></td></tr>

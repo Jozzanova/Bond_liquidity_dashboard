@@ -8,6 +8,8 @@ import datetime as dt
 
 from common import RAW
 
+CN_HOWTO_FALLBACK = "ChinaBond Advanced Bond Info Searching export saved as rawData/maturity/cny_cgb.xls (needs a ChinaBond login)"
+
 
 def _files(folder, patterns):
     out = []
@@ -104,7 +106,7 @@ def build(markets: dict, fx: dict, maturity: dict, today: dt.date | None = None)
            ("EUR-DE", "de_einzelaufstellung_en.xlsx", "monthly", "automatic", 1, 8),
            ("EUR-FR", "fr_encours_oat.html", "updated by AFT after each auction; the page carries no date", "automatic", 1, 1),
            ("JPY", "jp_maturity.xlsx", "annual, end-March figures published around June", "automatic", 12, 1),
-           ("CNY", "cny_*.*", "when the holding profile matters", "manual", 3, 1)]
+           ("CNY", "cny_*.*", "quarterly from ADB AsianBondsOnline, about six months after quarter end; a ChinaBond export whenever exact figures matter", "automatic", 6, 15)]
     for code, pat, cad, mode, months, day in MAT:
         x = mm.get(code, {})
         avail = bool(x.get("available"))
@@ -112,7 +114,9 @@ def build(markets: dict, fx: dict, maturity: dict, today: dt.date | None = None)
         how = {"USD": "run the pipeline with --refresh (Fiscal Data API)", "EUR-DE": "run the pipeline with --refresh (itemised list xlsx)",
                "EUR-FR": "run the pipeline with --refresh (AFT page)", "JPY": "run the pipeline with --refresh (MoF maturity.xlsx)",
                "GBP": "dmo.gov.uk > Data > Gilt market > Gilts in issue: export to Excel and save it as rawData/maturity/gilts-in-issue.xls",
-               "CNY": x.get("how_to") or "see the Notes tab"}[code]
+               "CNY": "run the pipeline with --refresh (ADB AsianBondsOnline CSV, shares only). For exact figures: " + (x.get("how_to") or CN_HOWTO_FALLBACK)}[code]
+        if code == "CNY" and not x.get("mode") and x.get("available"):
+            mode = "manual"   # a ChinaBond per-issue file is in use
         add("maturity_" + code, f"{markets[code]['name'] if code in markets else code}: outstanding stock by maturity", mode, x.get("source", ""), x.get("source_url", ""),
             x.get("as_of"), _files(RAW / "maturity", [pat]), cad, nxt, RAW / "maturity", how, available=avail or mode == "automatic",
             note="" if avail else (x.get("error") or "no file yet"))

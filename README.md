@@ -21,7 +21,7 @@ pipeline/cny_ccdc.py        CCDC monthly settlement statistics (CNY, whole marke
 pipeline/fx_rates.py        ECB reference rates                                  rawData/fx/
 pipeline/run_all.py         runs everything -> data/liquidity.json
 build.py                    template.html + data/liquidity.json -> site/index.html
-maturity.py                 outstanding stock by remaining maturity (US MSPD via Fiscal Data, Finanzagentur itemised list, AFT OAT page, MoF Japan by-issue file; gilts from the DMO 'Gilts in Issue' .xls placed in rawData/maturity by hand, present since 3 Nov 2026; CGBs still need a file) -> data['maturity'], the market-weighted default of the optional maturity distribution
+maturity.py                 outstanding stock by remaining maturity (US MSPD via Fiscal Data, Finanzagentur itemised list, AFT OAT page, MoF Japan by-issue file; gilts from the DMO 'Gilts in Issue' .xls placed in rawData/maturity by hand, present since 3 Nov 2026; CGBs from the ADB AsianBondsOnline quarterly maturity profile, shares only with the 5-10y bucket split by assumption, unless a ChinaBond per-issue export cny_cgb.xls is supplied) -> data['maturity'], the market-weighted default of the optional maturity distribution
 status.py                   per-dataset update status (latest data point, raw-file timestamps, next expected publication, how to refresh) -> data['status'], shown on the Update tab
 export_data.py              called by build.py: one xlsx per dataset (Data + About sheets), a combined workbook, README.txt and liquidity.json -> site/data/ (Downloads block on the Notes tab)
 wrangler.jsonc              Cloudflare Worker "bond-liquidity": src/worker.js in front of the static site

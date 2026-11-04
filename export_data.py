@@ -289,11 +289,11 @@ def export(data: dict, out_dir: Path) -> list[dict]:
             rows.append([code, M[code]["name"], None, None, None, None, None, m.get("source"), m.get("how_to") or m.get("error")])
             continue
         for b, sh, a in zip(data["buckets"], m["shares"], m["amounts_bn"]):
-            rows.append([code, M[code]["name"], m["as_of"], b, round(sh, 5), round(a, 3), m["unit"], m["source"], m["universe"]])
+            rows.append([code, M[code]["name"], m["as_of"], b, round(sh, 5), None if a is None else round(a, 3), m["unit"], m["source"], m["universe"]])
     _write(out_dir / "maturity_profile.csv", ["market", "market_name", "as_of", "bucket", "share", "amount_bn", "unit", "source", "universe"], rows, man, dict(
         title="Outstanding stock by remaining maturity (market-weighted maturity profile)",
         description="Nominal amount outstanding of each market's nominal coupon government bonds in the five common remaining-maturity buckets, and its share of the total. These shares are the default holding distribution when the maturity option on the Profile tab is switched on.",
-        source="US Treasury MSPD (Fiscal Data API), Deutsche Finanzagentur itemised list, Agence France Tresor OAT outstanding page, Ministry of Finance Japan outstanding by issue; DMO and ChinaBond files by hand",
+        source="US Treasury MSPD (Fiscal Data API), Deutsche Finanzagentur itemised list, Agence France Tresor OAT outstanding page, Ministry of Finance Japan outstanding by issue, ADB AsianBondsOnline for China (shares only, unless a ChinaBond per-issue file is supplied); DMO file by hand",
         notes="universe per market in the universe column; remaining maturity measured on the as-of date; markets without a source have empty rows and a note in the last column"))
 
     # ---- 8. full JSON ----
