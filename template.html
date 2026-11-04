@@ -966,7 +966,7 @@ function tabGBP() {
     plot('gb-ts', [
       {x, y: sumArr(B.map(b => q.d2c[b])).map(v => v / 1000), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
       {x, y: sumArr(B.map(b => q.d2d[b])).map(v => v / 1000), name: 'Professional', type: 'bar', marker: {color: css('--d2d')}},
-    ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}})}));
+    ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'GBP bn per day'}}), xaxis: Object.assign(base().xaxis, {tickvals: x.filter(q => q.endsWith('Q1') && +q.slice(0, 4) % 2 === 0), ticktext: x.filter(q => q.endsWith('Q1') && +q.slice(0, 4) % 2 === 0).map(q => q.slice(0, 4)), tickangle: 0})}));
     if (M.weekly) plot('gb-wk', [
       {x: M.weekly.week_ending, y: M.weekly.customer.map(v => v / 1000), name: 'Customer', mode: 'lines', line: {color: css('--d2c'), width: 1.5}},
       {x: M.weekly.week_ending, y: M.weekly.professional.map(v => v / 1000), name: 'Professional', mode: 'lines', line: {color: css('--d2d'), width: 1.5}},
