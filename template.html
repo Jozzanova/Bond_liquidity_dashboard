@@ -244,7 +244,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
         <li>Run <code>python -X utf8 build.py</code> to rebuild the page and the Excel downloads.</li>
         <li>Publish with <code>npx wrangler deploy</code> and check the dates on this tab.</li>
       </ol>
-      <p class="note" style="margin-top:.6rem"><b>Why there is no update button here.</b> This page is a static file on Cloudflare; the pipeline needs Python with pandas and openpyxl and the hand-downloaded files on disk, so there is nothing on the server that could run it or receive an uploaded file. Running updates from the page would need a small runner (for example a GitHub Actions job that the page triggers through a Worker endpoint, with uploads committed to the repository the same way). That is a separate piece of infrastructure and is not set up.</p>
+      <p class="note" style="margin-top:.6rem"><b>Why there is no update button here.</b> This page is a static file on Cloudflare; the pipeline needs Python with pandas and openpyxl and the hand-downloaded files on disk, so there is nothing on the server that could run it or receive an uploaded file. Running updates from the page would need a small runner (for example a GitHub Actions job that the page triggers through a Worker endpoint, with uploads committed to the repository the same way). That is a separate piece of infrastructure and is not set up. The one exception is exchange rates: the worker that serves the page fetches the ECB reference rates when the page is opened, so the profile is always converted at the latest ECB rates even when the rest of the data is older.</p>
     </div>
   </div>
   <div class="block"><details class="src"><summary>Technical: settings in the pipeline</summary>
@@ -514,7 +514,7 @@ function drawMain() {
   const bc = S.base, sz = S.size, AM = R.active;
   const segLab = SEGS[S.seg].label.toLowerCase();
   const f1 = R.curve(1) / R.sizeMn, f5 = R.curve(5) / R.sizeMn, f20 = R.curve(20) / R.sizeMn;
-  $('#mainTiles').innerHTML = tile('Holding', `${fmt(sz, 0)} <span style="font-size:.8em">${bc} bn</span>`, AM.length < MK.length ? `${AM.length} of ${MK.length} markets, ECB rates of ${D.fx.date}` : `at ECB rates of ${D.fx.date}`) +
+  $('#mainTiles').innerHTML = tile('Holding', `${fmt(sz, 0)} <span style="font-size:.8em">${bc} bn</span>`, AM.length < MK.length ? `${AM.length} of ${MK.length} markets, ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}` : `at ECB rates of ${D.fx.date}${D.fx.live ? ' (live)' : ''}`) +
     tile('Sold in 1 day', fmt(100 * f1, 0) + ' %', `${fmt(S.part, 0)} % of ${segLab}`) +
     tile('Sold in 5 days', fmt(100 * f5, 0) + ' %', 'one week') +
     tile('Sold in 20 days', fmt(100 * f20, 0) + ' %', 'one month') +
@@ -1175,7 +1175,7 @@ function tabNotes() {
     }
   }
   $('#matTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Shares in % of nominal outstanding. Bucket boundaries are on remaining maturity at the as-of date; 10y+ runs to the longest bond. The per-issue lists stay in rawData/maturity; the five sums per market are in the maturity_profile workbook under Downloads.</p>`;
-  $('#fxTable').innerHTML = `<p class="note">${esc(D.fx.source)}, ${D.fx.date} (<a href="${esc(D.fx.source_url)}" target="_blank" rel="noopener">source</a>). Units of currency per euro.</p><table class="tbl"><thead><tr>${Object.keys(D.fx.per_eur).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(D.fx.per_eur).map(v => `<td class="num">${fmt(v, 4)}</td>`).join('')}</tr></tbody></table>`;
+  $('#fxTable').innerHTML = `<p class="note">${esc(D.fx.source)}, ${D.fx.date} (<a href="${esc(D.fx.source_url)}" target="_blank" rel="noopener">source</a>). Units of currency per euro. ${D.fx.live ? `Fetched from the ECB when this page was opened${D.fx.built_date !== D.fx.date ? `; the rates stored at build time were of ${D.fx.built_date}` : ''}. The ECB publishes new rates around 16:00 CET on its working days and the page checks every time it is opened.` : 'Stored at build time; the page also tries to fetch the current rates from the ECB when it is opened, which did not succeed this time.'}</p><table class="tbl"><thead><tr>${Object.keys(D.fx.per_eur).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(D.fx.per_eur).map(v => `<td class="num">${fmt(v, 4)}</td>`).join('')}</tr></tbody></table>`;
 }
 
 /* ---------- tabs and boot ---------- */
@@ -1200,10 +1200,29 @@ try { const t = localStorage.getItem('bondliq.theme'); document.documentElement.
 $('#themeBtn').addEventListener('click', () => { setTheme(isDark() ? 'light' : 'dark'); redrawAll(); });
 $('#themeBtn').textContent = isDark() ? 'Light' : 'Dark';
 buildTabs(); buildSide(); update(); showTab(current());
+/* ---------- live exchange rates ----------
+   The worker in front of the site serves /api/fx with today's ECB reference rates. When that works and the date
+   is newer than the rates baked into the page, the profile is recomputed; otherwise the baked rates stay. */
+async function liveFx() {
+  if (location.protocol === 'file:') return;
+  try {
+    const r = await fetch('/api/fx', {cache: 'no-cache'}); if (!r.ok) return;
+    const j = await r.json(); if (!j || !j.date || !j.per_eur || j.date < D.fx.date) return;
+    const per = {}; let n = 0;
+    for (const k of Object.keys(D.fx.per_eur)) { if (j.per_eur[k] > 0) { per[k] = j.per_eur[k]; n++; } else per[k] = D.fx.per_eur[k]; }
+    if (n < 3) return;
+    const changed = j.date !== D.fx.date;
+    D.fx = Object.assign({}, D.fx, {per_eur: per, date: j.date, live: true, built_date: D.fx.built_date || D.fx.date});
+    if (changed) { update(); drawFoot(); }
+    if (drawn.notes) tabNotes();
+  } catch (e) {}
+}
 $('#btnXlsx').addEventListener('click', downloadXlsx);
 $('#grTable').addEventListener('click', e => { const b = e.target.closest('[data-grm]'); if (b) { S.grm = b.dataset.grm; update(); } });
 window.addEventListener('hashchange', () => showTab(current()));
-$('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Methods & sources tab; nothing on this page is investment advice.`;
+function drawFoot() { $('#foot').innerHTML = `Data as of: TRACE ${esc(D.markets.USD.window.to)} · ${MK.filter(m => m !== 'USD').map(m => esc(D.markets[m].code) + ' ' + esc(D.markets[m].window.label)).join(' · ')} · ECB rates ${D.fx.date}${D.fx.live ? ' (live)' : ''}. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}. Sources are linked on the Methods & sources tab; nothing on this page is investment advice.`; }
+drawFoot();
+liveFx();
 </script>
 </body>
 </html>
