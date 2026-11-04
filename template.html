@@ -84,6 +84,9 @@ section.pane > .block:first-child { margin-top: 0; }
 .tbl td.num { font-family: var(--mono); font-size: .86rem; }
 .tbl tr.tot td { font-weight: 600; border-top: 1px solid var(--line); }
 .tbl td.na { color: var(--muted); }
+tr.exp { cursor: pointer; }
+tr.exp .caret { display: inline-block; width: 1.1em; color: var(--accent); transition: transform .15s; }
+tr.exp.open .caret { transform: rotate(90deg); }
 .pane[data-view="market"] .sub-data, .pane[data-view="data"] .sub-market { display: none; }
 .subtabs { display: flex; gap: .3rem; margin: .2rem 0 .8rem; }
 .subtabs button { font: inherit; font-size: .85rem; padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card2); color: var(--fg); cursor: pointer; }
@@ -1634,10 +1637,11 @@ function tabUpdate() {
   const modeLab = {automatic: '<span class="badge ok">automatic</span>', manual: '<span class="badge warn">manual</span>', derived: '<span class="badge">derived</span>'};
   let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Dataset</th><th>Mode</th><th>Latest data point</th><th>Raw files updated</th><th>Next data expected</th><th>Status</th></tr></thead><tbody>`;
   for (const x of ST) {
-    h += `<tr class="main"><td>${esc(x.title)}</td><td>${modeLab[x.mode] || esc(x.mode)}</td><td class="num">${esc(x.latest || '–')}</td><td class="num">${x.files_updated ? `${esc(x.files_updated)} <span class="u">(${x.n_files} file${x.n_files === 1 ? '' : 's'})</span>` : '–'}</td><td class="num">${esc(x.next_expected || '–')}</td><td>${badge(stat(x))}</td></tr>
-    <tr><td colspan="6" class="src">${esc(x.cadence)}. ${x.how.includes('For exact figures: ') ? `${esc(x.how.split('For exact figures: ')[0])}<details class="src" style="display:inline-block;margin:0"><summary>Optional: exact per-issue figures from ChinaBond</summary>${esc(x.how.split('For exact figures: ')[1])}</details>` : esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.checked ? ` Source last checked ${esc(x.checked)}${stat(x) === 'up to date' && x.next_expected && todayIso >= x.next_expected ? ', nothing newer there yet' : ''}.` : ''}${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
+    h += `<tr class="main exp" data-exp="${esc(x.key)}" title="Click for details"><td><span class="caret">▸</span>${esc(x.title)}</td><td>${modeLab[x.mode] || esc(x.mode)}</td><td class="num">${esc(x.latest || '–')}</td><td class="num">${x.files_updated ? `${esc(x.files_updated)} <span class="u">(${x.n_files} file${x.n_files === 1 ? '' : 's'})</span>` : '–'}</td><td class="num">${esc(x.next_expected || '–')}</td><td>${badge(stat(x))}</td></tr>
+    <tr class="detail" data-for="${esc(x.key)}" style="display:none"><td colspan="6" class="src">${esc(x.cadence)}. ${x.how.includes('For exact figures: ') ? `${esc(x.how.split('For exact figures: ')[0])}<details class="src" style="display:inline-block;margin:0"><summary>Optional: exact per-issue figures from ChinaBond</summary>${esc(x.how.split('For exact figures: ')[1])}</details>` : esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.checked ? ` Source last checked ${esc(x.checked)}${stat(x) === 'up to date' && x.next_expected && todayIso >= x.next_expected ? ', nothing newer there yet' : ''}.` : ''}${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
   }
-  $('#upTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}.</p>`;
+  $('#upTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Click a dataset for how it is updated and where its files live. Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}.</p>`;
+  $('#upTable').addEventListener('click', e => { const tr = e.target.closest('tr.exp'); if (!tr || e.target.closest('a')) return; const d = $('#upTable').querySelector(`tr.detail[data-for="${tr.dataset.exp}"]`); const open = d.style.display === 'none'; d.style.display = open ? '' : 'none'; tr.classList.toggle('open', open); });
   const man = ST.filter(x => x.mode === 'manual');
   $('#setList').innerHTML = Object.entries(D.settings).map(([k, v]) => `<dt><code>${k}</code></dt><dd>${v === null ? 'not set' : esc(String(v))}</dd>`).join('');
   $('#upManual').innerHTML = `<ol class="steps">${man.map(x => `<li><b>${esc(x.title)}</b> ${badge(stat(x))}<br>${esc(x.how)}<br><span class="note">Latest data point ${esc(x.latest || 'none')}; files last written ${esc(x.files_updated || 'never')}; ${esc(x.cadence)}.</span> <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Open the download page</a></li>`).join('')}</ol>`;
