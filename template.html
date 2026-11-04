@@ -1035,9 +1035,9 @@ function downloadCmpXlsx() {
 }
 
 // calendar-year averages of monthly ADV series (trading-day weighted); cols = [[label, series in mn/day], ...]
-function yearTable(M, cols, note) {
+function yearTable(M, cols, note, title) {
   const years = [...new Set(M.months.map(d => d.slice(0, 4)))];
-  let h = `<table class="tbl small" style="margin-top:.6rem"><thead><tr><th>Year</th><th>Months</th>${cols.map(([l]) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`;
+  let h = `<div class="sub" style="margin-top:.7rem;font-weight:600;color:var(--fg)">${esc(title || 'Average daily volume by calendar year, USD bn per trading day')}</div><table class="tbl small" style="margin-top:.3rem"><thead><tr><th>Year</th><th>Months</th>${cols.map(([l]) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`;
   for (const y of years) {
     const idx = M.months.map((d, i) => d.startsWith(y) ? i : -1).filter(i => i >= 0), w = idx.reduce((a, i) => a + M.trading_days[i], 0);
     h += `<tr><td>${y}${idx.length < 12 ? '*' : ''}</td><td class="num">${idx.length}</td>${cols.map(([, v]) => `<td class="num">${fmt(idx.reduce((a, i) => a + (v[i] || 0) * M.trading_days[i], 0) / w / 1000, 0)}</td>`).join('')}</tr>`;
@@ -1193,9 +1193,9 @@ function tabUSD() {
     {x, y: sum('d2c_on'), name: 'D2C on-the-run', type: 'bar', marker: {color: css('--d2con')}},
     {x, y: sum('d2d_all'), name: 'ATS and interdealer', type: 'bar', marker: {color: css('--d2d')}},
   ], base({barmode: 'stack', yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
-  $('#us-ts-years').innerHTML = yearTable(M, [['D2C off-the-run', sumArr(B.map(b => ma.d2c_off[b]))], ['D2C on-the-run', sumArr(B.map(b => ma.d2c_on[b]))], ['ATS and interdealer', sumArr(B.map(b => ma.d2d_all[b]))], ['Total', sumArr(B.map(b => ma.total_all[b]))]], 'Nominal coupons, USD bn per trading day, calendar-year averages weighted by trading days; * partial year.');
+  $('#us-ts-years').innerHTML = yearTable(M, [['D2C off-the-run', sumArr(B.map(b => ma.d2c_off[b]))], ['D2C on-the-run', sumArr(B.map(b => ma.d2c_on[b]))], ['ATS and interdealer', sumArr(B.map(b => ma.d2d_all[b]))], ['Total', sumArr(B.map(b => ma.total_all[b]))]], 'Nominal coupons; volume in the year divided by its trading days; * partial year.', 'Average daily volume by calendar year, USD bn per trading day');
   const bt = M.by_type_adv;
-  $('#us-type-years').innerHTML = yearTable(M, ['All', 'Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map(t => [t === 'All' ? 'All Treasuries' : t, bt[t].total]), 'All Treasuries, all venues, USD bn per trading day, calendar-year averages weighted by trading days; * partial year.');
+  $('#us-type-years').innerHTML = yearTable(M, ['All', 'Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map(t => [t === 'All' ? 'All Treasuries' : t, bt[t].total]), 'All security types, all venues; volume in the year divided by its trading days; * partial year.', 'Average daily volume by calendar year, USD bn per trading day');
   plot('us-type', ['Nominal Coupons', 'Bills', 'TIPS', 'FRNs'].filter(t => bt[t]).map((t, i) => ({x, y: bt[t].total.map(v => v / 1000), name: t, mode: 'lines', line: {width: 2}})),
     base({yaxis: Object.assign(base().yaxis, {title: {text: 'USD bn per day'}})}));
   groupBars(m, 'us-grp');
