@@ -278,7 +278,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
       <li>No source reports turnover by both counterparty type and maturity except FINRA TRACE and the DMO maturity-band file. For Bunds and JGBs the counterparty mix of the latest window is applied uniformly to every maturity class.</li>
       <li>Bunds and JGBs are classified by original maturity, so a 10-year Bund with three years left sits in the 5-10y group. The common buckets are on remaining maturity; the mapping is therefore approximate for those two markets.</li>
       <li>France has no published turnover by maturity or counterparty: the OAT level is the Bund level times a scale factor. China has no maturity data and no observable interdealer split; the whole-market CGB figure is CCDC settlement data, all counterparties.</li>
-      <li>Turnover is measured differently across sources: par value (TRACE, JSDA), market value (DMO) or nominal gross (Finanzagentur). Reporting populations also differ (all FINRA members; GEMMs; a subset of Bund auction-group banks; all JSDA members; Bond Connect only).</li>
+      <li>Turnover is measured differently across sources: par value (TRACE, JSDA), market value (DMO) or nominal gross (Finanzagentur). Reporting populations also differ (all FINRA members; the DMO's gilt-edged market makers; a subset of Bund auction-group banks; all JSDA members; Bond Connect only).</li>
       <li>Trading-day calendars are maintained by hand for the US (SIFMA), UK, Japan and China; the euro area uses a flat 255 days.</li>
       <li>Averages are over the latest window of each source (12 months for TRACE, JSDA and Bond Connect; four quarters for the DMO; one calendar year for the Finanzagentur), so the windows do not coincide exactly.</li>
       <li>The profile is a capacity calculation at a constant participation rate. It is not a price-impact model, and it assumes turnover stays at its window average while the holding is sold; the haircut is the only stress device.</li>
@@ -948,7 +948,7 @@ function tabGBP() {
   const m = 'GBP', M = D.markets[m];
   const full = !M.provisional;
   $('#pane-gbp').innerHTML = marketHead(m) + `
-  <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by GEMMs, market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
+  <div class="block"><h2>Turnover over time</h2><p class="note">${full ? 'Conventional gilts reported by the Gilt-edged Market Makers (GEMMs, the primary dealers recognised by the DMO), market value, GBP bn per trading day (UK bank holidays). Customer counterparties are the dealer-to-customer leg; professional counterparties (DMO, Bank of England, other GEMMs, IDBs, agency brokers) the dealer-to-dealer leg, which may double count via IDBs.' : 'Aggregate GEMM turnover by financial year from the DMO Annual Review, GBP bn (cash terms): short 0-7y, medium 7-15y, long 15y+ conventional gilts, and index-linked gilts. Customer and professional legs are not separated in this source.'}</p>
   <div class="grid2"><div class="card"><h3>${full ? 'By counterparty type' : 'By maturity segment, financial years'}</h3><div class="plot" id="gb-ts"></div></div>
   <div class="card"><h3>${full ? 'Weekly turnover, all gilts' : 'Implied daily turnover, latest financial year'}</h3><div class="sub">${full ? 'Customer and professional, GBP bn per week' : 'Combined turnover divided by UK trading days, with the assumed customer share'}</div><div class="plot" id="gb-wk"></div></div></div></div>
   <div class="block"><h2>By remaining maturity, window average</h2>
@@ -957,7 +957,7 @@ function tabGBP() {
   <div class="block"><h2>Figures used in the profile</h2><div class="card">${groupTable(m)}</div></div>
   ${profileBlock(m)}
   <div class="block"><h2>Sources and caveats</h2><div class="card">${srcLine(m)}<ul class="caveats">
-  <li>GEMM-reported turnover covers the market makers only; it is not the whole gilt market, though it should be most of it.</li>
+  <li>GEMM-reported turnover covers trades with a Gilt-edged Market Maker (one of the 15 to 18 primary dealers recognised by the DMO) on at least one side; it is not the whole gilt market, though it should be most of it.</li>
   <li>Professional turnover is not adjusted for double counting through IDBs, so the D2D and total figures are upper bounds.</li>
   ${full ? '<li>Index-linked gilts and strips are excluded from the liquidity groups.</li>' : `<li>The customer share of ${fmt(100 * M.customer_share, 0)} % is read by eye from the weekly chart in the Quarterly Review April-June 2026 and applied uniformly to all maturities; the proper split by band is in the DMO spreadsheet.</li><li>The three segments (0-7y, 7-15y, 15y+) are coarser than the common buckets: holdings in the 10y+ bucket are matched with the 15y+ pool, which is conservative for 10-15 year bonds.</li>`}</ul></div></div>`;
   marketTiles(m);
