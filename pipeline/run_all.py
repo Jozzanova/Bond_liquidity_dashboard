@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cny_bond_connect, cny_ccdc, dmo_gilts, eur_bunds, fx_rates, jpy_jsda, maturity, status, trace_us  # noqa: E402
 from common import (CNY_BONDCONNECT_SHARE, CNY_CHANNEL, CNY_MARKET_CGB_ADV_BN, CNY_MARKET_CGB_NOTE, CNY_WINDOW, COMMON_BUCKETS, FR_REFERENCE_NOTE, FR_REFERENCE_TOTAL_MN,  # noqa: E402
                     DATA, DMO_WINDOW, EUR_FR_SCALE, EUR_TRADING_DAYS, JPY_INCLUDE_OTHERS, JPY_WINDOW,
-                    TRACE_WINDOW, dump_json)
+                    RAW, TRACE_WINDOW, dump_json)
 
 refresh = "--refresh" in sys.argv
 if refresh:
@@ -53,7 +53,11 @@ out = {
     "maturity": maturity.build(refresh),
     "markets": markets,
 }
-out["status"] = status.build(markets, out["fx"], out["maturity"])
+STAMP = RAW / ".last_refresh"   # when the automatic sources were last checked (run with --refresh)
+if refresh:
+    STAMP.write_text(dt.datetime.now().strftime("%Y-%m-%d %H:%M"), encoding="utf-8")
+out["last_refresh"] = STAMP.read_text(encoding="utf-8").strip() if STAMP.exists() else None
+out["status"] = status.build(markets, out["fx"], out["maturity"], checked=out["last_refresh"])
 dump_json(out, DATA / "liquidity.json")
 for k, m in markets.items():
     print(f"{k:7s} {m['window']['label']:22s}", {g: round(v or 0) for g, v in m["window_adv"]["d2c_base"].items()})

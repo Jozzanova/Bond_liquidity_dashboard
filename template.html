@@ -229,7 +229,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <p class="lede">Every number on this page comes from files in <code>rawData/</code>, read by the Python pipeline and baked into the page at build time. Most sources are downloaded by the pipeline itself; four need a file fetched by hand because the issuer's site blocks scripts. This tab shows how fresh each dataset is and what to do to bring it forward.</p>
   </div>
   <div class="block"><h2>Status by dataset</h2>
-    <p class="note">Mode: <span class="badge ok">automatic</span> the pipeline downloads it, <span class="badge warn">by hand</span> a file must be fetched in a browser first, <span class="badge">derived</span> computed from another dataset. Latest data point is the last period in the data; raw files updated is when the files in <code>rawData/</code> were last written; next data expected is a rough publication date after which newer figures are probably available at the source.</p>
+    <p class="note">Mode: <span class="badge ok">automatic</span> the pipeline downloads it, <span class="badge warn">by hand</span> a file must be fetched in a browser first, <span class="badge">derived</span> computed from another dataset. Status: <span class="badge ok">up to date</span> nothing newer is expected, or the source was checked after the expected date and had nothing new; <span class="badge warn">refresh due</span> an automatic source should have new data, run the pipeline with --refresh; <span class="badge warn">new data likely</span> a hand-fetched file is probably available; <span class="badge bad">file needed</span> no file at all. Latest data point is the last period in the data; raw files updated is when the files in <code>rawData/</code> were last written; next data expected is a rough publication date after which newer figures are probably available at the source.</p>
     <div class="card"><div id="upTable"></div></div>
   </div>
   <div class="block"><h2>Files to download by hand</h2>
@@ -1140,17 +1140,20 @@ function tabCNY() {
 
 function tabUpdate() {
   const ST = D.status || [];
+  // status is re-derived on the viewer's date, so a page built weeks ago still tells the truth
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const stat = x => { if (!x.available) return 'file needed'; if (x.next_expected && todayIso >= x.next_expected) { if (x.mode === 'automatic' && x.checked && x.checked >= x.next_expected) return 'up to date'; return x.mode === 'automatic' ? 'refresh due' : 'new data likely'; } return 'up to date'; };
   const badge = st => `<span class="badge ${st === 'up to date' ? 'ok' : st === 'file needed' ? 'bad' : 'warn'}">${esc(st)}</span>`;
   const modeLab = {automatic: '<span class="badge ok">automatic</span>', manual: '<span class="badge warn">by hand</span>', derived: '<span class="badge">derived</span>'};
   let h = `<table class="tbl mat"><thead><tr><th style="text-align:left">Dataset</th><th>Mode</th><th>Latest data point</th><th>Raw files updated</th><th>Next data expected</th><th>Status</th></tr></thead><tbody>`;
   for (const x of ST) {
-    h += `<tr class="main"><td>${esc(x.title)}</td><td>${modeLab[x.mode] || esc(x.mode)}</td><td class="num">${esc(x.latest || '–')}</td><td class="num">${x.files_updated ? `${esc(x.files_updated)} <span class="u">(${x.n_files} file${x.n_files === 1 ? '' : 's'})</span>` : '–'}</td><td class="num">${esc(x.next_expected || '–')}</td><td>${badge(x.status)}</td></tr>
-    <tr><td colspan="6" class="src">${esc(x.cadence)}. ${esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
+    h += `<tr class="main"><td>${esc(x.title)}</td><td>${modeLab[x.mode] || esc(x.mode)}</td><td class="num">${esc(x.latest || '–')}</td><td class="num">${x.files_updated ? `${esc(x.files_updated)} <span class="u">(${x.n_files} file${x.n_files === 1 ? '' : 's'})</span>` : '–'}</td><td class="num">${esc(x.next_expected || '–')}</td><td>${badge(stat(x))}</td></tr>
+    <tr><td colspan="6" class="src">${esc(x.cadence)}. ${esc(x.how)}${x.note ? ` (${esc(x.note)})` : ''}. Folder <code>${esc(x.folder)}</code>.${x.checked ? ` Source last checked ${esc(x.checked)}${stat(x) === 'up to date' && x.next_expected && todayIso >= x.next_expected ? ', nothing newer there yet' : ''}.` : ''}${x.source_url ? ` <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Source link</a>` : ''}</td></tr>`;
   }
   $('#upTable').innerHTML = h + `</tbody></table><p class="note" style="margin-top:.6rem">Pipeline run ${esc(D.generated)}, page built ${esc(D.built)}.</p>`;
   const man = ST.filter(x => x.mode === 'manual');
   $('#setList').innerHTML = Object.entries(D.settings).map(([k, v]) => `<dt><code>${k}</code></dt><dd>${v === null ? 'not set' : esc(String(v))}</dd>`).join('');
-  $('#upManual').innerHTML = `<ol class="steps">${man.map(x => `<li><b>${esc(x.title)}</b> ${badge(x.status)}<br>${esc(x.how)}<br><span class="note">Latest data point ${esc(x.latest || 'none')}; files last written ${esc(x.files_updated || 'never')}; ${esc(x.cadence)}.</span> <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Open the download page</a></li>`).join('')}</ol>`;
+  $('#upManual').innerHTML = `<ol class="steps">${man.map(x => `<li><b>${esc(x.title)}</b> ${badge(stat(x))}<br>${esc(x.how)}<br><span class="note">Latest data point ${esc(x.latest || 'none')}; files last written ${esc(x.files_updated || 'never')}; ${esc(x.cadence)}.</span> <a href="${esc(x.source_url)}" target="_blank" rel="noopener">Open the download page</a></li>`).join('')}</ol>`;
 }
 function tabNotes() {
   $('#methodNotes').innerHTML = $('#methodBody').innerHTML;

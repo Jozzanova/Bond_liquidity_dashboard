@@ -40,8 +40,11 @@ def _quarter_next(q: str) -> dt.date:
     return end_next + dt.timedelta(days=45)
 
 
-def build(markets: dict, fx: dict, maturity: dict, today: dt.date | None = None) -> list[dict]:
+def build(markets: dict, fx: dict, maturity: dict, today: dt.date | None = None, checked: str | None = None) -> list[dict]:
+    """checked: when the automatic sources were last downloaded ('YYYY-MM-DD HH:MM'); an automatic dataset checked after its
+    expected publication date and still at the old data point is up to date, not 'new data likely'."""
     today = today or dt.date.today()
+    checked_d = dt.date.fromisoformat(checked[:10]) if checked else None
     S = []
 
     def add(key, title, mode, source, source_url, latest, files, cadence, next_expected, folder, how, available=True, note=""):
@@ -49,12 +52,16 @@ def build(markets: dict, fx: dict, maturity: dict, today: dt.date | None = None)
         if not available:
             status = "file needed"
         elif next_expected and today >= next_expected:
-            status = "new data likely"
+            if mode == "automatic" and checked_d and checked_d >= next_expected:
+                status = "up to date"            # looked at the source after the expected date, nothing newer there
+            else:
+                status = "refresh due" if mode == "automatic" else "new data likely"
         else:
             status = "up to date"
         S.append(dict(key=key, title=title, mode=mode, source=source, source_url=source_url, latest=latest, files_updated=st,
                       n_files=len(files), folder=str(folder.relative_to(RAW.parent)).replace("\\", "/"), cadence=cadence,
-                      next_expected=next_expected.isoformat() if next_expected else None, status=status, how=how, available=available, note=note))
+                      next_expected=next_expected.isoformat() if next_expected else None, status=status, how=how, available=available, note=note,
+                      checked=checked[:10] if (checked and mode == "automatic") else None))
 
     usd = markets.get("USD")
     if usd:
