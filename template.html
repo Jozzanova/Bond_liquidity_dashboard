@@ -332,6 +332,8 @@ function applyHl(el) {
 function plot(id, traces, layout) {
   const el = document.getElementById(id); if (!el) return;
   if (layout.barmode === 'stack' && traces.length > 1 && traces.every(t => t.type === 'bar' && t.x === traces[0].x)) traces = traces.concat([totalTrace(traces)]);
+  const x0 = traces[0] && traces[0].x && traces[0].x[0];
+  if (typeof x0 === 'string' && /^\d{4}-\d{2}-01$/.test(x0)) layout.xaxis = Object.assign({}, layout.xaxis || {}, {type: 'date', hoverformat: '%b %Y'});
   Plotly.react(el, traces, layout, CFG);
   if (!el._hlBound) {
     el._hlBound = true;
@@ -1073,7 +1075,7 @@ function tabUSD() {
   <li>TRACE covers FINRA members' trades; trades between two non-members (for example bank dealers that are not broker-dealers) are not captured, and the ATS category includes both interdealer and some customer-facing platforms as FINRA classifies them.</li>
   <li>Monthly files are published around the middle of the following month; the window is the latest ${M.window.n} months on file.</li></ul></div></div>`;
   marketTiles(m);
-  const x = M.months.map(monthLab), ma = M.monthly_adv;
+  const x = M.months, ma = M.monthly_adv;
   const sum = k => sumArr(B.map(b => ma[k][b])).map(v => v / 1000);
   plot('us-ts', [
     {x, y: sum('d2c_off'), name: 'D2C off-the-run', type: 'bar', marker: {color: css('--d2c')}},
@@ -1223,7 +1225,7 @@ function tabJPY() {
   <li>"Bond Dealers" is the JSDA category for member-to-member trades; the halving assumes both sides are members, which is the definition of the category.</li>
   <li>The current-year file is revised monthly; the previous fiscal year's file is final.</li></ul></div></div>`;
   marketTiles(m);
-  const x = M.months.map(monthLab), ma = M.monthly_adv, cls = ['medium', 'long', 'super_long'];
+  const x = M.months, ma = M.monthly_adv, cls = ['medium', 'long', 'super_long'];
   plot('jp-ts', [
     {x, y: sumArr(cls.map(c => ma.d2c[c])).map(v => v / 1000), name: 'Customer', type: 'bar', marker: {color: css('--d2c')}},
     {x, y: sumArr(cls.map(c => ma.d2d[c])).map(v => v / 1000), name: 'Bond Dealers, halved', type: 'bar', marker: {color: css('--d2d')}},
@@ -1265,7 +1267,7 @@ function tabCNY() {
   <li>The Bond Connect share of foreign turnover (${M.bondconnect_share}) is a single HKMA statement and moves over time.</li>
   <li>A reserve manager selling CGBs would typically do so through CIBM Direct or Bond Connect against onshore dealers, so foreign-investor turnover understates the pool available, but the depth of that pool for large, one-sided foreign selling is untested.</li></ul></div></div>`;
   marketTiles(m);
-  const x = M.months.map(monthLab), mo = M.monthly;
+  const x = M.months, mo = M.monthly;
   plot('cn-ts', [
     {x, y: mo.map(r => r.adt_bn), name: 'All bonds', type: 'bar', marker: {color: css('--d2d')}},
     {x, y: mo.map(r => r.cgb_adt_bn), name: 'Chinese government bonds', type: 'bar', marker: {color: css('--d2c')}},
@@ -1275,7 +1277,7 @@ function tabCNY() {
     {x, y: mo.map(r => r.pfb_share == null ? null : 100 * r.pfb_share), name: 'Policy financial bond share', mode: 'lines+markers', line: {color: css('--d2d'), width: 2}, connectgaps: true},
   ], base({yaxis: Object.assign(base().yaxis, {title: {text: '% of volume'}, range: [0, 70]})}));
   if (M.ccdc) {
-    const C = M.ccdc, cx = C.months.map(monthLab);
+    const C = M.ccdc, cx = C.months;
     plot('cn-mk', [
       {x: cx, y: C.monthly.map(r => r.all_adv_mn / 1000), name: 'All CCDC bonds', type: 'bar', marker: {color: css('--d2d')}},
       {x: cx, y: C.monthly.map(r => r.cgb_adv_mn / 1000), name: 'Chinese government bonds', type: 'bar', marker: {color: css('--d2c')}},
