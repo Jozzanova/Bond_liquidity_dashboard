@@ -628,12 +628,12 @@ function drawMain() {
     tile('Fully sold after', fmtDays(R.t100) + ' <span style="font-size:.7em">days</span>', R.valid ? 'slowest group decides' : 'a group has no turnover figure');
   $('#fxDate').textContent = D.fx.date;
   // curves
-  const H = horizon(), n = 120, ts = Array.from({length: n + 1}, (_, i) => 1 + i * (H - 1) / n);
+  const H = horizon(), n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
   const traces = AM.map(m => ({x: ts, y: ts.map(t => R.markets[m].holdLocal > 0 ? 100 * R.markets[m].curve(t) / R.markets[m].holdLocal : null), name: D.markets[m].name, mode: 'lines', line: {color: col(m), width: 1.8}, hovertemplate: '%{y:.0f} %<extra>' + esc(D.markets[m].name) + '</extra>'}));
   traces.push({x: ts, y: ts.map(t => 100 * R.curve(t) / R.sizeMn), name: 'Combined', mode: 'lines', line: {color: css('--tot'), width: 3}, hovertemplate: '%{y:.0f} %<extra>Combined</extra>'});
   if (RB) traces.push({x: ts, y: ts.map(t => 100 * RB.curve(t) / RB.sizeMn), name: 'Combined, scenario B', mode: 'lines', line: {color: css('--tot'), width: 2, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Combined, scenario B</extra>'});
   $('#cvSub').textContent = `Share of each market's holding sold by day t at ${S.part} % of ${segLab}${S.haircut ? `, turnover cut by ${S.haircut} %` : ''}; combined line in ${bc}${RB ? `; dashed: scenario B at ${S.cmpB.part} %${S.cmpB.haircut ? ` with a ${S.cmpB.haircut} % haircut` : ''}` : ''}`;
-  plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, range: [1, H]})}));
+  plot('cvChart', traces, base({yaxis: Object.assign(base().yaxis, {title: {text: '% of holding'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
   // ADV by market in base currency bn/day
   const toB = (m, v) => v == null ? null : v / R.markets[m].fx / 1000;
   const names = MK.map(m => SHORT[m]);
@@ -1246,12 +1246,12 @@ function drawMarketProfile(m) {
     : `<b>Switched off on the Liquidity profile tab</b>, so this market carries no holding. Tick it in the side panel there to include it.`;
   const pn = $('#pn-' + TAB[m]); if (pn) pn.innerHTML = S.on[m] ? `The holding is linked to the Liquidity profile tab: portfolio size × allocation share at ECB rates. The selling assumptions below can be set for this market alone; the Liquidity profile tab keeps its own.` : `<b>This market is switched off on the Liquidity profile tab</b>, so it carries no holding here. Tick it in the Profile side panel to include it.`;
   let H = horizon(); if (S.horizon <= 0 && isFinite(r.t100)) H = Math.max(H, Math.min(500, Math.ceil(r.t100 * 1.3 / 5) * 5));
-  const n = 120, ts = Array.from({length: n + 1}, (_, i) => 1 + i * (H - 1) / n);
+  const n = 120, ts = Array.from({length: n + 1}, (_, i) => i * H / n);
   const tr = (r.pooled ? [] : r.groups.filter(x => x.H > 0)).map(x => ({x: ts, y: ts.map(t => 100 * x.sold(t) / x.H), name: x.g, mode: 'lines', line: {width: 1.5, dash: 'dot'}, hovertemplate: '%{y:.0f} %<extra>' + x.g + '</extra>'}));
   tr.push({x: ts, y: ts.map(t => r.holdLocal > 0 ? 100 * r.curve(t) / r.holdLocal : null), name: 'Whole holding', mode: 'lines', line: {color: col(m), width: 3}, hovertemplate: '%{y:.0f} %<extra>holding</extra>'});
   if (own) tr.push({x: ts, y: ts.map(t => g.holdLocal > 0 ? 100 * g.curve(t) / g.holdLocal : null), name: 'Liquidity profile tab assumptions', mode: 'lines', line: {color: css('--axis'), width: 1.5, dash: 'dash'}, hovertemplate: '%{y:.0f} %<extra>Liquidity profile tab assumptions</extra>'});
   $('#pfs-' + TAB[m]).textContent = `At ${P.part} % of ${segLab}${P.haircut ? `, turnover cut by ${P.haircut} %` : ''}, ${r.pooled ? (r.noDist ? 'no maturity distribution available (one pool)' : 'no maturity split (one pool)') : `maturity limit ${P.matMax} years`}${own ? '; dashed line: the Liquidity profile tab\'s assumptions' : ''}`;
-  plot('pf-' + TAB[m], tr, base({yaxis: Object.assign(base().yaxis, {title: {text: '% sold'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}, range: [1, H]})}));
+  plot('pf-' + TAB[m], tr, base({yaxis: Object.assign(base().yaxis, {title: {text: '% sold'}, range: [0, 105]}), xaxis: Object.assign(base().xaxis, {title: {text: 'trading days'}})}));
   let h = `<table class="tbl"><thead><tr><th>Group</th><th>Holding, ${M.currency} bn</th><th>Turnover, bn/day</th><th>Pace, bn/day</th><th>Holding / turnover</th><th>Days to sell</th></tr></thead><tbody>`;
   for (const x of r.groups) h += `<tr><td>${x.g === 'all' ? 'All maturities' : x.g}</td><td class="num">${fmt(x.H / 1000, 2)}</td><td class="num${x.A == null ? ' na' : ''}">${x.A == null ? 'n/a' : fmt(x.A / 1000, 2)}</td><td class="num">${x.cap == null ? '–' : fmt(x.cap / 1000, 2)}</td><td class="num">${fmtDays(x.daysAdv)}</td><td class="num">${fmtDays(x.days)}</td></tr>`;
   h += `<tr class="tot"><td>Holding</td><td class="num">${fmt(r.holdLocal / 1000, 2)}</td><td></td><td></td><td></td><td class="num">${fmtDays(r.t100)}</td></tr></tbody></table>
