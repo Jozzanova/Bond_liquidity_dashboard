@@ -319,7 +319,7 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
     <div class="card"><div id="fxTable"></div></div>
   </div>
   <div class="block"><h2>Downloads</h2>
-    <p class="note">The structured datasets behind every chart and table on this page, as Excel workbooks. Each has a <b>Data</b> sheet (one observation per row, local currency millions unless the column name says otherwise, empty cells mean not available) and an <b>About</b> sheet with the description, source, counting convention and a column dictionary. The first entry bundles every dataset into one workbook. <a href="data/README.txt" download>data/README.txt</a> repeats the descriptions as a plain-text data dictionary. The files are regenerated on every build, so they always match the page.</p>
+    <p class="note">The structured datasets behind every chart and table on this page, as Excel workbooks. Series datasets open on a <b>Wide</b> sheet (one row per period or market, one column per series, ready for formulas), followed by a <b>Data</b> sheet with the same figures in long form (one observation per row) and an <b>About</b> sheet with the description, source, counting convention and a column dictionary. Local currency millions unless the column name says otherwise; empty cells mean not available. The first entry bundles every dataset into one workbook, in wide form. <a href="data/README.txt" download>data/README.txt</a> repeats the descriptions as a plain-text data dictionary. The files are regenerated on every build, so they always match the page.</p>
     <div class="card"><div id="dlList"></div></div>
   </div>
 </section>

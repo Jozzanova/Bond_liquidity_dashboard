@@ -2,9 +2,10 @@
 site/data/, plus the full JSON and a plain-text data dictionary. Called by
 build.py; returns the manifest that the Notes tab renders as a Downloads block.
 
-Every dataset is an Excel workbook with a "Data" sheet (tidy: one observation
-per row, header row) and an "About" sheet (title, description, source,
-counting convention, column dictionary). A combined workbook holds every
+Every dataset is an Excel workbook with a "Wide" sheet where the data are a
+series table (one row per period or market, one column per series), a "Data"
+sheet (tidy: one observation per row) and an "About" sheet (title,
+description, source, counting convention, column dictionary). A combined workbook holds every
 dataset with an index sheet. Amounts are in local currency millions unless
 the column name says otherwise. Empty cells mean "not available".
 """
@@ -82,6 +83,8 @@ def _about_sheet(ws, meta, header, generated):
         ws.cell(ws.max_row, 2).hyperlink = meta["source_url"]
         ws.cell(ws.max_row, 2).font = Font(color="0563C1", underline="single")
     row("Counting / notes", meta["notes"])
+    if meta.get("wide"):
+        row("Sheets", meta["wide"])
     row("Units", "local currency millions unless the column name says otherwise; empty cells = not available")
     row("Pipeline run", generated)
     row("Page", "https://bond-liquidity.jskjeltorp.workers.dev (Notes & sources tab)")
@@ -104,13 +107,65 @@ SEG_LONG = {"d2c_base": "dealer-to-customer, conservative definition", "d2c_all"
 
 _GENERATED = ""
 
+# wide layouts: index columns stay as rows, the "columns" keys are spread across the sheet, one block per value column
+WIDE = {
+    "window_adv": dict(index=["market", "market_name", "currency", "window", "issue", "maturity_group"], columns=["segment"], values=["adv_local_mn_per_day", "adv_eur_mn_per_day"]),
+    "usd_trace_monthly": dict(index=["month", "trading_days"], columns=["segment", "issue", "maturity_group"], values=["adv_usd_mn_per_day"]),
+    "usd_trace_monthly_trace_buckets": dict(index=["month", "trading_days"], columns=["segment", "issue", "trace_bucket"], values=["adv_usd_mn_per_day"]),
+    "usd_trace_monthly_by_type": dict(index=["month", "trading_days"], columns=["security_type", "segment"], values=["adv_usd_mn_per_day", "coupon_trades_per_month"]),
+    "gbp_dmo_quarterly_bands": dict(index=["quarter", "trading_days"], columns=["segment", "maturity_band"], values=["adv_gbp_mn_per_day"]),
+    "eur_de_finanzagentur_annual": dict(index=["year"], columns=["kind", "name"], values=["value_eur_bn"]),
+    "jpy_jsda_monthly": dict(index=["month", "trading_days"], columns=["segment", "jgb_class"], values=["adv_jpy_mn_per_day"]),
+    "maturity_profile": dict(index=["market", "market_name", "as_of", "unit"], columns=["bucket"], values=["share", "amount_bn"]),
+}
+
+
+def _widen(header: list[str], rows: list[list], spec: dict):
+    """Pivot the long rows: one row per distinct index tuple (first-appearance order), one column per value x column-key
+    combination (first-appearance order). Returns (header, rows)."""
+    pos = {h: i for i, h in enumerate(header)}
+    idx_i = [pos[k] for k in spec["index"]]
+    col_i = [pos[k] for k in spec["columns"]]
+    val_i = [pos[k] for k in spec["values"]]
+    keys, cols, table = [], [], {}
+    for r in rows:
+        k = tuple(r[i] for i in idx_i)
+        c = tuple(r[i] for i in col_i)
+        if k not in table:
+            table[k] = {}
+            keys.append(k)
+        if c not in cols:
+            cols.append(c)
+        for v in val_i:
+            table[k][(header[v], c)] = r[v]
+    multi = len(spec["values"]) > 1
+    out_header = list(spec["index"])
+    series = []
+    for v in spec["values"]:
+        for c in cols:
+            label = " | ".join(str(x) for x in c)
+            out_header.append(f"{v}: {label}" if multi else label)
+            series.append((v, c))
+    out_rows = [list(k) + [table[k].get(sc) for sc in series] for k in keys]
+    return out_header, out_rows
+
 
 def _write(path: Path, header: list[str], rows: list[list], manifest: list, meta: dict):
     path = path.with_suffix(".xlsx")
     wb = Workbook()
     ws = wb.active
-    ws.title = "Data"
-    _data_sheet(ws, header, rows)
+    spec = WIDE.get(path.stem)
+    if spec:
+        ws.title = "Wide"
+        wh, wr = _widen(header, rows, spec)
+        _data_sheet(ws, wh, wr)
+        ws.freeze_panes = get_column_letter(len(spec["index"]) + 1) + "2"
+        _data_sheet(wb.create_sheet("Data"), header, rows)
+        meta = dict(meta, wide=f"Wide sheet: one row per {' / '.join(spec['index'][:1])}, one column per {' | '.join(spec['columns'])}"
+                              + (f", in blocks for {', '.join(spec['values'])}" if len(spec["values"]) > 1 else f" ({spec['values'][0]})") + ". Data sheet: the same in long form, one observation per row.")
+    else:
+        ws.title = "Data"
+        _data_sheet(ws, header, rows)
     _about_sheet(wb.create_sheet("About"), meta, header, _GENERATED)
     wb.save(path)
     manifest.append(dict(file=path.name, rows=len(rows), bytes=path.stat().st_size, columns=header, _header=header, _rows=rows, **meta))
@@ -312,7 +367,7 @@ def export(data: dict, out_dir: Path) -> list[dict]:
         ix.column_dimensions[col].width = wd
     ix.append(["Government bond liquidity dashboard: all datasets"])
     ix.cell(1, 1).font = Font(bold=True, size=13)
-    ix.append([f"Pipeline run {data['generated']}. One sheet per dataset. The per-dataset workbooks on the page carry an About sheet with the column dictionary. Amounts in local currency millions unless the column name says otherwise; empty cells = not available."])
+    ix.append([f"Pipeline run {data['generated']}. One sheet per dataset, in wide form where the dataset is a set of series (one row per period, one column per series). The per-dataset workbooks on the page carry the long form and an About sheet with the column dictionary. Amounts in local currency millions unless the column name says otherwise; empty cells = not available."])
     ix.cell(2, 1).alignment = Alignment(wrap_text=True)
     ix.merge_cells("A2:D2")
     ix.row_dimensions[2].height = 32
@@ -328,7 +383,12 @@ def export(data: dict, out_dir: Path) -> list[dict]:
         ix.cell(r, 1).font = Font(color="0563C1", underline="single")
         for c in ix[r]:
             c.alignment = Alignment(wrap_text=True, vertical="top")
-        _data_sheet(wb.create_sheet(name), e["_header"], e["_rows"])
+        spec = WIDE.get(name)
+        if spec:
+            wh, wr = _widen(e["_header"], e["_rows"], spec)
+            _data_sheet(wb.create_sheet(name), wh, wr)
+        else:
+            _data_sheet(wb.create_sheet(name), e["_header"], e["_rows"])
     allp = out_dir / "bond_liquidity_all_datasets.xlsx"
     wb.save(allp)
     man.insert(0, dict(file=allp.name, rows=None, bytes=allp.stat().st_size, columns=[],
@@ -341,7 +401,7 @@ def export(data: dict, out_dir: Path) -> list[dict]:
 
     # ---- 10. data dictionary ----
     lines = ["Government bond liquidity dashboard: data files", f"Pipeline run {data['generated']}", "",
-             "Each dataset is an Excel workbook with a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.", ""]
+             "Each dataset is an Excel workbook with a Wide sheet where the data form series (one row per period, one column per series), a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.", ""]
     for e in man:
         lines += [f"== {e['file']} ==", e["title"], e["description"], f"Source: {e['source']}" + (f" ({e['source_url']})" if e.get("source_url") else ""), f"Counting / notes: {e['notes']}"]
         if e["columns"]:

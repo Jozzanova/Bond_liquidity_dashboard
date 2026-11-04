@@ -1,7 +1,7 @@
 Government bond liquidity dashboard: data files
 Pipeline run 2026-11-04 14:18
 
-Each dataset is an Excel workbook with a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.
+Each dataset is an Excel workbook with a Wide sheet where the data form series (one row per period, one column per series), a Data sheet (one observation per row) and an About sheet (source, counting, column dictionary). Amounts in local currency millions unless the column name says otherwise. Empty cells = not available.
 
 == bond_liquidity_all_datasets.xlsx ==
 All datasets in one workbook
