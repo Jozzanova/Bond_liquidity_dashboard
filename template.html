@@ -369,6 +369,14 @@ footer { color: var(--muted); font-size: .85rem; max-width: 1500px; margin: 2rem
   </div>
 </section>
 
+<section class="pane" id="pane-letter">
+  <div class="block pagehead">
+    <h1>Liquidity letter</h1>
+    <p class="lede">A dated note on what changed in the turnover data: which markets have new figures, how dealer-to-customer and interdealer turnover moved, where along the curve, and which sources are due. Written by the monthly update agent after each refresh that brought new data, from the figures on this page. <label style="margin-left:.4rem">Date <select id="letterSel"></select></label></p>
+  </div>
+  <div class="block"><div class="card md" id="letterBody"></div></div>
+</section>
+
 </main>
 <footer id="foot"></footer>
 
@@ -1680,8 +1688,30 @@ function tabNotes() {
 }
 
 /* ---------- tabs and boot ---------- */
-const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, cmp: tabCmp, notes: tabNotes, update: tabUpdate, dl: tabDownloads};
-const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data', dl: 'Downloads'};
+// a minimal Markdown renderer for the letters: headings, paragraphs, bullet lists, bold, links
+function md(text) {
+  const lines = text.split(/\r?\n/); let h = '', inList = false, para = [];
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[(.+?)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const flush = () => { if (para.length) { h += `<p>${inline(para.join(' '))}</p>`; para = []; } if (inList) { h += '</ul>'; inList = false; } };
+  for (const l of lines) {
+    const m = l.match(/^(#{1,3})\s+(.*)/);
+    if (m) { flush(); h += `<h${m[1].length + 1}>${inline(m[2])}</h${m[1].length + 1}>`; continue; }
+    if (/^\s*[-*]\s+/.test(l)) { if (para.length) { h += `<p>${inline(para.join(' '))}</p>`; para = []; } if (!inList) { h += '<ul>'; inList = true; } h += `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`; continue; }
+    if (!l.trim()) { flush(); continue; }
+    if (inList) { h += '</ul>'; inList = false; }
+    para.push(l.trim());
+  }
+  flush(); return h;
+}
+function tabLetter() {
+  const L = (D.letters || []).slice().sort((a, b) => b.date.localeCompare(a.date)), sel = $('#letterSel');
+  if (!L.length) { sel.innerHTML = '<option>none yet</option>'; $('#letterBody').innerHTML = '<p class="note">No letter has been written yet. The monthly routine writes one after each refresh that brings new data.</p>'; return; }
+  sel.innerHTML = L.map(l => `<option value="${l.date}">${l.date}</option>`).join('');
+  const show = () => { const l = L.find(x => x.date === sel.value) || L[0]; $('#letterBody').innerHTML = md(l.text); };
+  sel.addEventListener('change', show); show();
+}
+const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, cmp: tabCmp, notes: tabNotes, update: tabUpdate, dl: tabDownloads, letter: tabLetter};
+const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data', dl: 'Downloads', letter: 'Letter'};
 const TABMK = {usd: 'USD', gbp: 'GBP', de: 'EUR-DE', fr: 'EUR-FR', jpy: 'JPY', cny: 'CNY'};
 function buildTabs() {
   const link = t => `<a href="#${t}" data-tab="${t}">${TABMK[t] ? `<span class="sw" style="background:${col(TABMK[t])}"></span>` : ''}${TABLABEL[t]}</a>`;

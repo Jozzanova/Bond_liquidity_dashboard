@@ -16,6 +16,12 @@ if not data_file.exists():
     sys.exit("data/liquidity.json missing: run  python -X utf8 pipeline/run_all.py  first")
 data = json.loads(data_file.read_text(encoding="utf-8"))
 data["built"] = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+# the dated letters written by the monthly routine (data/letters/YYYY-MM-DD.md), shown on the Letter tab
+data["letters"] = []
+for p in sorted((ROOT / "data" / "letters").glob("*.md")):
+    text = p.read_text(encoding="utf-8")
+    title = next((l.lstrip("# ").strip() for l in text.splitlines() if l.startswith("# ")), p.stem)
+    data["letters"].append({"date": p.stem, "title": title, "text": text})
 
 from export_data import export  # noqa: E402
 data["downloads"] = export(data, ROOT / "site" / "data")
