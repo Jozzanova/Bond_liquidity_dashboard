@@ -1696,6 +1696,9 @@ function md(text) {
   for (const l of lines) {
     const m = l.match(/^(#{1,3})\s+(.*)/);
     if (m) { flush(); h += `<h${m[1].length + 1}>${inline(m[2])}</h${m[1].length + 1}>`; continue; }
+    // a figure drawn from the page's data: {figure: USD d2c_base} = monthly turnover of that market and segment
+    const fg = l.match(/^\{figure:\s*([A-Z-]+)\s+([a-z0-9_]+)\s*\}/);
+    if (fg) { flush(); h += `<div class="plot letterfig" data-m="${esc(fg[1])}" data-seg="${esc(fg[2])}" style="min-height:280px;margin:.6rem 0 1rem"></div>`; continue; }
     if (/^\s*[-*]\s+/.test(l)) { if (para.length) { h += `<p>${inline(para.join(' '))}</p>`; para = []; } if (!inList) { h += '<ul>'; inList = true; } h += `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`; continue; }
     if (!l.trim()) { flush(); continue; }
     if (inList) { h += '</ul>'; inList = false; }
@@ -1707,8 +1710,20 @@ function tabLetter() {
   const L = (D.letters || []).slice().sort((a, b) => b.date.localeCompare(a.date)), sel = $('#letterSel');
   if (!L.length) { sel.innerHTML = '<option>none yet</option>'; $('#letterBody').innerHTML = '<p class="note">No letter has been written yet. The monthly routine writes one after each refresh that brings new data.</p>'; return; }
   sel.innerHTML = L.map(l => `<option value="${l.date}">${l.date}</option>`).join('');
-  const show = () => { const l = L.find(x => x.date === sel.value) || L[0]; $('#letterBody').innerHTML = md(l.text); };
+  const show = () => { const l = L.find(x => x.date === sel.value) || L[0]; $('#letterBody').innerHTML = md(l.text); drawLetterFigures(); };
   sel.addEventListener('change', show); show();
+}
+// figures referenced in a letter: monthly average daily turnover (sum of the liquidity groups) of a market's segment
+function drawLetterFigures() {
+  document.querySelectorAll('#letterBody .letterfig').forEach((el, i) => {
+    el.id = 'letterfig' + i;
+    const M = D.markets[el.dataset.m], seg = M && (M.segments[el.dataset.seg] || Object.values(M.segments).find(s => s.key === el.dataset.seg));
+    const series = M && seg && M.monthly_adv && M.monthly_adv[seg.key];
+    if (!series || !M.months) { el.innerHTML = `<p class="note">No monthly series for ${esc(el.dataset.m)} ${esc(el.dataset.seg)}.</p>`; return; }
+    const groups = Object.keys(series), y = M.months.map((_, j) => groups.some(g => series[g][j] != null) ? groups.reduce((a, g) => a + (series[g][j] || 0), 0) / 1000 : null);
+    plot(el.id, [{type: 'bar', x: M.months, y, marker: {color: col(el.dataset.m)}, hovertemplate: '%{x|%b %Y}: %{y:,.1f} bn<extra></extra>'}],
+      base({showlegend: false, title: {text: `${M.name}: ${seg.label}, ${M.currency} bn per trading day`, font: {size: 12, color: css('--muted')}, x: 0}, margin: {l: 48, r: 10, t: 28, b: 36}, yaxis: Object.assign(base().yaxis, {rangemode: 'tozero'})}));
+  });
 }
 const TABS = {main: null, usd: tabUSD, gbp: tabGBP, de: tabDE, fr: tabFR, jpy: tabJPY, cny: tabCNY, cmp: tabCmp, notes: tabNotes, update: tabUpdate, dl: tabDownloads, letter: tabLetter};
 const TABLABEL = {main: 'Liquidity profile', usd: 'US Treasuries', gbp: 'UK gilts', de: 'German Bunds', fr: 'French OATs', jpy: 'JGBs', cny: 'CGBs', cmp: 'Market comparison', notes: 'Methods & sources', update: 'Update data', dl: 'Downloads', letter: 'Letter'};

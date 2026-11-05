@@ -38,7 +38,10 @@ If at least one market's data moved on since the previous letter, create `data/l
     ## Data status
 
 Length 300 to 500 words. Figures only from the brief or `data/liquidity.json`, with the period they refer to; local-currency
-billions per trading day unless you say otherwise. Say which markets have new data and which do not. Note anything that looks
+billions per trading day unless you say otherwise. A chart can be placed in the letter with a line of the form
+`{figure: USD d2c_base}` (market code and segment: d2c_base, d2c_all, d2d or total): the page draws that market's monthly
+average daily turnover from its own data. Only markets with monthly series draw (US Treasuries, JGBs, Bond Connect); use at
+most two per letter. Say which markets have new data and which do not. Note anything that looks
 like a break (a month far above or below its neighbours, a window that shrank, provisional figures). No investment advice.
 
 If nothing moved on, do not write a letter; just report that.
