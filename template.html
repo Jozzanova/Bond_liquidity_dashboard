@@ -1698,7 +1698,7 @@ function md(text) {
     if (m) { flush(); h += `<h${m[1].length + 1}>${inline(m[2])}</h${m[1].length + 1}>`; continue; }
     // a figure drawn from the page's data: {figure: USD d2c_base} = monthly turnover of that market and segment
     const fg = l.match(/^\{figure:\s*([A-Z-]+)\s+([a-z0-9_]+)\s*\}/);
-    if (fg) { flush(); h += `<div class="plot letterfig" data-m="${esc(fg[1])}" data-seg="${esc(fg[2])}" style="min-height:280px;margin:.6rem 0 1rem"></div>`; continue; }
+    if (fg) { flush(); h += `<div class="plot letterfig" data-m="${esc(fg[1])}" data-seg="${esc(fg[2])}" style="min-height:280px;max-width:72ch;margin:.6rem 0 1rem"></div>`; continue; }
     if (/^\s*[-*]\s+/.test(l)) { if (para.length) { h += `<p>${inline(para.join(' '))}</p>`; para = []; } if (!inList) { h += '<ul>'; inList = true; } h += `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`; continue; }
     if (!l.trim()) { flush(); continue; }
     if (inList) { h += '</ul>'; inList = false; }
@@ -1721,7 +1721,7 @@ function drawLetterFigures() {
     const series = M && seg && M.monthly_adv && M.monthly_adv[seg.key];
     if (!series || !M.months) { el.innerHTML = `<p class="note">No monthly series for ${esc(el.dataset.m)} ${esc(el.dataset.seg)}.</p>`; return; }
     const groups = Object.keys(series), y = M.months.map((_, j) => groups.some(g => series[g][j] != null) ? groups.reduce((a, g) => a + (series[g][j] || 0), 0) / 1000 : null);
-    plot(el.id, [{type: 'bar', x: M.months, y, marker: {color: col(el.dataset.m)}, hovertemplate: '%{x|%b %Y}: %{y:,.1f} bn<extra></extra>'}],
+    plot(el.id, [{type: 'scatter', mode: 'lines+markers', x: M.months, y, line: {color: col(el.dataset.m), width: 2}, marker: {size: 5}, connectgaps: false, hovertemplate: '%{x|%b %Y}: %{y:,.1f} bn<extra></extra>'}],
       base({showlegend: false, title: {text: `${M.name}: ${seg.label}, ${M.currency} bn per trading day`, font: {size: 12, color: css('--muted')}, x: 0}, margin: {l: 48, r: 10, t: 28, b: 36}, yaxis: Object.assign(base().yaxis, {rangemode: 'tozero'})}));
   });
 }
